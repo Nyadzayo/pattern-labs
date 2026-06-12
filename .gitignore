@@ -5,3 +5,4 @@ dist-ssr
 .DS_Store
 src-tauri/target
 *.pdf
+.claude/phase-screenshots/

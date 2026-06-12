@@ -5,6 +5,7 @@ import type { Difficulty, ModuleContent, ModuleId, ModuleMeta } from '@/content'
 import { useAppState } from '@/lib/useAppState'
 import { markConceptRead, setLastVisited } from '@/lib/storage'
 import { Markdown } from '@/components/markdown/Markdown'
+import { VisualizerHost } from '@/components/visualizers/VisualizerHost'
 
 export const MODULE_TABS = ['learn', 'visualize', 'practice', 'quiz', 'flashcards'] as const
 export type ModuleTab = (typeof MODULE_TABS)[number]
@@ -85,7 +86,7 @@ export function ModulePage() {
 
           <div className="py-6">
             {tab === 'learn' && <LearnTab meta={meta} content={content} />}
-            {tab === 'visualize' && <ComingSoon what="The interactive visualizer" phase="Phase 3" />}
+            {tab === 'visualize' && <VisualizerHost id={content.visualizer} />}
             {tab === 'practice' && <PracticeTab meta={meta} content={content} />}
             {tab === 'quiz' && <ComingSoon what="The quiz" phase="Phase 5" />}
             {tab === 'flashcards' && <ComingSoon what="Flashcards" phase="Phase 5" />}

@@ -34,6 +34,7 @@ export type ModuleId = (typeof MODULE_IDS)[number]
 
 export const VISUALIZER_IDS = [
   'two-pointers',
+  'hash-map',
   'sliding-window',
   'binary-search',
   'linked-list',

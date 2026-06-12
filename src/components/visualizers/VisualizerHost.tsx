@@ -8,6 +8,7 @@ import type { VisualizerId } from '@/content'
  */
 const REGISTRY: Record<VisualizerId, LazyExoticComponent<ComponentType>> = {
   'two-pointers': lazy(() => import('./viz/two-pointers')),
+  'hash-map': lazy(() => import('./viz/hash-map')),
   'sliding-window': lazy(() => import('./viz/sliding-window')),
   'binary-search': lazy(() => import('./viz/binary-search')),
   'linked-list': lazy(() => import('./viz/linked-list')),

@@ -7,7 +7,7 @@ import type { ModuleContent, ModuleId, ModuleMeta } from './types'
  */
 export const MODULES: ModuleMeta[] = [
   { id: 'two-pointers', title: 'Two Pointers', order: 1, blurb: 'Converging indices over sorted data', visualizer: 'two-pointers' },
-  { id: 'hash-maps-sets', title: 'Hash Maps & Sets', order: 2, blurb: 'Trade memory for O(1) lookups', visualizer: 'sliding-window' },
+  { id: 'hash-maps-sets', title: 'Hash Maps & Sets', order: 2, blurb: 'Trade memory for O(1) lookups', visualizer: 'hash-map' },
   { id: 'linked-lists', title: 'Linked Lists', order: 3, blurb: 'Pointer surgery without losing nodes', visualizer: 'linked-list' },
   { id: 'fast-slow-pointers', title: 'Fast & Slow Pointers', order: 4, blurb: 'Cycle detection by lapping', visualizer: 'linked-list' },
   { id: 'sliding-windows', title: 'Sliding Windows', order: 5, blurb: 'Grow and shrink a moving range', visualizer: 'sliding-window' },

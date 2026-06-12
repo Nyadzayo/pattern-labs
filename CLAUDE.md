@@ -50,7 +50,7 @@ Step-engine contract in `engine.ts`: each visualizer is a **pure function** `inp
 ## Build Plan (7 phases — verify each before starting the next)
 
 1. **Skeleton & shell** — scaffold, sidebar + progress rings, dashboard, settings ✅ verified
-2. **Content engine & reader** — schema, markdown renderer (complexity chips), module tabs, first 3 modules (Two Pointers, Hash Maps & Sets, Sliding Windows)
+2. **Content engine & reader** — schema, markdown renderer (complexity chips), module tabs, first 3 modules (Two Pointers, Hash Maps & Sets, Sliding Windows) ✅ verified
 3. **Interactive visualizers** — step engine + 15 visualizers, editable inputs
 4. **Practice arena** — CodeMirror + Pyodide worker judge, hints gate, solution reveal (solved-with-help vs solved-clean), draft autosave
 5. **Quiz, flashcards, mock interview** — instant-feedback quiz + sparkline history, SM-2 review deck, 45-min mock with report
