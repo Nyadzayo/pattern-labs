@@ -6,6 +6,8 @@ import { useAppState } from '@/lib/useAppState'
 import { markConceptRead, setLastVisited } from '@/lib/storage'
 import { Markdown } from '@/components/markdown/Markdown'
 import { VisualizerHost } from '@/components/visualizers/VisualizerHost'
+import { QuizTab } from '@/components/quiz/QuizTab'
+import { FlashcardsTab } from '@/components/flashcards/FlashcardsTab'
 
 export const MODULE_TABS = ['learn', 'visualize', 'practice', 'quiz', 'flashcards'] as const
 export type ModuleTab = (typeof MODULE_TABS)[number]
@@ -88,19 +90,11 @@ export function ModulePage() {
             {tab === 'learn' && <LearnTab meta={meta} content={content} />}
             {tab === 'visualize' && <VisualizerHost id={content.visualizer} />}
             {tab === 'practice' && <PracticeTab meta={meta} content={content} />}
-            {tab === 'quiz' && <ComingSoon what="The quiz" phase="Phase 5" />}
-            {tab === 'flashcards' && <ComingSoon what="Flashcards" phase="Phase 5" />}
+            {tab === 'quiz' && <QuizTab moduleId={meta.id} />}
+            {tab === 'flashcards' && <FlashcardsTab moduleId={meta.id} />}
           </div>
         </>
       )}
-    </div>
-  )
-}
-
-function ComingSoon({ what, phase }: { what: string; phase: string }) {
-  return (
-    <div className="rounded-xl border border-dashed border-edge p-8 text-center text-sm text-ink-muted">
-      {what} lands in {phase}.
     </div>
   )
 }

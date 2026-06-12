@@ -132,6 +132,7 @@ export function StepPlayer<T>({ frames, renderFrame, pseudocode, resetKey }: Ste
           <button
             onClick={togglePlay}
             title="Play/Pause (space)"
+            data-play-toggle
             className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-sm text-white transition-opacity hover:opacity-90"
             aria-label={playing ? 'Pause' : 'Play'}
           >

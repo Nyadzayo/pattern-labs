@@ -7,7 +7,7 @@
  */
 import { allLoadedContent } from '@/content'
 import type { AppState, CardSchedule } from './storage'
-import { todayISO } from './storage'
+import { setState, todayISO } from './storage'
 
 export type Grade = 'again' | 'hard' | 'good' | 'easy'
 
@@ -51,6 +51,15 @@ export function applyGrade(prev: CardSchedule | undefined, grade: Grade): CardSc
   if (grade === 'hard' && reps > 2) intervalDays = Math.max(1, Math.round(s.intervalDays * 1.2))
 
   return { reps, intervalDays, ease, due: addDays(today, intervalDays), lapses: s.lapses }
+}
+
+/** Grade a card and persist its new schedule. */
+export function gradeCard(moduleId: string, cardId: string, grade: Grade): void {
+  const key = `${moduleId}/${cardId}`
+  setState((prev) => ({
+    ...prev,
+    cards: { ...prev.cards, [key]: applyGrade(prev.cards[key], grade) },
+  }))
 }
 
 export interface DueCard {

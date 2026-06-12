@@ -252,6 +252,10 @@ export function recordQuizAttempt(moduleId: string, score: number, total: number
   }))
 }
 
+export function recordMockReport(report: MockReport): void {
+  setState((prev) => ({ ...prev, mockReports: [...prev.mockReports, report] }))
+}
+
 export function updateProblemProgress(
   problemKey: string,
   patch: Partial<ProblemProgress>,

@@ -73,20 +73,26 @@ export function overallProgress(state: AppState): number {
 }
 
 /**
- * The module the learner is weakest in, judged primarily by quiz scores,
- * then by unsolved problems. Only modules with content qualify.
+ * Per-module mastery score in 0..1 (higher = stronger), judged primarily by
+ * quiz scores, then solve rate. Untaken quizzes count as 0.5 so brand-new
+ * modules don't always shadow genuinely weak ones. Modules without content
+ * are omitted.
  */
-export function weakestModule(state: AppState): ModuleId | null {
-  let worst: { id: ModuleId; score: number } | null = null
+export function moduleMastery(state: AppState): { id: ModuleId; score: number }[] {
+  const out: { id: ModuleId; score: number }[] = []
   for (const m of MODULES) {
     const p = moduleProgress(state, m.id)
     if (!p.hasContent) continue
-    // Quiz score dominates; untaken quizzes count as 0.5 so brand-new
-    // modules don't always shadow genuinely weak ones.
     const quiz = p.bestQuizScore ?? 0.5
     const solveRate = p.problemsTotal ? p.problemsSolved / p.problemsTotal : 0
-    const score = 0.7 * quiz + 0.3 * solveRate
-    if (!worst || score < worst.score) worst = { id: m.id, score }
+    out.push({ id: m.id, score: 0.7 * quiz + 0.3 * solveRate })
   }
-  return worst?.id ?? null
+  return out
+}
+
+/** The module the learner is weakest in. */
+export function weakestModule(state: AppState): ModuleId | null {
+  const scored = moduleMastery(state)
+  if (!scored.length) return null
+  return scored.reduce((a, b) => (b.score < a.score ? b : a)).id
 }

@@ -2,6 +2,11 @@ import { HashRouter, Route, Routes } from 'react-router-dom'
 import { Layout } from '@/components/shell/Layout'
 import { Dashboard } from '@/pages/Dashboard'
 import { ModulePage } from '@/pages/ModulePage'
+import { ProblemPage } from '@/pages/ProblemPage'
+import { CheatSheetPage } from '@/pages/CheatSheetPage'
+import { DecisionTreePage } from '@/pages/DecisionTreePage'
+import { ReviewPage } from '@/pages/ReviewPage'
+import { GalleryPage } from '@/pages/GalleryPage'
 import { Settings } from '@/pages/Settings'
 import { Placeholder } from '@/pages/Placeholder'
 
@@ -12,10 +17,12 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="module/:moduleId" element={<ModulePage />} />
-          <Route path="module/:moduleId/problem/:problemId" element={<Placeholder title="Practice arena" phase="Phase 4" />} />
-          <Route path="review" element={<Placeholder title="Review due cards" phase="Phase 5" />} />
+          <Route path="module/:moduleId/problem/:problemId" element={<ProblemPage />} />
+          <Route path="review" element={<ReviewPage />} />
           <Route path="mock" element={<Placeholder title="Mock interview" phase="Phase 5" />} />
-          <Route path="decide" element={<Placeholder title="Which pattern do I use?" phase="Phase 7" />} />
+          <Route path="cheatsheet/:moduleId" element={<CheatSheetPage />} />
+          <Route path="gallery/:vizId?" element={<GalleryPage />} />
+          <Route path="decide" element={<DecisionTreePage />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Placeholder title="Not found" phase="another universe" />} />
         </Route>

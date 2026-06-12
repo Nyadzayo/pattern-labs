@@ -1,7 +1,9 @@
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
+import { useGlobalShortcuts } from '@/lib/useGlobalShortcuts'
 
 export function Layout() {
+  useGlobalShortcuts()
   return (
     <div className="flex h-full">
       <Sidebar />
