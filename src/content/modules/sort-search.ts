@@ -667,8 +667,10 @@ for start, end in runs[1:]:
     else:
         merged.append([start, end])
 
-# 2) Exploit: problem-defined order via comparator
-parts.sort(key=cmp_to_key(lambda a, b: -1 if a + b > b + a else 1))`,
+# 2) Exploit: problem-defined order via comparator (must be a total order:
+#    return 0 on ties, or the sort's behavior is undefined)
+parts.sort(key=cmp_to_key(
+    lambda a, b: -1 if a + b > b + a else (1 if a + b < b + a else 0)))`,
     complexity:
       'Sort O(n log n) once; then binary search O(log n) per query, merge sweep O(n), quickselect average O(n) (worst O(n^2)), staircase search O(m + n).',
   },

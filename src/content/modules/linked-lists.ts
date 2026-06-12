@@ -697,7 +697,7 @@ Step 4 is the part interviews use to separate careful engineers from fast ones: 
     {
       id: 'q-one-pass-kth',
       prompt:
-        'A telemetry chain streams from cold storage and may be traversed **once**. You must unlink the k-th record from the end. Which approach fits?',
+        'A telemetry chain streams from cold storage: it may be traversed **once**, and you have working memory for only a few cursors. You must unlink the k-th record from the end, in place. Which approach fits?',
       choices: [
         'First pass to count the n records, second pass to stop at node n−k and splice — simple and O(n)',
         'Copy all values into a Python list, delete index −k, and rebuild the chain from the copy',
@@ -706,7 +706,7 @@ Step 4 is the part interviews use to separate careful engineers from fast ones: 
       ],
       correctIndex: 2,
       explanation:
-        'The gap-runner keeps an invariant — lead is always k ahead of trail — so the end-of-chain event *located* the victim without ever counting, in one pass and O(1) space. The two-pass count (A) is the tempting classic but explicitly violates the single-traversal budget; copying to an array (B) abandons O(1) space and still re-reads everything; recursion (D) is one pass in disguise but burns O(n) stack, the same memory you were told you don’t have.',
+        'The gap-runner keeps an invariant — lead is always k ahead of trail — so the end-of-chain event *located* the victim without ever counting, in one pass and a few cursors of space. The two-pass count (A) is the tempting classic but explicitly violates the single-traversal budget; copying to a Python list (B) does read the stream only once, but it rebuilds a brand-new chain rather than unlinking the record from the existing one — and the O(n) copy blows the few-cursors memory budget anyway; recursion (D) is one pass in disguise but burns O(n) stack frames, the same memory you were told you don’t have.',
       kind: 'scenario',
     },
     {

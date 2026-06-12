@@ -545,21 +545,21 @@ Each word costs at most its own length, so the whole rewrite is linear in the re
       ],
       correctIndex: 1,
       explanation:
-        'A node stands for the string spelled by walking root-to-node — a prefix shared by every word stored beneath it. Choice 1 is the tempting one because leaf nodes usually do end words, but words can also end at internal nodes ("app" inside "apple"), which is exactly why nodes represent prefixes and a separate marker flags which prefixes are complete words.',
+        'A node stands for the string spelled by walking root-to-node — a prefix shared by every word stored beneath it. "One complete word" is the tempting answer because leaf nodes do end words, but words can also end at internal nodes ("app" inside "apple"), which is exactly why nodes represent prefixes and a separate marker flags which prefixes are complete words. A node is not "one character in isolation" either: the same letter appears in many nodes, each meaning something different because of the path above it.',
     },
     {
       id: 'q2',
       kind: 'conceptual',
       prompt: 'Why does a trie need an explicit end-of-word marker on its nodes?',
       choices: [
-        'Because a node with no children is not necessarily a word, and a word\'s node may still have children when that word is a prefix of a longer one',
+        'Because inserting a word creates a path for every one of its prefixes, so node existence alone cannot distinguish a stored word from a mere prefix of one',
         'To make lookups O(1) instead of O(L)',
         'Because child dictionaries cannot store the empty string',
         'It does not — leaves always coincide exactly with word ends',
       ],
       correctIndex: 0,
       explanation:
-        'Storing "apple" creates nodes for "a", "ap", "app"... — paths exist for every prefix whether or not it was inserted. Only the marker distinguishes "app is stored" from "app is just a hallway". Choice 3 is the tempting trap: it holds only when no stored word is a prefix of another, which real dictionaries violate constantly. Markers change correctness, not asymptotic lookup cost (choice 1).',
+        'Storing "apple" creates nodes for "a", "ap", "app"... — paths exist for every prefix whether or not it was inserted. Only the marker distinguishes "app is stored" from "app is just a hallway". The "leaves always coincide with word ends" claim is the tempting trap: it holds only when no stored word is a prefix of another, which real dictionaries violate constantly. And markers change correctness, not asymptotic cost — lookup stays O(L) either way.',
     },
     {
       id: 'q3',
@@ -568,7 +568,7 @@ Each word costs at most its own length, so the whole rewrite is linear in the re
       choices: ['O(log N)', 'O(L), independent of N and C', 'O(N)', 'O(L * N)'],
       correctIndex: 1,
       explanation:
-        'Lookup walks at most L child links and reads one flag — the dictionary size never enters the loop. That independence from N is the trie\'s core complexity promise. O(log N) (choice 0) describes balanced BSTs or binary search over a sorted list, where each of the log N comparisons can itself cost up to O(L).',
+        'Lookup walks at most L child links and reads one flag — the dictionary size never enters the loop. That independence from N is the trie\'s core complexity promise. O(log N) is the tempting answer because "dictionary lookup" sounds like search, but it describes balanced BSTs or binary search over a sorted list, where each of the log N comparisons can itself cost up to O(L).',
     },
     {
       id: 'q4',
@@ -582,7 +582,7 @@ Each word costs at most its own length, so the whole rewrite is linear in the re
       ],
       correctIndex: 2,
       explanation:
-        'Literal characters follow one child; each dot branches into all children the node actually has. In the worst case (all dots, adversarial dictionary) the DFS explores almost every trie node — bounded by trie size, i.e. O(total stored characters). Choice 0 is the tempting one: it is true only for patterns with no dots. 26^L (choice 1) is the cost of enumerating concrete strings against a hash set, which is precisely what the trie avoids by only following children that exist.',
+        'Literal characters follow one child; each dot branches into all children the node actually has. In the worst case (all dots, adversarial dictionary) the DFS explores almost every trie node — bounded by trie size, i.e. O(total stored characters). Plain O(L) is the tempting answer, but it holds only for patterns with no dots. 26^L is the cost of enumerating concrete strings against a hash set, which is precisely what the trie avoids by only following children that exist.',
     },
     {
       id: 'q5',
@@ -597,7 +597,7 @@ Each word costs at most its own length, so the whole rewrite is linear in the re
       ],
       correctIndex: 1,
       explanation:
-        'Counters maintained at build time turn every query into an O(L) walk plus one integer read — dictionary size never appears in query cost. The hash-set scan (choice 0) is the tempting wrong pattern: hash sets are great for exact membership, but prefix questions force an O(N * L) scan per query, ruinous at millions of queries. Sliding window (choice 2) answers contiguous-subarray questions, not string-prefix aggregation.',
+        'Counters maintained at build time turn every query into an O(L) walk plus one integer read — dictionary size never appears in query cost. The hash-set scan is the tempting wrong pattern: hash sets are great for exact membership, but prefix questions force an O(N * L) scan per query, ruinous at millions of queries. A sliding window answers contiguous-subarray questions, not string-prefix aggregation, and re-sorting per query does strictly more work than the scan it replaces.',
     },
     {
       id: 'q6',
@@ -612,7 +612,7 @@ Each word costs at most its own length, so the whole rewrite is linear in the re
       ],
       correctIndex: 2,
       explanation:
-        'The trie DFS only ever explores letters the registry actually contains, so its cost is capped by trie size regardless of dot count. Choice 0 is the tempting hash-set reflex: it generates 26^(#dots) candidates — about 12 million for five dots — almost all of which exist nowhere. Binary search (choice 1) cannot handle a leading dot at all, since the first character determines where to look. Removing dots before hashing (choice 3) conflates patterns with different lengths and positions.',
+        'The trie DFS only ever explores letters the registry actually contains, so its cost is capped by trie size regardless of dot count. Expanding dots against a hash set is the tempting reflex: it generates 26^(#dots) candidates — about 12 million for five dots — almost all of which exist nowhere. Binary search cannot handle a leading dot at all, since the first character determines where to look, and hashing with the dots removed conflates patterns of different lengths and positions.',
     },
     {
       id: 'q7',
@@ -626,7 +626,7 @@ Each word costs at most its own length, so the whole rewrite is linear in the re
       ],
       correctIndex: 2,
       explanation:
-        'Each inserted character creates at most one new node, so C characters bound the node count; words sharing prefixes reuse nodes, which is the whole compression story. O(N) (choice 0) undercounts — node count tracks characters, not words. 26^L (choice 1) is the size of the space of possible strings, not of the structure, which only materializes paths that were actually inserted.',
+        'Each inserted character creates at most one new node, so C characters bound the node count; words sharing prefixes reuse nodes, which is the whole compression story. O(N) is the tempting undercount — node count tracks characters, not words, so one very long word can dominate. 26^L is the size of the space of possible strings, not of the structure, which only materializes paths that were actually inserted.',
     },
     {
       id: 'q8',
@@ -641,7 +641,7 @@ Each word costs at most its own length, so the whole rewrite is linear in the re
       ],
       correctIndex: 0,
       explanation:
-        'Depth in a trie equals prefix length, so a root-to-node walk enumerates candidates shortest-first by construction; the first marker wins and the walk can stop. Choice 2 is the tempting over-engineered version — collecting then minimizing gives the same answer but does provably unnecessary work, and missing the early exit is a common inefficiency. Alphabetical order (choice 1) says nothing about length, and tries never discard longer roots (choice 3) — both markers coexist at different depths.',
+        'Depth in a trie equals prefix length, so a root-to-node walk enumerates candidates shortest-first by construction; the first marker wins and the walk can stop. Collect-every-marker-then-minimize is the tempting over-engineered version — it gives the same answer but does provably unnecessary work by ignoring the early exit. Alphabetical order says nothing about length, and tries never discard longer roots — markers for nested roots coexist at different depths on the same path.',
     },
   ],
   flashcards: [
@@ -713,6 +713,7 @@ Each word costs at most its own length, so the whole rewrite is linear in the re
         self.count = 0        # optional payload: words passing through
 
 def insert(root, word):
+    root.count += 1           # count the root too: the empty prefix matches every word
     node = root
     for ch in word:
         node = node.children.setdefault(ch, TrieNode())

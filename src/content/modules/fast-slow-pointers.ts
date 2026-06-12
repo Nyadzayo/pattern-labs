@@ -92,7 +92,7 @@ The hall's controller has two pointer registers and no scratch memory: solve it 
           input: 'labels = [3, 1, 4, 1], pos = 1',
           output: 'True',
           explanation:
-            'The fourth cart links back to the cart at index 1, so the bag cycles 1 → 4 → 1 → 4 … forever.',
+            'The fourth cart links back to the cart at index 1, so the bag circles the carts at indices 1 → 2 → 3 → 1 forever (label sequence 1 → 4 → 1, repeating).',
         },
         {
           input: 'labels = [7, 7, 7], pos = -1',

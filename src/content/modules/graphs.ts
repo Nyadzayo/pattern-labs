@@ -583,7 +583,7 @@ The DFS alternative — three-color marking, where finding an edge into a "gray"
       ],
       correctIndex: 1,
       explanation:
-        'The queue holds at most two consecutive distance values at any moment, so frontier expansion proceeds ring by ring; the first discovery of a node therefore comes from distance d and assigns it d+1, which no later path can beat. Choice 2 describes brute-force enumeration — BFS never revisits a node, which is exactly why it is fast. Insertion order and sorted adjacency (choices 0 and 3) affect tie-breaking among equal-length paths, never the length itself.',
+        "The queue holds at most two consecutive distance values at any moment, so frontier expansion proceeds ring by ring; the first discovery of a node therefore comes from distance d and assigns it d+1, which no later path can beat. 'Enumerates every possible path' describes brute-force search — BFS never revisits a node, which is exactly why it is fast. Insertion order and sorted adjacency lists affect tie-breaking among equal-length paths, never the length itself.",
     },
     {
       id: 'q2',
@@ -598,7 +598,7 @@ The DFS alternative — three-color marking, where finding an edge into a "gray"
       ],
       correctIndex: 2,
       explanation:
-        'The first copy of a cell to be popped is still the one enqueued earliest, i.e., at minimal distance, so answers remain correct — which is what makes this bug so sneaky. But several frontier cells often share an undiscovered neighbor, and pop-time marking lets each of them enqueue it, multiplying queue traffic (up to one entry per edge). It terminates eventually, so choice 3 is wrong; choice 0 is wrong because duplicates are skipped at pop time before they can assign anything.',
+        "The first copy of a cell to be popped is still the one enqueued earliest, i.e., at minimal distance, so answers remain correct — which is what makes this bug so sneaky. But several frontier cells often share an undiscovered neighbor, and pop-time marking lets each of them enqueue it, multiplying queue traffic (up to one entry per edge). It terminates eventually, so 'loops forever' is wrong; and distances never come out too long, because duplicates are skipped at pop time before they can assign anything.",
     },
     {
       id: 'q3',
@@ -618,7 +618,7 @@ The DFS alternative — three-color marking, where finding an edge into a "gray"
       choices: ['O(R · C)', 'O((R · C)^2)', 'O(R · C · log(R · C))', 'O(R + C)'],
       correctIndex: 0,
       explanation:
-        'The grid is a graph with V = R·C nodes and at most 4 edges per node, so E = O(V) and the usual O(V + E) collapses to O(R·C). The log factor (choice 2) belongs to Dijkstra with a priority queue — unnecessary when all moves cost the same. O(R + C) only counts one row and one column, and the quadratic bound would mean re-scanning the whole grid per cell, which the visited set exists to prevent.',
+        'The grid is a graph with V = R·C nodes and at most 4 edges per node, so E = O(V) and the usual O(V + E) collapses to O(R·C). The log factor in O(R · C · log(R · C)) belongs to Dijkstra with a priority queue — unnecessary when all moves cost the same. O(R + C) only counts one row and one column, and the quadratic bound would mean re-scanning the whole grid per cell, which the visited set exists to prevent.',
     },
     {
       id: 'q5',
@@ -633,7 +633,7 @@ The DFS alternative — three-color marking, where finding an edge into a "gray"
       ],
       correctIndex: 1,
       explanation:
-        "BFS's optimality proof depends on every edge costing the same — its rings count hops, not dollars. A 2-hop route through expensive toll roads can easily cost more than a 5-hop route on free streets, so the tempting choice 0 produces wrong fares. DFS-with-tracking explores exponentially many paths, and Union-Find answers connectivity questions, not cheapest-path ones. Dijkstra is BFS's weighted generalization: a priority queue keyed on accumulated cost restores the 'first arrival is optimal' guarantee.",
+        "BFS's optimality proof depends on every edge costing the same — its rings count hops, not dollars. A 2-hop route through expensive toll roads can easily cost more than a 5-hop route on free streets, so the tempting 'BFS finds shortest paths in any graph' answer produces wrong fares. DFS-with-tracking explores exponentially many paths, and Union-Find answers connectivity questions, not cheapest-path ones. Dijkstra is BFS's weighted generalization: a priority queue keyed on accumulated cost restores the 'first arrival is optimal' guarantee.",
     },
     {
       id: 'q6',
@@ -648,7 +648,7 @@ The DFS alternative — three-color marking, where finding an edge into a "gray"
       ],
       correctIndex: 2,
       explanation:
-        'This is connected-component counting over a stream of undirected pairs — Union-Find processes each event in near-constant amortized time and the surviving group count is the answer. The tempting choice 0 fails because a single BFS only explores ONE component; accounts never mentioned in any event would be missed entirely, and you would need to sweep all n starts anyway. Topological sort applies to directed acyclic precedence, not symmetric merges, and sorting by id tells you nothing about transitive connectivity.',
+        "This is connected-component counting over a stream of undirected pairs — Union-Find processes each event in near-constant amortized time and the surviving group count is the answer. The tempting 'BFS from account 0' option fails because a single BFS only explores ONE component; accounts never mentioned in any event would be missed entirely, and you would need to sweep all n starts anyway. Topological sort applies to directed acyclic precedence, not symmetric merges, and sorting by id tells you nothing about transitive connectivity.",
     },
     {
       id: 'q7',
@@ -663,7 +663,7 @@ The DFS alternative — three-color marking, where finding an edge into a "gray"
       ],
       correctIndex: 1,
       explanation:
-        "In a directed graph, two long branches can both point at a shared node: the second branch finds it 'visited' even though no edge leads back, so no cycle exists. A cycle requires an edge back into a node still on the current recursion path — hence the three-color scheme (white/gray/black) or, equivalently, Kahn's processed-count check. Choice 0 is backwards, and choices 2 and 3 are non-sequiturs: visited sets work fine on any graph; they just answer 'seen before?', not 'still in progress?'.",
+        "In a directed graph, two long branches can both point at a shared node: the second branch finds it 'visited' even though no edge leads back, so no cycle exists. A cycle requires an edge back into a node still on the current recursion path — hence the three-color scheme (white/gray/black) or, equivalently, Kahn's processed-count check. 'Directed graphs cannot contain cycles' is backwards — they certainly can. The doubled-edge-count and only-sound-on-trees objections are non-sequiturs: visited sets work fine on any graph; they just answer 'seen before?', not 'still in progress?'.",
     },
     {
       id: 'q8',
@@ -678,7 +678,7 @@ The DFS alternative — three-color marking, where finding an edge into a "gray"
       ],
       correctIndex: 1,
       explanation:
-        "Single-pass DP needs an acyclic dependency order, which only exists when movement is restricted (e.g., right/down only — the case the tempting choice 0 is remembering). With all four directions, a cell's true distance can depend on a neighbor that the scan has not reached yet, or one computed from a stale value — think of a U-shaped corridor that forces the robot to travel down and back up. BFS makes no ordering assumption beyond expanding rings and is exactly linear. DFS gives no shortest-path guarantee, and the moves here all cost 1, so Dijkstra is overkill.",
+        "Single-pass DP needs an acyclic dependency order, which only exists when movement is restricted (e.g., right/down only — the special case the tempting 'nothing is wrong' answer is remembering). With all four directions, a cell's true distance can depend on a neighbor that the scan has not reached yet, or one computed from a stale value — think of a U-shaped corridor that forces the robot to travel down and back up. BFS makes no ordering assumption beyond expanding rings and is exactly linear. DFS gives no shortest-path guarantee, and the moves here all cost 1, so Dijkstra is overkill.",
     },
   ],
   flashcards: [

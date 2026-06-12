@@ -168,7 +168,7 @@ The two classic traps both live in the extend branch. First, the condition is \`
         { input: [[[5, 7]]], expected: [[5, 7]], hidden: true, label: 'single booking' },
         { input: [[[1, 10], [2, 3], [4, 5], [6, 7]]], expected: [[1, 10]], hidden: true, label: 'nested bookings swallowed' },
         { input: [[[2, 6], [2, 6], [2, 6]]], expected: [[2, 6]], hidden: true, label: 'all identical' },
-        { input: [[[0, 1000000000], [500000000, 1500000000]]], expected: [[0, 1500000000]], hidden: true, label: 'large timestamps' },
+        { input: [[[0, 900000000], [500000000, 1000000000]]], expected: [[0, 1000000000]], hidden: true, label: 'large timestamps' },
       ],
       furtherPractice: [
         { name: 'LeetCode 56. Merge Intervals', note: 'the canonical version' },
@@ -282,10 +282,10 @@ Encoders are expensive, so the platform provisions the bare minimum. Given \`eve
 `,
       examples: [
         {
-          input: 'events = [[0, 30], [5, 10], [15, 20]]',
+          input: 'events = [[2, 40], [6, 14], [18, 27]]',
           output: '2',
           explanation:
-            'The 0–30 event overlaps both short ones, but the short ones never overlap each other — they can share a second encoder.',
+            'The 2–40 event overlaps both short ones, but the short ones never overlap each other — they can share a second encoder.',
         },
         {
           input: 'events = [[1, 3], [3, 5], [5, 7]]',
@@ -349,7 +349,7 @@ The single subtle line is \`ends[freed] <= s\`. With \`<=\`, an event ending at 
         complexity: 'Time O(n log n) for the two sorts + O(n) sweep, Space O(n)',
       },
       testCases: [
-        { input: [[[0, 30], [5, 10], [15, 20]]], expected: 2, label: 'long event spans two short ones' },
+        { input: [[[2, 40], [6, 14], [18, 27]]], expected: 2, label: 'long event spans two short ones' },
         { input: [[[1, 3], [3, 5], [5, 7]]], expected: 1, label: 'perfect hand-offs' },
         { input: [[[2, 4], [7, 10]]], expected: 1, label: 'disjoint events' },
         { input: [[]], expected: 0, hidden: true, label: 'no events' },

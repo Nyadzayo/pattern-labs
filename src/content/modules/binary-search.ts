@@ -399,7 +399,7 @@ Return that minimum rate. It is guaranteed that \`hours >= len(bins)\`, so a sol
         code: `def min_flash_rate(bins: list[int], hours: int) -> int:
     def hours_needed(rate: int) -> int:
         # Each bin occupies whole hours: ceil(b / rate), computed
-        # with integer math to stay exact for values up to 10^9.
+        # with integer math so it stays exact at any operand size.
         return sum((b + rate - 1) // rate for b in bins)
 
     # Candidate answers, NOT array indices: every rate in [1, max(bins)].
@@ -419,7 +419,7 @@ Return that minimum rate. It is guaranteed that \`hours >= len(bins)\`, so a sol
         commentary: `
 Nothing here is sorted and there is no array to probe — the move is to binary-search the **answer space**. The candidates are the integer rates \`1..max(bins)\`, and the question "does rate r finish within the budget?" is a monotone predicate: raising the rate can only shrink each bin's \`ceil(b/r)\` hour count, so the rates form a clean too-slow/fast-enough stripe. The minimum feasible rate is the stripe's boundary, which is exactly what the \`lo < hi\` template finds: feasible \`mid\` stays a candidate (\`hi = mid\`), infeasible \`mid\` is discarded along with everything below it (\`lo = mid + 1\`).
 
-Two details earn the "hard" tag. First, the feasibility check must respect the *whole-hour* rule — \`sum(bins) / r\` is tempting and wrong, because it lets one bin's leftover minutes spill into the next bin's hour. With \`bins = [30, 11, 23, 4, 20]\` and \`hours = 5\`, total work is 88 phones, and \`88 / 5 = 17.6\` suggests rate 18 — but five bins in five hours forces one hour per bin, so the true answer is 30. The per-bin ceiling is the entire problem. Second, \`(b + rate - 1) // rate\` computes the ceiling in pure integer arithmetic; \`math.ceil(b / rate)\` round-trips through a float and can mis-round near \`10^9\`.
+Two details earn the "hard" tag. First, the feasibility check must respect the *whole-hour* rule — \`sum(bins) / r\` is tempting and wrong, because it lets one bin's leftover minutes spill into the next bin's hour. With \`bins = [30, 11, 23, 4, 20]\` and \`hours = 5\`, total work is 88 phones, and \`88 / 5 = 17.6\` suggests rate 18 — but five bins in five hours forces one hour per bin, so the true answer is 30. The per-bin ceiling is the entire problem. Second, \`(b + rate - 1) // rate\` computes the ceiling in pure integer arithmetic; \`math.ceil(b / rate)\` round-trips through a 53-bit float, which is fine at this problem's \`10^9\` scale but mis-rounds once operands approach \`2^53\` (answer ranges near \`10^18\`) — the integer form is the habit that never needs the caveat.
 
 The upper bound \`max(bins)\` is safe because \`hours >= len(bins)\` guarantees one-hour-per-bin fits, so the search range always contains a feasible rate and the loop's survivor is genuinely the minimum.
 `,
@@ -596,7 +596,7 @@ The upper bound \`max(bins)\` is safe because \`hours >= len(bins)\` guarantees 
     {
       id: 'f9',
       front: 'How do you compute an integer ceiling division in Python without floats, and why bother?',
-      back: 'ceil(a / b) == (a + b - 1) // b. math.ceil(a / b) routes through a float and can mis-round for values near 10^9 and beyond; the integer form is always exact.',
+      back: 'ceil(a / b) == (a + b - 1) // b. math.ceil(a / b) routes through a 53-bit float and can mis-round once operands approach 2^53 (answer ranges near 10^18); the integer form is exact at any size.',
     },
     {
       id: 'f10',

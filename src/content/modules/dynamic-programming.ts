@@ -8,7 +8,7 @@ const mod: ModuleContent = {
 
 Picture a spreadsheet. Every cell poses one tiny question — "fewest tokens to assemble exactly 7 credits", "best haul from the first five hives" — and its formula references only cells that were filled in earlier. No cell is ever computed twice: once its value is written, later formulas simply read it. Fill the sheet in dependency order and the answer materializes in the final cell.
 
-That spreadsheet is dynamic programming. The naive recursive solution to these problems is a call **tree** that keeps re-asking identical questions — a plain recursive \`fib(40)\` recomputes \`fib(20)\` hundreds of thousands of times. DP notices that the tree contains only a handful of **distinct** questions and flattens it into a table with one cell per question. The exponential blowup was an illusion; the real problem was polynomial-sized all along.
+That spreadsheet is dynamic programming. The naive recursive solution to these problems is a call **tree** that keeps re-asking identical questions — a plain recursive \`fib(40)\` recomputes \`fib(10)\` over a million times. DP notices that the tree contains only a handful of **distinct** questions and flattens it into a table with one cell per question. The exponential blowup was an illusion; the real problem was polynomial-sized all along.
 
 Two properties must hold before this works:
 

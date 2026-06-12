@@ -53,7 +53,7 @@ Operations on a single word are \`O(1)\`. Folding or scanning \`n\` values is \`
 ## Common pitfalls
 
 - **Python ints never overflow.** There is no 33rd switch falling off the end: \`x << 40\` just grows, and \`~x\` is the *negative* number \`-x - 1\`, not a flipped 32-bit pattern. When a problem says "32-bit", mask with \`& 0xFFFFFFFF\` to emulate the width.
-- **Operator precedence bites.** In Python (and C), \`==\` binds tighter than \`&\`, so \`n & 1 == 0\` parses as \`n & (1 == 0)\` — always 0. Parenthesize: \`(n & 1) == 0\`.
+- **Operator precedence bites.** In C and C-family languages, \`==\` binds tighter than \`&\`, so \`n & 1 == 0\` parses as \`n & (1 == 0)\` — always 0. Python parses it correctly as \`(n & 1) == 0\`, but parenthesize anyway for portability and readability: \`(n & 1) == 0\`.
 - **Right-shifting negatives** in Python floors toward negative infinity and keeps the sign bit conceptually infinite — there is no unsigned \`>>>\`. Mask first if you want logical-shift behavior.
 - **XOR cancellation needs the precondition.** If some value appears an odd number of times *other than once*, or two values appear once, the plain fold's answer means something different. Re-read the guarantee.
 - **Power of four ≠ power of two.** 8 passes the single-bit test but is not a power of four; the lone bit must also sit at an even position.
@@ -348,7 +348,7 @@ A legacy seismic sensor shifts each 32-bit sample out over a serial line **least
 
 Given the latched value \`v\`, interpreted as an **unsigned 32-bit integer** (\`0 <= v <= 2^32 - 1\`), return the corrected sample: the value whose 32-bit binary representation is the reverse of \`v\`'s, also as an unsigned integer in \`[0, 2^32 - 1]\`.
 
-The word is always **exactly 32 bits wide** — leading zeros are real bit positions and must land at the other end. The correction runs inside an interrupt handler with a budget of roughly a dozen operations per sample, so a 32-iteration bit-by-bit loop is over budget: aim for the divide-and-conquer mask-and-shift method.
+The word is always **exactly 32 bits wide** — leading zeros are real bit positions and must land at the other end. The correction runs inside an interrupt handler with a budget of a few dozen operations per sample, so a 32-iteration bit-by-bit loop is over budget: aim for the divide-and-conquer mask-and-shift method.
 `,
       examples: [
         {
@@ -611,8 +611,8 @@ A Python-specific check: left shifts can normally grow past bit 31 because Pytho
     },
     {
       id: 'f8',
-      front: 'Pitfall: why is `n & 1 == 0` a bug in Python and C?',
-      back: '== binds tighter than &, so it parses as n & (1 == 0) = n & 0 = 0 (falsy) for every n. Always parenthesize: (n & 1) == 0.',
+      front: 'Pitfall: why is `n & 1 == 0` a bug in C, and what about Python?',
+      back: 'In C, == binds tighter than &, so it parses as n & (1 == 0) = n & 0 = 0 (falsy) for every n. Python binds & tighter, so it parses correctly as (n & 1) == 0 — but parenthesize anyway for portability and readability.',
     },
     {
       id: 'f9',

@@ -111,7 +111,7 @@ Given two pads \`a\` and \`b\`, return \`True\` if they overlap with positive ar
         'Touching edges or corners must return False',
       ],
       hints: [
-        'Reasoning about all eight corner points at once gets confusing fast. Can you break the 2-D question into two simpler 1-D questions?',
+        'Reasoning about all eight corner points at once gets confusing fast. Instead, sketch one overlapping pair and one merely-touching pair on grid paper — what single fact about their positions distinguishes the two situations?',
         'Project both pads onto the x-axis: each becomes an interval. Do the same on the y-axis. The pads collide exactly when both pairs of intervals overlap — and keep the shared-edge rule in mind.',
         'Two intervals (lo1, hi1) and (lo2, hi2) share interior points exactly when lo1 < hi2 and lo2 < hi1 — strictly. Return the AND of that test on x and on y; the strict < is what makes touching edges safe.',
       ],

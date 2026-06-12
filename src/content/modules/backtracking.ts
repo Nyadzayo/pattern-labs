@@ -150,9 +150,9 @@ This is the purest form of the pattern: there are no constraints to prune on, so
 
 **The start index kills duplicates structurally.** By only appending items at or after \`start\`, each subset is built in exactly one way: in sorted order. Without it you would generate \`["beta", "dark_mode"]\` and \`["dark_mode", "beta"]\` as separate paths and need a set of frozensets to dedupe — strictly worse.
 
-The final \`sort\` re-keys the natural DFS order (lexicographic) into the requested size-then-lex order. Sorting \`2^n\` subsets costs \`O(n * 2^n * log(2^n))\` in the worst case, which the generation cost already dwarfs in practice for n <= 12.
+The final \`sort\` re-keys the natural DFS order (lexicographic) into the requested size-then-lex order. It is actually the asymptotic bottleneck: sorting \`2^n\` subsets takes \`O(2^n * log(2^n)) = O(n * 2^n)\` comparisons, and each comparison of two lists can cost up to \`O(n)\`, for \`O(n^2 * 2^n)\` worst case — more than the \`O(n * 2^n)\` generation. You could avoid the sort entirely by generating subsets size by size (one bounded DFS per target size), but for the n <= 12 limit here the straightforward sort is perfectly fine.
 `,
-        complexity: 'Time O(n * 2^n), Space O(n) beyond the output',
+        complexity: 'Time O(n^2 * 2^n) (the size-then-lex sort dominates the O(n * 2^n) generation), Space O(n) beyond the output',
       },
       testCases: [
         {
@@ -390,7 +390,7 @@ Given \`board\` (a grid of single-character strings) and the serial \`code\`, re
           input: 'board = [["N","O"],["O","N"]], code = "NOON"',
           output: 'False',
           explanation:
-            'All four letters exist, but each N touches only one O and the two O pads are diagonal to each other — the chain N-O-O-N cannot be walked with edge-adjacent steps.',
+            'All four letters exist, but the two O pads are diagonal to each other — the middle O-to-O step of N-O-O-N cannot be walked with edge-adjacent moves.',
         },
       ],
       constraints: [
