@@ -7,6 +7,7 @@ import { CheatSheetPage } from '@/pages/CheatSheetPage'
 import { DecisionTreePage } from '@/pages/DecisionTreePage'
 import { ReviewPage } from '@/pages/ReviewPage'
 import { GalleryPage } from '@/pages/GalleryPage'
+import { MockInterviewPage } from '@/pages/MockInterviewPage'
 import { Settings } from '@/pages/Settings'
 import { Placeholder } from '@/pages/Placeholder'
 
@@ -19,7 +20,7 @@ export default function App() {
           <Route path="module/:moduleId" element={<ModulePage />} />
           <Route path="module/:moduleId/problem/:problemId" element={<ProblemPage />} />
           <Route path="review" element={<ReviewPage />} />
-          <Route path="mock" element={<Placeholder title="Mock interview" phase="Phase 5" />} />
+          <Route path="mock" element={<MockInterviewPage />} />
           <Route path="cheatsheet/:moduleId" element={<CheatSheetPage />} />
           <Route path="gallery/:vizId?" element={<GalleryPage />} />
           <Route path="decide" element={<DecisionTreePage />} />

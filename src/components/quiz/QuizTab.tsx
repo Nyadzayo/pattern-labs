@@ -129,6 +129,12 @@ export function QuizTab({ moduleId }: { moduleId: ModuleId }) {
   const [answers, setAnswers] = useState<(number | null)[]>(() => questions.map(() => null))
   // Guards recordQuizAttempt against double-fire (rapid double-click, StrictMode).
   const recordedRef = useRef(false)
+  // Guards advance() against double-fire across the AnimatePresence exit
+  // window: the frozen outgoing card keeps its (still enabled) Next button
+  // wired to the previous render's closure for ~180ms, so a second click
+  // would re-run advance() with the old `index` and skip a question.
+  // Tracks the last index we advanced from; re-armed in startQuiz.
+  const advancedFromRef = useRef(-1)
 
   // Reset everything if the component is reused for a different module
   // (j/k shortcuts navigate between modules while preserving ?tab=quiz, so
@@ -156,6 +162,7 @@ export function QuizTab({ moduleId }: { moduleId: ModuleId }) {
     setAnswers(questions.map(() => null))
     setIndex(0)
     recordedRef.current = false
+    advancedFromRef.current = -1
     setPhase('active')
   }
 
@@ -167,7 +174,12 @@ export function QuizTab({ moduleId }: { moduleId: ModuleId }) {
   function advance() {
     if (phase !== 'active' || answers[index] === null) return
     if (index < questions.length - 1) {
-      setIndex((i) => i + 1)
+      // Advance at most once per question (a stale click from the exiting
+      // card re-enters with the old `index`), and clamp so `index` can
+      // never run past the last question even if a stale update slips in.
+      if (advancedFromRef.current === index) return
+      advancedFromRef.current = index
+      setIndex((i) => Math.min(i + 1, questions.length - 1))
       return
     }
     // Finishing: record exactly once, inside this click handler.
@@ -345,7 +357,10 @@ function ActiveView({
           key={index}
           initial={{ opacity: 0, x: 32 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -32 }}
+          // pointerEvents is applied instantly on exit so the frozen outgoing
+          // card (still rendered by AnimatePresence for ~180ms) cannot receive
+          // a second click on its stale Next/Finish button.
+          exit={{ opacity: 0, x: -32, pointerEvents: 'none' }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
           className="mt-5 rounded-xl border border-edge bg-surface-raised p-5"
         >

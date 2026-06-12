@@ -53,7 +53,7 @@ Step-engine contract in `engine.ts`: each visualizer is a **pure function** `inp
 2. **Content engine & reader** — schema, markdown renderer (complexity chips), module tabs, first 3 modules (Two Pointers, Hash Maps & Sets, Sliding Windows) ✅ verified
 3. **Interactive visualizers** — step engine + 15 visualizers, editable inputs ✅ verified
 4. **Practice arena** — CodeMirror + Pyodide worker judge, hints gate, solution reveal (solved-with-help vs solved-clean), draft autosave ✅ verified
-5. **Quiz, flashcards, mock interview** — instant-feedback quiz + sparkline history, SM-2 review deck, 45-min mock with report
+5. **Quiz, flashcards, mock interview** — instant-feedback quiz + sparkline history, SM-2 review deck, 45-min mock with report ✅ verified
 6. **Full content pass** — remaining 16 modules, validated module by module
 7. **Polish & package** — keyboard shortcuts, printable cheat sheets, decision-tree page, Tauri desktop build, README
 
