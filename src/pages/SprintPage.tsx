@@ -26,6 +26,12 @@ const ROUNDS = [
     blurb: '10 seconds per card. Score is your streak times how fast you answer.',
     meta: '10s · scored',
   },
+  {
+    round: 'sudden-death' as SprintRoundKind,
+    title: 'Sudden Death',
+    blurb: 'One wrong answer or timeout ends the run. How long can your streak survive?',
+    meta: 'one life',
+  },
 ]
 
 function parseFocus(raw: string | null): ModuleId[] {

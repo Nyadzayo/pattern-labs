@@ -1,8 +1,12 @@
 /**
  * Pattern Sprint validator. Usage:
  *
- *   npx tsx scripts/validate-sprint.ts          # validate every registered stem
- *   npx tsx scripts/validate-sprint.ts --full   # also require per-module coverage
+ *   npx tsx scripts/validate-sprint.ts                       # validate every registered stem
+ *   npx tsx scripts/validate-sprint.ts --full                # also require per-module coverage
+ *   npx tsx scripts/validate-sprint.ts src/content/sprint/stems/<id>.ts   # one file (no coverage)
+ *
+ * The `<file>` form lets a stem-authoring agent self-validate its own file
+ * before it is wired into index.ts (one-file-per-agent ownership).
  *
  * Stems are data only (no code execution), so the checks are static invariants:
  *   - unique kebab id
@@ -58,15 +62,33 @@ function validateStem(s: SprintStem, seen: Set<string>): void {
   if (!s.tell || !s.tell.trim()) err(id, 'tell is empty')
 }
 
+async function loadStems(files: string[]): Promise<SprintStem[]> {
+  if (files.length === 0) {
+    const mod = await import(SPRINT_INDEX)
+    return (mod.allStems as () => SprintStem[])()
+  }
+  const out: SprintStem[] = []
+  for (const f of files) {
+    const abs = f.startsWith('/') ? f : join(ROOT, f)
+    const mod = await import(abs)
+    const arr = (mod.default ?? mod.stems) as SprintStem[]
+    if (!Array.isArray(arr)) throw new Error(`${f} must default-export a SprintStem[]`)
+    out.push(...arr)
+  }
+  return out
+}
+
 async function main() {
-  const full = process.argv.slice(2).includes('--full')
+  const args = process.argv.slice(2)
+  const full = args.includes('--full')
+  const files = args.filter((a) => !a.startsWith('--'))
+  const fileMode = files.length > 0
 
   let stems: SprintStem[]
   try {
-    const mod = await import(SPRINT_INDEX)
-    stems = (mod.allStems as () => SprintStem[])()
+    stems = await loadStems(files)
   } catch (e) {
-    console.log(`ERROR [load] failed to import the sprint catalog: ${(e as Error).message}`)
+    console.log(`ERROR [load] failed to import stems: ${(e as Error).message}`)
     process.exit(1)
   }
 
@@ -77,21 +99,24 @@ async function main() {
     if (MODULES.has(s.pattern)) perModule.set(s.pattern, (perModule.get(s.pattern) ?? 0) + 1)
   }
 
-  const uncovered = (MODULE_IDS as readonly ModuleId[]).filter(
-    (m) => (perModule.get(m) ?? 0) < MIN_PER_MODULE,
-  )
-  if (uncovered.length) {
-    const line = `module(s) with < ${MIN_PER_MODULE} stems: ${uncovered
-      .map((m) => `${m}(${perModule.get(m) ?? 0})`)
-      .join(', ')}`
-    if (full) err('coverage', line)
-    else warn('coverage', line)
+  // Coverage only applies to the whole catalog, not a single-file check.
+  if (!fileMode) {
+    const uncovered = (MODULE_IDS as readonly ModuleId[]).filter(
+      (m) => (perModule.get(m) ?? 0) < MIN_PER_MODULE,
+    )
+    if (uncovered.length) {
+      const line = `module(s) with < ${MIN_PER_MODULE} stems: ${uncovered
+        .map((m) => `${m}(${perModule.get(m) ?? 0})`)
+        .join(', ')}`
+      if (full) err('coverage', line)
+      else warn('coverage', line)
+    }
   }
 
   for (const w of warnings) console.log(`WARN  ${w}`)
   for (const e of errors) console.log(`ERROR ${e}`)
   console.log(
-    `\n${stems.length} stem(s) across ${perModule.size} module(s): ` +
+    `\n${stems.length} stem(s) across ${perModule.size} module(s)${fileMode ? ` in ${files.length} file(s)` : ''}: ` +
       `${errors.length} error(s), ${warnings.length} warning(s)`,
   )
   process.exit(errors.length ? 1 : 0)
