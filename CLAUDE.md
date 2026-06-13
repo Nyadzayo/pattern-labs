@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **Resuming work?** Read `PROGRESS.md` first — it's the live checkpoint of what's done and
 > what's next (currently: Phase 5.5 Primitives Lab). The detailed Primitives Lab design is in
-> `~/.claude/plans/proud-crunching-sphinx.md`.
+> `docs/PRIMITIVES_LAB_PLAN.md`.
 
 ## Project Overview
 
@@ -58,7 +58,7 @@ Step-engine contract in `engine.ts`: each visualizer is a **pure function** `inp
 3. **Interactive visualizers** — step engine + 15 visualizers, editable inputs ✅ verified
 4. **Practice arena** — CodeMirror + Pyodide worker judge, hints gate, solution reveal (solved-with-help vs solved-clean), draft autosave ✅ verified
 5. **Quiz, flashcards, mock interview** — instant-feedback quiz + sparkline history, SM-2 review deck, 45-min mock with report ✅ verified
-5.5 **Primitives Lab** — Brilliant-style faded-scaffolding drills (~40 micro-pattern primitives, 6-rung ladder: predict→order→fade→cloze→roles→write), pure reducer engine, SM-2 per (primitive,rung), Daily Drill. ⏳ **next** — design in `~/.claude/plans/proud-crunching-sphinx.md`
+5.5 **Primitives Lab** — Brilliant-style faded-scaffolding drills (~40 micro-pattern primitives, 6-rung ladder: predict→order→fade→cloze→roles→write), pure reducer engine, SM-2 per (primitive,rung), Daily Drill. ⏳ **next** — design in `docs/PRIMITIVES_LAB_PLAN.md`
 6. **Full content pass** — all 19 modules, expanded to 9 problems each, validated ✅ verified
 7. **Polish & package** — keyboard shortcuts, printable cheat sheets, decision-tree page, Tauri desktop build, README ✅ verified
 

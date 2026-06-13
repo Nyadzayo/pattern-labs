@@ -2,7 +2,7 @@
 
 > Durable state so a fresh session can continue without replaying the build transcript.
 > Read this, then `CLAUDE.md`, then the relevant files. Detailed Primitives Lab design
-> lives in the plan file: `~/.claude/plans/proud-crunching-sphinx.md`.
+> lives in the plan file: `docs/PRIMITIVES_LAB_PLAN.md`.
 
 ## Status
 
@@ -34,7 +34,7 @@ rung, fail→demote; mastered = rung 6 passed on 2 different days). Dashboard ge
 primitives. **Drill engine must be a pure, unit-tested reducer** (answer→feedback→next).
 
 → Full schema, reducer/checker design, SM-2 transitions, validator spec, and the 6-step build
-order are in `~/.claude/plans/proud-crunching-sphinx.md` (Part B). Build it in resumable
+order are in `docs/PRIMITIVES_LAB_PLAN.md` (Part B). Build it in resumable
 batches per the conventions below.
 
 ## Resilient-workflow conventions (learned the hard way — quota walls killed mid-runs)
