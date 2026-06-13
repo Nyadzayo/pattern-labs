@@ -9,9 +9,11 @@ import { ReviewPage } from '@/pages/ReviewPage'
 import { GalleryPage } from '@/pages/GalleryPage'
 import { MockInterviewPage } from '@/pages/MockInterviewPage'
 import { DrillsPage } from '@/pages/DrillsPage'
+import { SprintPage } from '@/pages/SprintPage'
 import { Settings } from '@/pages/Settings'
 import { Placeholder } from '@/pages/Placeholder'
 import '@/content/primitives' // self-register the Primitives Lab catalog
+import '@/content/sprint' // self-register the Pattern Sprint catalog
 
 export default function App() {
   return (
@@ -24,6 +26,7 @@ export default function App() {
           <Route path="review" element={<ReviewPage />} />
           <Route path="drills" element={<DrillsPage />} />
           <Route path="drills/:primitiveId" element={<DrillsPage />} />
+          <Route path="sprint" element={<SprintPage />} />
           <Route path="mock" element={<MockInterviewPage />} />
           <Route path="cheatsheet/:moduleId" element={<CheatSheetPage />} />
           <Route path="gallery/:vizId?" element={<GalleryPage />} />

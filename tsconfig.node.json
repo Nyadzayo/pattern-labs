@@ -18,6 +18,7 @@
     "scripts",
     "src/content/types.ts",
     "src/content/primitives/types.ts",
-    "src/content/primitives/manifest.ts"
+    "src/content/primitives/manifest.ts",
+    "src/content/sprint/types.ts"
   ]
 }

@@ -29,6 +29,9 @@ export function Sidebar() {
         <NavLink to="/drills" className={navItemClass}>
           Primitives Lab
         </NavLink>
+        <NavLink to="/sprint" className={navItemClass}>
+          Pattern Sprint
+        </NavLink>
         <NavLink to="/mock" className={navItemClass}>
           Mock interview
         </NavLink>
