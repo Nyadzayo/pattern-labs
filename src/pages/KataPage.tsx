@@ -7,6 +7,7 @@ import { runJudge, warmupJudge } from '@/lib/judge'
 import { KataTypingSurface } from '@/components/katas/KataTypingSurface'
 import { KataEndScreen, type KataMode } from '@/components/katas/KataEndScreen'
 import { KataModeSelect, type KataModeDef } from '@/components/katas/KataModeSelect'
+import { Sparkline } from '@/components/Sparkline'
 
 const MODES: KataModeDef[] = [
   {
@@ -162,7 +163,8 @@ export function KataPage() {
     setPhase('end')
   }
 
-  const best = state.katas[kata.id]?.bestSeconds ?? null
+  const prog = state.katas[kata.id]
+  const best = prog?.bestSeconds ?? null
 
   return (
     <div className="mx-auto max-w-3xl px-8 py-8">
@@ -182,7 +184,30 @@ export function KataPage() {
       <p className="mt-1 text-sm leading-6 text-ink-muted">{kata.intent}</p>
 
       <div className="mt-6">
-        {phase === 'select' && <KataModeSelect modes={MODES} onPick={begin} />}
+        {phase === 'select' && (
+          <>
+            {prog && prog.attempts.length > 0 && (
+              <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-edge bg-surface-raised p-4">
+                <div className="text-sm">
+                  <div className="text-xs uppercase tracking-wider text-ink-faint">Your runs</div>
+                  <div className="mt-1 text-ink-muted">
+                    {prog.attempts.length} run{prog.attempts.length === 1 ? '' : 's'}
+                    {prog.bestSeconds != null
+                      ? ` · best blank-page ${prog.bestSeconds.toFixed(1)}s`
+                      : ' · no clean blank-page yet'}
+                    {prog.automatic && (
+                      <span className="ml-2 font-medium text-emerald-600 dark:text-emerald-400">
+                        automatic
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Sparkline values={prog.attempts.map((a) => a.wpm)} ariaLabel="WPM trend" />
+              </div>
+            )}
+            <KataModeSelect modes={MODES} onPick={begin} />
+          </>
+        )}
 
         {phase === 'countdown' && (
           <div>

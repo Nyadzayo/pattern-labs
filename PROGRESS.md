@@ -16,7 +16,7 @@
 | 6 | Full content: all 19 modules | ✅ committed |
 | — | Expand every module to **9 problems** (was 4) | ✅ committed (this checkpoint) |
 | **5.5** | **Primitives Lab** (40 primitives, 6-rung ladder) | ✅ **committed** |
-| **5.6** | **Mastery & Recall** (Code Katas + Pattern Sprint + Daily Warm-up) | 🚧 **in progress** |
+| **5.6** | **Mastery & Recall** (Code Katas + Pattern Sprint + Daily Warm-up) | ✅ **committed** |
 | 7 | Polish & package (cheat sheets, decision tree, shortcuts, Tauri) | ✅ done |
 
 Content now: 19 modules × **9 problems** (171 total), 8 quiz Qs each, 10 flashcards each.
@@ -49,10 +49,14 @@ authoring contract is the `write-primitive` skill.
 - UI `src/components/drills/*` (one view per rung + `DrillSession`) · page `src/pages/DrillsPage.tsx`.
 - Validator `scripts/validate-primitives.ts` (`--full` enforces coverage).
 
-## IN PROGRESS: Mastery & Recall (Phase 5.6)
+## DONE: Mastery & Recall (Phase 5.6)
 
 Two trainers for the skills the rest of the app under-trains — motor memory and pattern recognition —
-plus a mixed Daily Warm-up. Design: `docs/MASTERY_RECALL_PLAN.md`.
+plus a mixed Daily Warm-up. Design: `docs/MASTERY_RECALL_PLAN.md`. Built in 6 committed steps
+(0 scaffolding → A Sprint MVP → B Sudden-Death/SM-2/stems → C Katas guided → D fading/blank-page →
+E metrics/warm-up/mock-links), each browser-verified. **90 sprint stems** (validate-sprint --full 0/0),
+**40 katas** (validate-katas 0/0), **61 vitest** (sprintScore, kataDiff, warmup + prior suites);
+tsc/build green; validate-content 19/0 and validate-primitives:full 40/0 unchanged.
 
 - **Code Katas** — type the 40 primitive **write-rung solutions** from memory. Three modes: guided
   (reference shown, char-level diff), fading (5s reveal then hidden), blank-page (name+intent only,

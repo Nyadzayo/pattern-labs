@@ -443,6 +443,24 @@ export function MockInterviewPage() {
     const totalPassed = report.problems.reduce((s, p) => s + p.casesPassed, 0)
     const totalCases = report.problems.reduce((s, p) => s + p.casesTotal, 0)
     const identified = report.problems.filter((p) => p.patternCorrect).length
+
+    // Map a guessed pattern *title* back to its module id for the Sprint deep-link.
+    const idByTitle = Object.fromEntries(
+      (Object.entries(MODULE_TITLES) as [ModuleId, string][]).map(([id, t]) => [t, id]),
+    ) as Record<string, ModuleId>
+    // Confused pairs (correct vs guessed) to train discrimination in Pattern Sprint.
+    const confusedPairs: { correct: ModuleId; guess: ModuleId }[] = []
+    const seenPairs = new Set<string>()
+    for (const p of report.problems) {
+      if (p.patternCorrect !== false || !p.patternGuess) continue
+      const correct = p.problemKey.split('/')[0] as ModuleId
+      const guess = idByTitle[p.patternGuess]
+      if (!guess || guess === correct) continue
+      const key = `${correct}|${guess}`
+      if (seenPairs.has(key)) continue
+      seenPairs.add(key)
+      confusedPairs.push({ correct, guess })
+    }
     return (
       <div className="mx-auto max-w-3xl px-8 py-8">
         <h1 className="text-2xl font-semibold tracking-tight">Mock report</h1>
@@ -513,12 +531,40 @@ export function MockInterviewPage() {
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {report.weakPrimitiveIds.map((id) => (
-                <Link
+                <span
                   key={id}
-                  to={`/drills/${id}`}
+                  className="flex items-center gap-2 rounded-full border border-accent/40 bg-accent-soft/40 px-3 py-1.5 text-sm"
+                >
+                  <span className="font-medium text-ink">{primitiveName(id)}</span>
+                  <Link to={`/drills/${id}`} className="text-accent hover:underline">
+                    drill
+                  </Link>
+                  <span className="text-ink-faint">·</span>
+                  <Link to={`/katas/${id}`} className="text-accent hover:underline">
+                    type
+                  </Link>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {confusedPairs.length > 0 && (
+          <div className="mt-4 rounded-xl border border-edge bg-surface-raised p-5">
+            <div className="text-xs font-medium uppercase tracking-wider text-ink-faint">
+              Patterns you confused
+            </div>
+            <p className="mt-1 text-sm text-ink-muted">
+              You named the wrong pattern here — drill the discrimination in Pattern Sprint.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {confusedPairs.map(({ correct, guess }) => (
+                <Link
+                  key={`${correct}-${guess}`}
+                  to={`/sprint?focus=${correct},${guess}`}
                   className="rounded-full border border-accent/40 bg-accent-soft/40 px-3 py-1.5 text-sm font-medium text-accent transition-colors hover:bg-accent-soft"
                 >
-                  {primitiveName(id)} →
+                  {MODULE_TITLES[correct]} vs {MODULE_TITLES[guess]} →
                 </Link>
               ))}
             </div>

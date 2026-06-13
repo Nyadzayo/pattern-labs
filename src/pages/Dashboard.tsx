@@ -5,6 +5,8 @@ import { useAppState } from '@/lib/useAppState'
 import { moduleProgress, overallProgress, weakestModule } from '@/lib/progress'
 import { dueCardCount } from '@/lib/sm2'
 import { dueDrillCount } from '@/lib/drills'
+import { dueStemCount } from '@/lib/sprint'
+import { dailyWarmup, warmupDoneToday } from '@/lib/warmup'
 import { ProgressRing } from '@/components/shell/ProgressRing'
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
@@ -24,6 +26,8 @@ export function Dashboard() {
   const weakestMeta = weakest ? getModuleMeta(weakest) : undefined
   const due = dueCardCount(state)
   const dueDrills = dueDrillCount(state)
+  const warmupDone = warmupDoneToday(state)
+  const warmupCount = dailyWarmup(state).length
   const last = state.lastVisited
   const lastMeta = last ? getModuleMeta(last.moduleId as ModuleId) : undefined
 
@@ -55,6 +59,33 @@ export function Dashboard() {
           )}
         />
       </div>
+
+      {warmupDone ? (
+        <div className="mt-6 flex items-center justify-between rounded-2xl border border-edge bg-surface-raised px-6 py-5">
+          <div>
+            <div className="font-semibold">Daily Warm-up ✓</div>
+            <div className="mt-0.5 text-sm text-ink-muted">
+              Done today — consistency over cramming. Back tomorrow.
+            </div>
+          </div>
+          <Link to="/warmup" className="text-sm text-accent">
+            Run again
+          </Link>
+        </div>
+      ) : (
+        <Link
+          to="/warmup"
+          className="group mt-6 flex items-center justify-between rounded-2xl border border-accent/40 bg-accent-soft/30 px-6 py-5 transition-colors hover:border-accent/70"
+        >
+          <div>
+            <div className="font-semibold group-hover:text-accent">Daily Warm-up</div>
+            <div className="mt-0.5 text-sm text-ink-muted">
+              {warmupCount} mixed reps — a Sprint card, a kata, a drill, and a flashcard. 5 minutes.
+            </div>
+          </div>
+          <span className="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white">Start</span>
+        </Link>
+      )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         {lastMeta && (
@@ -101,6 +132,22 @@ export function Dashboard() {
             <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-sm font-semibold tabular-nums">
               {dueDrills}
             </span>
+          </Link>
+          <Link
+            to="/sprint"
+            className="flex flex-1 items-center justify-between rounded-xl border border-edge bg-surface-raised px-5 transition-colors hover:border-accent/50"
+          >
+            <span className="font-medium">Pattern Sprint</span>
+            <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-sm font-semibold tabular-nums">
+              {dueStemCount(state)}
+            </span>
+          </Link>
+          <Link
+            to="/katas"
+            className="flex flex-1 items-center justify-between rounded-xl border border-edge bg-surface-raised px-5 transition-colors hover:border-accent/50"
+          >
+            <span className="font-medium">Code Katas</span>
+            <span className="text-sm text-ink-muted">type it</span>
           </Link>
           <Link
             to="/mock"

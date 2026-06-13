@@ -3,8 +3,8 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > **Resuming work?** Read `PROGRESS.md` first — it's the live checkpoint of what's done and
-> what's next. All 7 phases plus Phase 5.5 (Primitives Lab) are complete; Phase 5.6 (Mastery &
-> Recall) is in progress. Detailed designs: `docs/PRIMITIVES_LAB_PLAN.md`, `docs/MASTERY_RECALL_PLAN.md`.
+> what's next. All 7 phases plus Phase 5.5 (Primitives Lab) and Phase 5.6 (Mastery & Recall) are
+> complete. Detailed designs: `docs/PRIMITIVES_LAB_PLAN.md`, `docs/MASTERY_RECALL_PLAN.md`.
 
 ## Project Overview
 
@@ -64,7 +64,7 @@ Step-engine contract in `engine.ts`: each visualizer is a **pure function** `inp
 4. **Practice arena** — CodeMirror + Pyodide worker judge, hints gate, solution reveal (solved-with-help vs solved-clean), draft autosave ✅ verified
 5. **Quiz, flashcards, mock interview** — instant-feedback quiz + sparkline history, SM-2 review deck, 45-min mock with report ✅ verified
 5.5 **Primitives Lab** — Brilliant-style faded-scaffolding drills (**40** micro-pattern primitives, 6-rung ladder: predict→order→fade→cloze→roles→write), pure reducer engine, SM-2 per primitive, Daily Drill, Learn-tab strips, mock-report tells. ✅ verified (34 vitest, `validate-primitives:full` 0 errors). Design in `docs/PRIMITIVES_LAB_PLAN.md`; authoring contract in the `write-primitive` skill.
-5.6 **Mastery & Recall** — two skills the rest of the app under-trains: motor memory and pattern recognition. **Code Katas** (timed typing of the 40 primitive write-rung solutions — guided / fading / blank-page recall, char-level diff, hesitation map, WPM trend, "automatic" badge) + **Pattern Sprint** (timed recognition game over ~80 original problem-stem cards: Warmup / Sprint / Sudden-Death, 6-option discriminator grid from each stem's tagged look-alikes, SM-2 per stem) + a mixed **Daily Warm-up**. Pure deterministic diff/score reducers. Design in `docs/MASTERY_RECALL_PLAN.md`; stem-authoring contract in the `write-sprint-card` skill. 🚧 in progress
+5.6 **Mastery & Recall** — two skills the rest of the app under-trains: motor memory and pattern recognition. **Code Katas** (timed typing of the 40 primitive write-rung solutions — guided / fading / blank-page recall, char-level diff, hesitation map, WPM trend, "automatic" badge) + **Pattern Sprint** (timed recognition game over ~80 original problem-stem cards: Warmup / Sprint / Sudden-Death, 6-option discriminator grid from each stem's tagged look-alikes, SM-2 per stem) + a mixed **Daily Warm-up**. Pure deterministic diff/score reducers. Design in `docs/MASTERY_RECALL_PLAN.md`; stem-authoring contract in the `write-sprint-card` skill. ✅ verified (61 vitest, validate-sprint --full + validate-katas 0 errors, browser-swept)
 6. **Full content pass** — all 19 modules, expanded to 9 problems each, validated ✅ verified
 7. **Polish & package** — keyboard shortcuts, printable cheat sheets, decision-tree page, Tauri desktop build, README ✅ verified
 

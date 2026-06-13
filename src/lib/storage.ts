@@ -118,6 +118,8 @@ export interface AppState {
   sprintStats: SprintStats
   /** primitiveId → Code-Kata progress. No entry until first typed. */
   katas: Record<string, KataProgress>
+  /** ISO date the Daily Warm-up was last completed (caps it to once/day). */
+  lastWarmup: string
 }
 
 export function defaultState(): AppState {
@@ -136,6 +138,7 @@ export function defaultState(): AppState {
     sprint: {},
     sprintStats: { bestSprint: 0, bestSuddenDeath: 0 },
     katas: {},
+    lastWarmup: '',
   }
 }
 
@@ -178,6 +181,7 @@ export function sanitizeState(raw: unknown): AppState {
     base.streak = { lastActive: raw.streak.lastActive, count: raw.streak.count }
   }
   if (Array.isArray(raw.mockReports)) base.mockReports = raw.mockReports as MockReport[]
+  if (typeof raw.lastWarmup === 'string') base.lastWarmup = raw.lastWarmup
   if (
     isObject(raw.sprintStats) &&
     typeof raw.sprintStats.bestSprint === 'number' &&
