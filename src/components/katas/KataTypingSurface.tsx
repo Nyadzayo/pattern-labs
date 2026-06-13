@@ -5,6 +5,11 @@ interface KataTypingSurfaceProps {
   reference: string
   /** Show the not-yet-typed reference (guided). False hides it (fading recall). */
   revealPending?: boolean
+  /**
+   * Blank-page mode: render typed text plainly with no diff against the
+   * reference (the learner may write any correct solution — the judge decides).
+   */
+  plain?: boolean
   /** Fires on every value change with the current text and accumulated keystrokes. */
   onChange: (typed: string, keys: Keystroke[]) => void
   onEscape?: () => void
@@ -23,6 +28,7 @@ const TYPO = 'font-mono text-sm leading-6 whitespace-pre-wrap break-words'
 export function KataTypingSurface({
   reference,
   revealPending = true,
+  plain = false,
   onChange,
   onEscape,
   autoFocus = true,
@@ -76,27 +82,31 @@ export function KataTypingSurface({
   return (
     <div className="relative rounded-xl border border-edge bg-surface-sunken">
       <pre className={`${TYPO} pointer-events-none m-0 min-h-[1.5rem] overflow-hidden p-4 text-ink`}>
-        {cells.map((c, i) => {
-          if (c.status === 'pending') {
+        {plain ? (
+          <span className="text-ink">{typed}</span>
+        ) : (
+          cells.map((c, i) => {
+            if (c.status === 'pending') {
+              return (
+                <span key={i} className={revealPending ? 'text-ink-faint/50' : 'text-transparent'}>
+                  {c.ch}
+                </span>
+              )
+            }
             return (
-              <span key={i} className={revealPending ? 'text-ink-faint/50' : 'text-transparent'}>
+              <span
+                key={i}
+                className={
+                  c.status === 'correct'
+                    ? 'text-ink'
+                    : 'rounded-sm bg-rose-500/25 text-rose-600 dark:text-rose-300'
+                }
+              >
                 {c.ch}
               </span>
             )
-          }
-          return (
-            <span
-              key={i}
-              className={
-                c.status === 'correct'
-                  ? 'text-ink'
-                  : 'rounded-sm bg-rose-500/25 text-rose-600 dark:text-rose-300'
-              }
-            >
-              {c.ch}
-            </span>
-          )
-        })}
+          })
+        )}
         {/* Trailing space keeps an empty last line from collapsing. */}
         {'​'}
       </pre>

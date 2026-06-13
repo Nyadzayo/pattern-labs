@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAppState } from '@/lib/useAppState'
-import { getKata } from '@/lib/katas'
-import { isComplete, type Keystroke } from '@/lib/kataDiff'
+import { getKata, recordKataAttempt } from '@/lib/katas'
+import { codeWpm, isComplete, keystrokeAccuracy, type Keystroke } from '@/lib/kataDiff'
+import { runJudge, warmupJudge } from '@/lib/judge'
 import { KataTypingSurface } from '@/components/katas/KataTypingSurface'
 import { KataEndScreen, type KataMode } from '@/components/katas/KataEndScreen'
 import { KataModeSelect, type KataModeDef } from '@/components/katas/KataModeSelect'
@@ -18,20 +19,26 @@ const MODES: KataModeDef[] = [
     mode: 'fading',
     title: 'Fading recall',
     blurb: 'See it for five seconds, then it disappears — reproduce it from memory.',
-    enabled: false,
+    enabled: true,
   },
   {
     mode: 'blank',
     title: 'Blank-page recall',
     blurb: 'Only the name and intent — write the whole thing and run it against the tests.',
-    enabled: false,
+    enabled: true,
   },
 ]
+
+const COUNTDOWN_SECONDS = 5
+const PEEK_PENALTY_SECONDS = 15
 
 interface Result {
   mode: KataMode
   keys: Keystroke[]
   elapsedSeconds: number
+  passed?: boolean
+  casesPassed?: number
+  casesTotal?: number
 }
 
 export function KataPage() {
@@ -40,18 +47,44 @@ export function KataPage() {
   const state = useAppState()
   const kata = kataId ? getKata(kataId) : null
 
-  const [phase, setPhase] = useState<'select' | 'typing' | 'end'>('select')
+  const [mode, setMode] = useState<KataMode>('guided')
+  const [phase, setPhase] = useState<'select' | 'countdown' | 'typing' | 'judging' | 'end'>('select')
   const [runId, setRunId] = useState(0)
   const [elapsed, setElapsed] = useState(0)
+  const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS)
+  const [peeked, setPeeked] = useState(false)
   const [result, setResult] = useState<Result | null>(null)
-  const startRef = useRef(0)
 
-  // Live timer while typing (starts on the first keystroke).
+  const startRef = useRef(0)
+  const penaltyRef = useRef(0)
+  const typedRef = useRef('')
+  const keysRef = useRef<Keystroke[]>([])
+
+  // Live typing timer (starts on the first keystroke).
   useEffect(() => {
     if (phase !== 'typing') return
     const id = setInterval(() => {
-      if (startRef.current > 0) setElapsed((performance.now() - startRef.current) / 1000)
+      if (startRef.current > 0) {
+        setElapsed((performance.now() - startRef.current) / 1000 + penaltyRef.current)
+      }
     }, 100)
+    return () => clearInterval(id)
+  }, [phase, runId])
+
+  // Fading countdown, then hand off to typing.
+  useEffect(() => {
+    if (phase !== 'countdown') return
+    setCountdown(COUNTDOWN_SECONDS)
+    const id = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(id)
+          setPhase('typing')
+          return 0
+        }
+        return c - 1
+      })
+    }, 1000)
     return () => clearInterval(id)
   }, [phase, runId])
 
@@ -66,22 +99,67 @@ export function KataPage() {
     )
   }
 
-  const begin = (mode: KataMode) => {
-    if (mode !== 'guided') return
+  const begin = (m: KataMode) => {
     startRef.current = 0
+    penaltyRef.current = 0
+    typedRef.current = ''
+    keysRef.current = []
+    setMode(m)
     setElapsed(0)
+    setPeeked(false)
     setResult(null)
     setRunId((n) => n + 1)
-    setPhase('typing')
+    if (m === 'blank') warmupJudge()
+    setPhase(m === 'fading' ? 'countdown' : 'typing')
+  }
+
+  const finishTyping = (m: KataMode, keys: Keystroke[]) => {
+    const seconds = (startRef.current > 0 ? (performance.now() - startRef.current) / 1000 : 0) + penaltyRef.current
+    recordKataAttempt(kata.id, {
+      mode: m,
+      seconds,
+      accuracy: keystrokeAccuracy(keys),
+      wpm: codeWpm(kata.code.length, seconds),
+      parSeconds: kata.parSeconds,
+    })
+    setResult({ mode: m, keys, elapsedSeconds: seconds })
+    setPhase('end')
   }
 
   const onChange = (typed: string, keys: Keystroke[]) => {
+    typedRef.current = typed
+    keysRef.current = keys
     if (startRef.current === 0 && keys.length > 0) startRef.current = performance.now()
-    if (isComplete(kata.code, typed)) {
-      const seconds = startRef.current > 0 ? (performance.now() - startRef.current) / 1000 : 0
-      setResult({ mode: 'guided', keys, elapsedSeconds: seconds })
-      setPhase('end')
+    if ((mode === 'guided' || mode === 'fading') && isComplete(kata.code, typed)) {
+      finishTyping(mode, keys)
     }
+  }
+
+  const peek = () => {
+    if (peeked) return
+    penaltyRef.current += PEEK_PENALTY_SECONDS
+    setPeeked(true)
+  }
+
+  const runBlank = async () => {
+    const seconds = startRef.current > 0 ? (performance.now() - startRef.current) / 1000 : 0
+    const keys = keysRef.current
+    setPhase('judging')
+    const outcome = await runJudge(typedRef.current, kata.functionName, kata.testCases)
+    const total = kata.testCases.length
+    const casesPassed = outcome.results.filter((r) => r.ok).length
+    const passed =
+      !outcome.timedOut && !outcome.setupError && outcome.results.length === total && casesPassed === total
+    recordKataAttempt(kata.id, {
+      mode: 'blank',
+      seconds,
+      accuracy: passed ? 1 : 0,
+      wpm: codeWpm(typedRef.current.length, seconds),
+      parSeconds: kata.parSeconds,
+      passed,
+    })
+    setResult({ mode: 'blank', keys, elapsedSeconds: seconds, passed, casesPassed, casesTotal: total })
+    setPhase('end')
   }
 
   const best = state.katas[kata.id]?.bestSeconds ?? null
@@ -94,9 +172,10 @@ export function KataPage() {
 
       <div className="mt-3 flex items-baseline justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">{kata.name}</h1>
-        {phase === 'typing' && (
+        {(phase === 'typing' || phase === 'judging') && (
           <span className="tabular-nums text-sm text-ink-muted">
             {elapsed.toFixed(1)}s <span className="text-ink-faint">/ par {kata.parSeconds}s</span>
+            {penaltyRef.current > 0 && <span className="ml-1 text-rose-500">+{penaltyRef.current}s</span>}
           </span>
         )}
       </div>
@@ -105,19 +184,57 @@ export function KataPage() {
       <div className="mt-6">
         {phase === 'select' && <KataModeSelect modes={MODES} onPick={begin} />}
 
+        {phase === 'countdown' && (
+          <div>
+            <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-wider text-ink-faint">
+              <span>Memorize it</span>
+              <span className="tabular-nums text-accent">{countdown}s</span>
+            </div>
+            <pre className="rounded-xl border border-edge bg-surface-sunken p-4 font-mono text-sm leading-6 text-ink">
+              {kata.code}
+            </pre>
+          </div>
+        )}
+
         {phase === 'typing' && (
           <>
-            <p className="mb-2 text-xs uppercase tracking-wider text-ink-faint">
-              Type the reference · Tab inserts spaces · Esc to bail
-            </p>
+            <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-wider text-ink-faint">
+              <span>
+                {mode === 'blank'
+                  ? 'Write it from scratch · Tab inserts spaces · Esc to bail'
+                  : 'Type it · Tab inserts spaces · Esc to bail'}
+              </span>
+              {mode === 'fading' && (
+                <button
+                  onClick={peek}
+                  disabled={peeked}
+                  className="text-accent disabled:text-ink-faint"
+                >
+                  {peeked ? `revealed (+${PEEK_PENALTY_SECONDS}s)` : `Reveal (+${PEEK_PENALTY_SECONDS}s)`}
+                </button>
+              )}
+            </div>
             <KataTypingSurface
               key={runId}
               reference={kata.code}
-              revealPending
+              revealPending={mode === 'guided' || (mode === 'fading' && peeked)}
+              plain={mode === 'blank'}
               onChange={onChange}
               onEscape={() => setPhase('select')}
             />
+            {mode === 'blank' && (
+              <button
+                onClick={runBlank}
+                className="mt-3 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white hover:opacity-90"
+              >
+                Run against tests
+              </button>
+            )}
           </>
+        )}
+
+        {phase === 'judging' && (
+          <p className="mt-4 text-sm text-ink-muted">Running your solution against the test cases…</p>
         )}
 
         {phase === 'end' && result && (
@@ -128,7 +245,10 @@ export function KataPage() {
             elapsedSeconds={result.elapsedSeconds}
             parSeconds={kata.parSeconds}
             bestSeconds={best}
-            onAgain={() => begin('guided')}
+            passed={result.passed}
+            casesPassed={result.casesPassed}
+            casesTotal={result.casesTotal}
+            onAgain={() => begin(result.mode)}
             onExit={() => navigate('/katas')}
           />
         )}

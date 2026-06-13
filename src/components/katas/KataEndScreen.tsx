@@ -17,6 +17,8 @@ interface KataEndScreenProps {
   bestSeconds: number | null
   /** Blank-page recall: whether the reproduced solution passed the judge. */
   passed?: boolean
+  casesPassed?: number
+  casesTotal?: number
   onAgain: () => void
   onExit: () => void
 }
@@ -62,6 +64,8 @@ export function KataEndScreen({
   parSeconds,
   bestSeconds,
   passed,
+  casesPassed,
+  casesTotal,
   onAgain,
   onExit,
 }: KataEndScreenProps) {
@@ -69,13 +73,18 @@ export function KataEndScreen({
   const wpm = Math.round(codeWpm(reference.length, elapsedSeconds))
   const hesitation = hesitationMap(reference, keys)
   const underPar = elapsedSeconds <= parSeconds
-  const blankFailed = mode === 'blank' && passed === false
+  const isBlank = mode === 'blank'
+  const blankFailed = isBlank && passed === false
 
   return (
     <div className="mx-auto max-w-2xl">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold tracking-tight">
-          {blankFailed ? 'Not quite — keep drilling' : 'Nice typing'}
+          {blankFailed
+            ? 'Not quite — keep drilling'
+            : isBlank
+              ? 'Reproduced from memory'
+              : 'Nice typing'}
         </h2>
         <span className="text-xs uppercase tracking-wider text-ink-faint">{mode} recall</span>
       </div>
@@ -84,50 +93,75 @@ export function KataEndScreen({
         <Stat
           label="Time"
           value={`${elapsedSeconds.toFixed(1)}s`}
-          tone={underPar ? 'text-emerald-600 dark:text-emerald-400' : undefined}
+          tone={
+            isBlank && !passed
+              ? 'text-rose-600 dark:text-rose-400'
+              : underPar
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : undefined
+          }
         />
         <Stat label="Par" value={`${parSeconds}s`} />
-        <Stat label="Accuracy" value={`${accuracy}%`} />
+        {isBlank ? (
+          <Stat
+            label="Cases"
+            value={`${casesPassed ?? 0}/${casesTotal ?? 0}`}
+            tone={passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
+          />
+        ) : (
+          <Stat label="Accuracy" value={`${accuracy}%`} />
+        )}
         <Stat label="Speed" value={`${wpm} wpm`} />
       </div>
       {bestSeconds !== null && (
         <p className="mt-2 text-xs text-ink-muted">
-          Personal best: <span className="tabular-nums">{bestSeconds.toFixed(1)}s</span>
-          {elapsedSeconds < bestSeconds && (
+          Best blank-page: <span className="tabular-nums">{bestSeconds.toFixed(1)}s</span>
+          {isBlank && passed && elapsedSeconds <= bestSeconds && (
             <span className="ml-2 font-medium text-emerald-600 dark:text-emerald-400">new best!</span>
           )}
         </p>
       )}
 
-      <div className="mt-6 rounded-xl border border-edge bg-surface-raised p-4">
-        <div className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
-          Where you slowed down
-        </div>
-        {hesitation.length === 0 ? (
-          <p className="mt-2 text-sm text-ink-muted">Even pace throughout — nothing stood out.</p>
-        ) : (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {hesitation.map((h) => (
-              <span
-                key={`${h.start}-${h.token}`}
-                className="flex items-center gap-1.5 rounded bg-surface-sunken px-2 py-0.5 font-mono text-xs"
-              >
-                <span>{h.token}</span>
-                <span className="tabular-nums text-ink-faint">{(h.pauseMs / 1000).toFixed(1)}s</span>
-              </span>
-            ))}
+      {isBlank ? (
+        <div className="mt-6 rounded-xl border border-edge bg-surface-raised p-4">
+          <div className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
+            Reference solution
           </div>
-        )}
-      </div>
+          <pre className="mt-2 overflow-x-auto font-mono text-xs leading-6 text-ink">{reference}</pre>
+        </div>
+      ) : (
+        <>
+          <div className="mt-6 rounded-xl border border-edge bg-surface-raised p-4">
+            <div className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
+              Where you slowed down
+            </div>
+            {hesitation.length === 0 ? (
+              <p className="mt-2 text-sm text-ink-muted">Even pace throughout — nothing stood out.</p>
+            ) : (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {hesitation.map((h) => (
+                  <span
+                    key={`${h.start}-${h.token}`}
+                    className="flex items-center gap-1.5 rounded bg-surface-sunken px-2 py-0.5 font-mono text-xs"
+                  >
+                    <span>{h.token}</span>
+                    <span className="tabular-nums text-ink-faint">{(h.pauseMs / 1000).toFixed(1)}s</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
 
-      <div className="mt-3 rounded-xl border border-edge bg-surface-raised p-4">
-        <div className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
-          Where you mistyped
-        </div>
-        <div className="mt-2">
-          <MistypedView reference={reference} keys={keys} />
-        </div>
-      </div>
+          <div className="mt-3 rounded-xl border border-edge bg-surface-raised p-4">
+            <div className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
+              Where you mistyped
+            </div>
+            <div className="mt-2">
+              <MistypedView reference={reference} keys={keys} />
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="mt-6 flex gap-3">
         <button
