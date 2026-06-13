@@ -32,6 +32,9 @@ export function Sidebar() {
         <NavLink to="/sprint" className={navItemClass}>
           Pattern Sprint
         </NavLink>
+        <NavLink to="/katas" className={navItemClass}>
+          Code Katas
+        </NavLink>
         <NavLink to="/mock" className={navItemClass}>
           Mock interview
         </NavLink>

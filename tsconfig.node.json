@@ -19,6 +19,7 @@
     "src/content/types.ts",
     "src/content/primitives/types.ts",
     "src/content/primitives/manifest.ts",
-    "src/content/sprint/types.ts"
+    "src/content/sprint/types.ts",
+    "src/content/katas/index.ts"
   ]
 }

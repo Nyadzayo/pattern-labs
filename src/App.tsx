@@ -10,6 +10,8 @@ import { GalleryPage } from '@/pages/GalleryPage'
 import { MockInterviewPage } from '@/pages/MockInterviewPage'
 import { DrillsPage } from '@/pages/DrillsPage'
 import { SprintPage } from '@/pages/SprintPage'
+import { KatasPage } from '@/pages/KatasPage'
+import { KataPage } from '@/pages/KataPage'
 import { Settings } from '@/pages/Settings'
 import { Placeholder } from '@/pages/Placeholder'
 import '@/content/primitives' // self-register the Primitives Lab catalog
@@ -27,6 +29,8 @@ export default function App() {
           <Route path="drills" element={<DrillsPage />} />
           <Route path="drills/:primitiveId" element={<DrillsPage />} />
           <Route path="sprint" element={<SprintPage />} />
+          <Route path="katas" element={<KatasPage />} />
+          <Route path="katas/:kataId" element={<KataPage />} />
           <Route path="mock" element={<MockInterviewPage />} />
           <Route path="cheatsheet/:moduleId" element={<CheatSheetPage />} />
           <Route path="gallery/:vizId?" element={<GalleryPage />} />
