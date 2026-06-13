@@ -6,7 +6,7 @@
  * classic algorithm, ease is still adjusted downward.
  */
 import { allLoadedContent } from '@/content'
-import type { AppState, CardSchedule } from './storage'
+import type { AppState, CardSchedule, DrillProgress } from './storage'
 import { setState, todayISO } from './storage'
 
 export type Grade = 'again' | 'hard' | 'good' | 'easy'
@@ -91,4 +91,46 @@ export function dueCards(state: AppState): DueCard[] {
 
 export function dueCardCount(state: AppState): number {
   return dueCards(state).length
+}
+
+// ── Primitives Lab: drill scheduling ────────────────────────────────────────
+
+export function newDrillProgress(): DrillProgress {
+  return { rung: 1, schedule: newSchedule(), rung6PassDates: [], mastered: false }
+}
+
+/**
+ * Apply one drill outcome (pure). Pass → promote a rung (cap 6) and grade the
+ * card 'good'; a rung-6 pass records `today` and mastery flips on after 2
+ * distinct days. Fail → demote a rung (floor 1) and grade 'again'. `today` is
+ * passed in so this stays deterministic and testable.
+ */
+export function applyDrillResult(
+  prev: DrillProgress | undefined,
+  opts: { passed: boolean; rung: number; today: string },
+): DrillProgress {
+  const base = prev ?? newDrillProgress()
+  const { passed, rung, today } = opts
+  const schedule = applyGrade(base.schedule, passed ? 'good' : 'again')
+
+  let rung6PassDates = base.rung6PassDates
+  if (passed && rung === 6 && !rung6PassDates.includes(today)) {
+    rung6PassDates = [...rung6PassDates, today]
+  }
+  const mastered = rung6PassDates.length >= 2
+  const nextRung = passed ? Math.min(6, rung + 1) : Math.max(1, rung - 1)
+
+  return { rung: nextRung, schedule, rung6PassDates, mastered }
+}
+
+/** Apply a drill outcome to a primitive and persist it. */
+export function gradeDrill(primitiveId: string, passed: boolean, rung: number): void {
+  const today = todayISO()
+  setState((prev) => ({
+    ...prev,
+    drills: {
+      ...prev.drills,
+      [primitiveId]: applyDrillResult(prev.drills[primitiveId], { passed, rung, today }),
+    },
+  }))
 }

@@ -26,6 +26,9 @@ export function Sidebar() {
         <NavLink to="/" end className={navItemClass}>
           Dashboard
         </NavLink>
+        <NavLink to="/drills" className={navItemClass}>
+          Primitives Lab
+        </NavLink>
         <NavLink to="/mock" className={navItemClass}>
           Mock interview
         </NavLink>

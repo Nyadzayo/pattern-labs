@@ -13,5 +13,11 @@
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
   },
-  "include": ["vite.config.ts", "scripts", "src/content/types.ts"]
+  "include": [
+    "vite.config.ts",
+    "scripts",
+    "src/content/types.ts",
+    "src/content/primitives/types.ts",
+    "src/content/primitives/manifest.ts"
+  ]
 }

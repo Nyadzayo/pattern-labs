@@ -54,6 +54,17 @@ export interface MockReport {
   problems: MockProblemReport[]
 }
 
+/** SM-2 scheduling + ladder progress for one Primitives-Lab primitive. */
+export interface DrillProgress {
+  /** Current rung 1..6 (where the next session resumes this primitive). */
+  rung: number
+  schedule: CardSchedule
+  /** Distinct ISO dates on which rung 6 was passed. */
+  rung6PassDates: string[]
+  /** True once rung 6 has been passed on ≥2 distinct days. */
+  mastered: boolean
+}
+
 export interface AppState {
   version: 1
   theme: Theme
@@ -70,6 +81,8 @@ export interface AppState {
   lastVisited: { moduleId: string; tab: string } | null
   streak: { lastActive: string; count: number } // lastActive = YYYY-MM-DD
   mockReports: MockReport[]
+  /** primitiveId → Primitives-Lab progress. No entry until first drilled. */
+  drills: Record<string, DrillProgress>
 }
 
 export function defaultState(): AppState {
@@ -84,6 +97,7 @@ export function defaultState(): AppState {
     lastVisited: null,
     streak: { lastActive: '', count: 0 },
     mockReports: [],
+    drills: {},
   }
 }
 
@@ -100,7 +114,7 @@ export function sanitizeState(raw: unknown): AppState {
   const base = defaultState()
   if (!isObject(raw)) return base
   if (raw.theme === 'light' || raw.theme === 'dark') base.theme = raw.theme
-  for (const key of ['conceptRead', 'problems', 'quizAttempts', 'cards', 'drafts'] as const) {
+  for (const key of ['conceptRead', 'problems', 'quizAttempts', 'cards', 'drafts', 'drills'] as const) {
     if (isObject(raw[key])) base[key] = raw[key] as never
   }
   if (isObject(raw.lastVisited) && typeof raw.lastVisited.moduleId === 'string') {

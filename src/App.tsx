@@ -8,8 +8,10 @@ import { DecisionTreePage } from '@/pages/DecisionTreePage'
 import { ReviewPage } from '@/pages/ReviewPage'
 import { GalleryPage } from '@/pages/GalleryPage'
 import { MockInterviewPage } from '@/pages/MockInterviewPage'
+import { DrillsPage } from '@/pages/DrillsPage'
 import { Settings } from '@/pages/Settings'
 import { Placeholder } from '@/pages/Placeholder'
+import '@/content/primitives' // self-register the Primitives Lab catalog
 
 export default function App() {
   return (
@@ -20,6 +22,8 @@ export default function App() {
           <Route path="module/:moduleId" element={<ModulePage />} />
           <Route path="module/:moduleId/problem/:problemId" element={<ProblemPage />} />
           <Route path="review" element={<ReviewPage />} />
+          <Route path="drills" element={<DrillsPage />} />
+          <Route path="drills/:primitiveId" element={<DrillsPage />} />
           <Route path="mock" element={<MockInterviewPage />} />
           <Route path="cheatsheet/:moduleId" element={<CheatSheetPage />} />
           <Route path="gallery/:vizId?" element={<GalleryPage />} />
