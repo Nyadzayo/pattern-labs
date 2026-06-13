@@ -39,7 +39,12 @@ import heapPushPopK from './items/heap-push-pop-k'
 import recDfsCombine from './items/rec-dfs-combine'
 import recBacktrackChoose from './items/rec-backtrack-choose'
 import dpTableInit from './items/dp-table-init'
+import dpFillOrder from './items/dp-fill-order'
+import dpTransitionRef from './items/dp-transition-ref'
 import arrPrefixSumBuild from './items/arr-prefix-sum-build'
+import arrInPlaceReverse from './items/arr-in-place-reverse'
+import arrKRotation from './items/arr-k-rotation'
+import intervalSortSweep from './items/interval-sort-sweep'
 
 export * from './types'
 export * from './registry'
@@ -79,4 +84,9 @@ registerPrimitive(heapPushPopK)
 registerPrimitive(recDfsCombine)
 registerPrimitive(recBacktrackChoose)
 registerPrimitive(dpTableInit)
+registerPrimitive(dpFillOrder)
+registerPrimitive(dpTransitionRef)
 registerPrimitive(arrPrefixSumBuild)
+registerPrimitive(arrInPlaceReverse)
+registerPrimitive(arrKRotation)
+registerPrimitive(intervalSortSweep)
