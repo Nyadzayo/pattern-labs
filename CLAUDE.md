@@ -3,8 +3,8 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > **Resuming work?** Read `PROGRESS.md` first — it's the live checkpoint of what's done and
-> what's next (currently: Phase 5.5 Primitives Lab). The detailed Primitives Lab design is in
-> `docs/PRIMITIVES_LAB_PLAN.md`.
+> what's next. All 7 phases plus Phase 5.5 (Primitives Lab) are complete. The detailed
+> Primitives Lab design is in `docs/PRIMITIVES_LAB_PLAN.md`.
 
 ## Project Overview
 
@@ -29,6 +29,9 @@ npm run typecheck          # tsc -b --noEmit
 npm run validate-content   # schema-check all content files + execute reference
                            # solutions against their test cases via system python3
 npx tsx scripts/validate-content.ts <module-id>   # validate one module
+npm run validate-primitives        # validate all authored Primitives-Lab primitives
+npm run validate-primitives:full   # + enforce full manifest & per-module coverage
+npm run test                       # vitest (pure reducer, checkers, SM-2, tells)
 ```
 
 ## Architecture
@@ -58,7 +61,7 @@ Step-engine contract in `engine.ts`: each visualizer is a **pure function** `inp
 3. **Interactive visualizers** — step engine + 15 visualizers, editable inputs ✅ verified
 4. **Practice arena** — CodeMirror + Pyodide worker judge, hints gate, solution reveal (solved-with-help vs solved-clean), draft autosave ✅ verified
 5. **Quiz, flashcards, mock interview** — instant-feedback quiz + sparkline history, SM-2 review deck, 45-min mock with report ✅ verified
-5.5 **Primitives Lab** — Brilliant-style faded-scaffolding drills (~40 micro-pattern primitives, 6-rung ladder: predict→order→fade→cloze→roles→write), pure reducer engine, SM-2 per (primitive,rung), Daily Drill. ⏳ **next** — design in `docs/PRIMITIVES_LAB_PLAN.md`
+5.5 **Primitives Lab** — Brilliant-style faded-scaffolding drills (**40** micro-pattern primitives, 6-rung ladder: predict→order→fade→cloze→roles→write), pure reducer engine, SM-2 per primitive, Daily Drill, Learn-tab strips, mock-report tells. ✅ verified (34 vitest, `validate-primitives:full` 0 errors). Design in `docs/PRIMITIVES_LAB_PLAN.md`; authoring contract in the `write-primitive` skill.
 6. **Full content pass** — all 19 modules, expanded to 9 problems each, validated ✅ verified
 7. **Polish & package** — keyboard shortcuts, printable cheat sheets, decision-tree page, Tauri desktop build, README ✅ verified
 

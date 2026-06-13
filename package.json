@@ -10,6 +10,7 @@
     "typecheck": "tsc -b --noEmit",
     "validate-content": "tsx scripts/validate-content.ts",
     "validate-primitives": "tsx scripts/validate-primitives.ts",
+    "validate-primitives:full": "tsx scripts/validate-primitives.ts --full",
     "test": "vitest run",
     "test:watch": "vitest",
     "tauri": "tauri"

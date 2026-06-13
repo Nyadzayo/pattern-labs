@@ -15,27 +15,38 @@
 | 5 | Quiz + flashcards (SM-2) + mock interview | ✅ committed |
 | 6 | Full content: all 19 modules | ✅ committed |
 | — | Expand every module to **9 problems** (was 4) | ✅ committed (this checkpoint) |
-| **5.5** | **Primitives Lab** (faded-scaffolding drills) | ⏳ **NEXT — not started** |
-| 7 | Polish & package (cheat sheets, decision tree, shortcuts, Tauri) | ✅ done (revisit after 5.5) |
+| **5.5** | **Primitives Lab** (40 primitives, 6-rung ladder) | ✅ **committed** |
+| 7 | Polish & package (cheat sheets, decision tree, shortcuts, Tauri) | ✅ done |
 
 Content now: 19 modules × **9 problems** (171 total), 8 quiz Qs each, 10 flashcards each.
 `npm run validate-content` = 19 modules, 0 errors (executes every reference solution in python3).
+Primitives Lab: **40 primitives** × 6 rungs. `npm run validate-primitives:full` = 0 errors,
+0 warnings (executes predict keys, write solutions, and reconstructs order/fade/cloze to snippet).
 
-## NEXT: Primitives Lab (Phase 5.5)
+## DONE: Primitives Lab (Phase 5.5)
 
-A Brilliant-style drill section for ~40 recurring micro-patterns (loop idioms, pointer
-setups, window mechanics, search skeletons, traversal templates). Each primitive is drilled
-on a **6-rung fading ladder**: 1 Predict (MC) · 2 Order (Parsons) · 3 Fade (Parsons+blanks) ·
-4 Cloze (typed blanks) · 5 Roles (assign variable roles) · 6 Write (from scratch, Pyodide-judged).
-Wrong answers give **misconception-specific feedback** + shake + **re-queue later in the session**.
-A "this is easy" button skips a primitive up a rung. SM-2 schedules each primitive (pass→promote
-rung, fail→demote; mastered = rung 6 passed on 2 different days). Dashboard gets an interleaved
-**Daily Drill**; module Learn tabs get a "primitives used here" strip; mock report flags weakest
-primitives. **Drill engine must be a pure, unit-tested reducer** (answer→feedback→next).
+Brilliant-style drills for **40 recurring micro-patterns** on a **6-rung fading ladder**:
+1 Predict (MC) · 2 Order (Parsons) · 3 Fade (Parsons+blanks) · 4 Cloze (typed blanks) ·
+5 Roles (assign variable roles) · 6 Write (from scratch, Pyodide-judged). Wrong answers give
+misconception-specific feedback + shake + re-queue (3-attempt cap then reveal). SM-2 schedules
+each primitive (pass→promote rung, fail→demote; mastered = rung 6 on 2 distinct days). Dashboard
+Daily Drill (module-first interleave); module Learn tabs show a "primitives used here" strip;
+mock report flags weakest primitives via a precision-first code tell-set.
 
-→ Full schema, reducer/checker design, SM-2 transitions, validator spec, and the 6-step build
-order are in `docs/PRIMITIVES_LAB_PLAN.md` (Part B). Build it in resumable
-batches per the conventions below.
+Built in 6 steps (all committed): engine+validator+5 hand-authored → fade/cloze/roles renderers →
+write/judge → SM-2/Daily-Drill/Learn-strip/mock-tells → 35 primitives via workflow batches →
+coverage + browser sweep. The pure reducer, checkers, SM-2, interleaver, and mock tells are
+unit-tested (**34 vitest**). Design lives in `docs/PRIMITIVES_LAB_PLAN.md` (Part B); the
+authoring contract is the `write-primitive` skill.
+
+### Key Primitives Lab files
+- Schema `src/content/primitives/types.ts` · manifest `…/manifest.ts` · items `…/items/<id>.ts` ·
+  registry `…/registry.ts` · self-registration `…/index.ts`.
+- Engine `src/lib/drillEngine.ts` (reducer, mulberry32, interleave) + `src/lib/drillCheckers.ts`.
+- SM-2 `src/lib/sm2.ts` (`applyDrillResult`, `gradeDrill`) · selectors `src/lib/drills.ts` ·
+  mock tells `src/lib/primitiveTells.ts`. State key `drills` in `storage.ts` (whitelisted).
+- UI `src/components/drills/*` (one view per rung + `DrillSession`) · page `src/pages/DrillsPage.tsx`.
+- Validator `scripts/validate-primitives.ts` (`--full` enforces coverage).
 
 ## Resilient-workflow conventions (learned the hard way — quota walls killed mid-runs)
 
