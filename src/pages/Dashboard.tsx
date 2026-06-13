@@ -4,6 +4,7 @@ import type { ModuleId } from '@/content'
 import { useAppState } from '@/lib/useAppState'
 import { moduleProgress, overallProgress, weakestModule } from '@/lib/progress'
 import { dueCardCount } from '@/lib/sm2'
+import { dueDrillCount } from '@/lib/drills'
 import { ProgressRing } from '@/components/shell/ProgressRing'
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
@@ -22,6 +23,7 @@ export function Dashboard() {
   const weakest = weakestModule(state)
   const weakestMeta = weakest ? getModuleMeta(weakest) : undefined
   const due = dueCardCount(state)
+  const dueDrills = dueDrillCount(state)
   const last = state.lastVisited
   const lastMeta = last ? getModuleMeta(last.moduleId as ModuleId) : undefined
 
@@ -89,6 +91,15 @@ export function Dashboard() {
             <span className="font-medium">Review due cards</span>
             <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-sm font-semibold tabular-nums">
               {due}
+            </span>
+          </Link>
+          <Link
+            to="/drills"
+            className="flex flex-1 items-center justify-between rounded-xl border border-edge bg-surface-raised px-5 transition-colors hover:border-accent/50"
+          >
+            <span className="font-medium">Daily Drill</span>
+            <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-sm font-semibold tabular-nums">
+              {dueDrills}
             </span>
           </Link>
           <Link

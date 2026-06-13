@@ -8,6 +8,7 @@ import { Markdown } from '@/components/markdown/Markdown'
 import { VisualizerHost } from '@/components/visualizers/VisualizerHost'
 import { QuizTab } from '@/components/quiz/QuizTab'
 import { FlashcardsTab } from '@/components/flashcards/FlashcardsTab'
+import { primitivesForModule } from '@/content/primitives/registry'
 
 export const MODULE_TABS = ['learn', 'visualize', 'practice', 'quiz', 'flashcards'] as const
 export type ModuleTab = (typeof MODULE_TABS)[number]
@@ -102,6 +103,7 @@ export function ModulePage() {
 function LearnTab({ meta, content }: { meta: ModuleMeta; content: ModuleContent }) {
   const state = useAppState()
   const read = !!state.conceptRead[meta.id]
+  const primitives = primitivesForModule(meta.id)
   return (
     <div>
       <Markdown>{content.concept}</Markdown>
@@ -115,6 +117,34 @@ function LearnTab({ meta, content }: { meta: ModuleMeta; content: ModuleContent 
           </div>
         ))}
       </div>
+
+      {primitives.length > 0 && (
+        <div className="no-print mt-10">
+          <h2 className="mb-1 text-lg font-semibold tracking-tight">Primitives used here</h2>
+          <p className="mb-3 text-sm text-ink-muted">
+            Drill the micro-patterns this pattern leans on, from predict up to writing them cold.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {primitives.map((p) => {
+              const prog = state.drills[p.id]
+              return (
+                <Link
+                  key={p.id}
+                  to={`/drills/${p.id}`}
+                  className="group inline-flex items-center gap-2 rounded-full border border-edge bg-surface-raised px-3 py-1.5 text-sm transition-colors hover:border-accent/60"
+                >
+                  <span className="group-hover:text-accent">{p.name}</span>
+                  {prog?.mastered ? (
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400">✓</span>
+                  ) : prog ? (
+                    <span className="text-[11px] text-ink-faint">r{Math.min(6, Math.max(1, Math.round(prog.rung)))}</span>
+                  ) : null}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="no-print mt-10 flex justify-center">
         <button

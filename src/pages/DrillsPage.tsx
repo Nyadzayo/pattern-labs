@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { allPrimitives, getPrimitive } from '@/content/primitives/registry'
-import type { Primitive } from '@/content/primitives/types'
 import { DrillSession } from '@/components/drills/DrillSession'
-import { interleave, type DrillItem, type RungNumber } from '@/lib/drillEngine'
+import type { DrillItem } from '@/lib/drillEngine'
 import { useAppState } from '@/lib/useAppState'
-import { todayISO } from '@/lib/storage'
-import type { AppState } from '@/lib/storage'
+import { clampRung, dailyDrillItems, ladderItems } from '@/lib/drills'
 
 const CATEGORY_LABELS: Record<string, string> = {
   loops: 'Loops',
@@ -19,36 +17,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   recursion: 'Recursion',
   dp: 'Dynamic programming',
   arrays: 'Arrays',
-}
-
-function clampRung(n: number): RungNumber {
-  return Math.min(6, Math.max(1, Math.round(n))) as RungNumber
-}
-
-/** Full 6-rung ladder for one primitive, starting from the learner's current rung. */
-function ladderItems(primitive: Primitive, state: AppState): DrillItem[] {
-  const start = clampRung(state.drills[primitive.id]?.rung ?? 1)
-  const items: DrillItem[] = []
-  for (let r = start; r <= 6; r++) items.push({ primitiveId: primitive.id, rung: r as RungNumber })
-  return items
-}
-
-/** Daily Drill stub: due primitives, interleaved by module then category, capped at 10. */
-function dailyItems(state: AppState): DrillItem[] {
-  const today = todayISO()
-  const due = allPrimitives().filter((p) => {
-    const d = state.drills[p.id]
-    return !d || d.schedule.due <= today
-  })
-  const ordered = interleave(
-    due,
-    (p) => p.moduleTags[0] ?? p.category,
-    (p) => p.category,
-  )
-  return ordered.slice(0, 10).map((p) => ({
-    primitiveId: p.id,
-    rung: clampRung(state.drills[p.id]?.rung ?? 1),
-  }))
 }
 
 export function DrillsPage() {
@@ -105,7 +73,7 @@ export function DrillsPage() {
   // Catalog.
   const primitives = allPrimitives()
   const categories = [...new Set(primitives.map((p) => p.category))]
-  const dueCount = dailyItems(state).length
+  const dueCount = dailyDrillItems(state).length
 
   return (
     <div className="mx-auto max-w-5xl px-8 py-8">
@@ -124,7 +92,7 @@ export function DrillsPage() {
             </p>
           </div>
           <button
-            onClick={() => setDaily(dailyItems(state))}
+            onClick={() => setDaily(dailyDrillItems(state))}
             disabled={dueCount === 0}
             className="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40"
           >

@@ -57,8 +57,8 @@ export function ProblemPage() {
 }
 
 export interface MockHooks {
-  /** Called after every Submit with (casesPassed, casesTotal). */
-  onSubmitOutcome: (passed: number, total: number) => void
+  /** Called after every Submit with (casesPassed, casesTotal, submittedCode). */
+  onSubmitOutcome: (passed: number, total: number, code: string) => void
 }
 
 export function ProblemView({
@@ -129,7 +129,7 @@ export function ProblemView({
     if (kind === 'submit') {
       const passed = data.results.filter((r) => r.ok).length
       const allPassed = !data.timedOut && !data.setupError && passed === problem.testCases.length
-      mock?.onSubmitOutcome(passed, problem.testCases.length)
+      mock?.onSubmitOutcome(passed, problem.testCases.length, code)
       if (allPassed) {
         updateProblemProgress(problemKey, {
           status: solutionShown || progress?.viewedSolution ? 'solved-with-help' : 'solved-clean',

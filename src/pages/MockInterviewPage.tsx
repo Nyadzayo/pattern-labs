@@ -13,6 +13,8 @@ import type { AppState, MockProblemReport, MockReport } from '@/lib/storage'
 import { useAppState } from '@/lib/useAppState'
 import { moduleMastery } from '@/lib/progress'
 import { ProblemView } from '@/pages/ProblemPage'
+import { detectWeakPrimitives } from '@/lib/primitiveTells'
+import { primitiveName } from '@/lib/drills'
 
 const TOTAL_SECONDS = 45 * 60
 const AMBER_AT = 10 * 60
@@ -30,6 +32,8 @@ interface ProblemRun extends PickedProblem {
   casesTotal: number
   submitted: boolean
   secondsSpent: number
+  /** Last code the learner submitted (for weakest-primitive detection). */
+  lastCode?: string
 }
 
 interface IdentifyQuestion {
@@ -182,11 +186,17 @@ export function MockInterviewPage() {
     return runs.map((r, i) => (i === current ? { ...r, secondsSpent: spent } : r))
   }
 
-  function recordOutcome(index: number, passed: number, total: number): void {
+  function recordOutcome(index: number, passed: number, total: number, code: string): void {
     setRuns((prev) =>
       prev.map((r, i) =>
         i === index
-          ? { ...r, submitted: true, bestPassed: Math.max(r.bestPassed, passed), casesTotal: total }
+          ? {
+              ...r,
+              submitted: true,
+              bestPassed: Math.max(r.bestPassed, passed),
+              casesTotal: total,
+              lastCode: code,
+            }
           : r,
       ),
     )
@@ -251,10 +261,19 @@ export function MockInterviewPage() {
         patternCorrect: guess === undefined ? undefined : guess === MODULE_TITLES[r.moduleId],
       }
     })
+    const weakPrimitiveIds = detectWeakPrimitives(
+      runs.map((r) => ({
+        moduleId: r.moduleId,
+        code: r.lastCode ?? '',
+        passedAll: r.casesTotal > 0 && r.bestPassed === r.casesTotal,
+      })),
+      state,
+    )
     const rep: MockReport = {
       at: new Date().toISOString(),
       durationSeconds: elapsedRef.current,
       problems,
+      weakPrimitiveIds,
     }
     recordMockReport(rep)
     setReport(rep)
@@ -349,7 +368,10 @@ export function MockInterviewPage() {
                 moduleId={run.moduleId}
                 moduleTitle={MODULE_TITLES[run.moduleId]}
                 problem={run.problem}
-                mock={{ onSubmitOutcome: (passed, total) => recordOutcome(current, passed, total) }}
+                mock={{
+                  onSubmitOutcome: (passed, total, code) =>
+                    recordOutcome(current, passed, total, code),
+                }}
               />
             </motion.div>
           </AnimatePresence>
@@ -480,6 +502,28 @@ export function MockInterviewPage() {
             )
           })}
         </div>
+
+        {report.weakPrimitiveIds && report.weakPrimitiveIds.length > 0 && (
+          <div className="mt-6 rounded-xl border border-edge bg-surface-raised p-5">
+            <div className="text-xs font-medium uppercase tracking-wider text-ink-faint">
+              Primitives to review
+            </div>
+            <p className="mt-1 text-sm text-ink-muted">
+              Based on what you wrote, these micro-patterns are worth a quick drill.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {report.weakPrimitiveIds.map((id) => (
+                <Link
+                  key={id}
+                  to={`/drills/${id}`}
+                  className="rounded-full border border-accent/40 bg-accent-soft/40 px-3 py-1.5 text-sm font-medium text-accent transition-colors hover:bg-accent-soft"
+                >
+                  {primitiveName(id)} →
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-8 flex items-center gap-4">
           <Link

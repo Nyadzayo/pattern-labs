@@ -52,6 +52,8 @@ export interface MockReport {
   at: string
   durationSeconds: number
   problems: MockProblemReport[]
+  /** Primitive ids surfaced as worth reviewing (Primitives Lab). */
+  weakPrimitiveIds?: string[]
 }
 
 /** SM-2 scheduling + ladder progress for one Primitives-Lab primitive. */
