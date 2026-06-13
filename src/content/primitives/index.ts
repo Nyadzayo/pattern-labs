@@ -19,7 +19,13 @@ import stateVisitedSet from './items/state-visited-set'
 import stateXorAccumulate from './items/state-xor-accumulate'
 import tpOppositeEnds from './items/tp-opposite-ends'
 import tpReaderWriter from './items/tp-reader-writer'
+import tpFastSlow from './items/tp-fast-slow'
+import swExpandRight from './items/sw-expand-right'
+import swShrinkLeft from './items/sw-shrink-left'
+import swLengthMath from './items/sw-length-math'
+import swFreqMap from './items/sw-freq-map'
 import hashCountDefault from './items/hash-count-default'
+import hashSeenSet from './items/hash-seen-set'
 import bsMidOverflowSafe from './items/bs-mid-overflow-safe'
 import arrPrefixSumBuild from './items/arr-prefix-sum-build'
 
@@ -41,6 +47,12 @@ registerPrimitive(stateVisitedSet)
 registerPrimitive(stateXorAccumulate)
 registerPrimitive(tpOppositeEnds)
 registerPrimitive(tpReaderWriter)
+registerPrimitive(tpFastSlow)
+registerPrimitive(swExpandRight)
+registerPrimitive(swShrinkLeft)
+registerPrimitive(swLengthMath)
+registerPrimitive(swFreqMap)
 registerPrimitive(hashCountDefault)
+registerPrimitive(hashSeenSet)
 registerPrimitive(bsMidOverflowSafe)
 registerPrimitive(arrPrefixSumBuild)
