@@ -13,6 +13,7 @@ import { OrderRungView } from './OrderRungView'
 import { FadeRungView } from './FadeRungView'
 import { ClozeRungView } from './ClozeRungView'
 import { RolesRungView } from './RolesRungView'
+import { WriteRungView } from './WriteRungView'
 import { stringSeed, type RungViewProps } from './rungProps'
 
 const RUNG_LABELS = ['Predict', 'Order', 'Fade', 'Cloze', 'Roles', 'Write']
@@ -187,12 +188,12 @@ function RungBody({ viewProps, onSkipRung }: { viewProps: RungViewProps; onSkipR
       return <ClozeRungView {...viewProps} rung={rung} />
     case 'roles':
       return <RolesRungView {...viewProps} rung={rung} />
+    case 'write':
+      return <WriteRungView {...viewProps} rung={rung} />
     default:
       return (
         <div className="py-6 text-center">
-          <p className="text-sm text-ink-muted">
-            The “{rung.kind}” rung renderer arrives in the next build step.
-          </p>
+          <p className="text-sm text-ink-muted">Unsupported rung.</p>
           <button onClick={onSkipRung} className="mt-3 text-sm font-medium text-accent hover:underline">
             Skip this rung →
           </button>
