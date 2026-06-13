@@ -598,6 +598,603 @@ Counting instead of listing changes only the leaf: \`return 1\` and sum the recu
         { name: 'LeetCode 37. Sudoku Solver', note: 'heavier constraint propagation, same skeleton' },
       ],
     },
+    {
+      id: 'audio-guide-mnemonics',
+      title: 'Audio Guide Mnemonics',
+      difficulty: 'easy',
+      statement: `
+A museum's handheld audio guide has a numeric keypad, and every exhibit is reached by typing its numeric code. To help visitors remember codes, each key from 2 to 9 is also printed with letters, exactly like this:
+
+\`\`\`
+2 -> abc   3 -> def   4 -> ghi   5 -> jkl
+6 -> mno   7 -> pqrs  8 -> tuv   9 -> wxyz
+\`\`\`
+
+The curators want to pick a pronounceable nickname for each exhibit, so they need **every** letter string the code could stand for: one letter chosen from each key, in the order the digits appear.
+
+Given the digit string \`code\`, return all possible mnemonics as a list of strings in **lexicographic (dictionary) order**. If \`code\` is empty there is nothing to spell: return an empty list.
+`,
+      examples: [
+        {
+          input: 'code = "23"',
+          output: '["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]',
+          explanation:
+            'Key 2 offers a/b/c for the first letter and key 3 offers d/e/f for the second: 3 x 3 = 9 mnemonics, in dictionary order.',
+        },
+        {
+          input: 'code = "7"',
+          output: '["p", "q", "r", "s"]',
+          explanation: 'A single key with four letters yields four one-letter mnemonics.',
+        },
+        {
+          input: 'code = ""',
+          output: '[]',
+          explanation: 'No digits means no mnemonics — an empty list, not a list holding an empty string.',
+        },
+      ],
+      constraints: [
+        '0 <= len(code) <= 6',
+        "code contains only the digits '2' through '9'",
+        'Mnemonics must appear in lexicographic order, each exactly len(code) letters long',
+      ],
+      hints: [
+        "Before any code, count the mnemonics for '79' by hand: key 7 carries four letters and key 9 carries four. The number you land on — and the way you computed it — reveals the shape of the whole answer.",
+        'Build one mnemonic letter by letter. A partial string of length k has committed one letter for each of the first k digits; extending it means trying, in turn, each letter printed on key code[k].',
+        "Carry a path list and an index k. When k == len(code), record ''.join(path). Otherwise for ch in keypad[code[k]]: append ch, recurse with k + 1, pop. Each key lists its letters alphabetically, so this branch order emits mnemonics in lexicographic order with no final sort.",
+      ],
+      functionName: 'expand_exhibit_code',
+      starterCode: `def expand_exhibit_code(code: str) -> list[str]:
+    pass
+`,
+      solution: {
+        code: `KEYPAD = {
+    '2': 'abc', '3': 'def', '4': 'ghi', '5': 'jkl',
+    '6': 'mno', '7': 'pqrs', '8': 'tuv', '9': 'wxyz',
+}
+
+
+def expand_exhibit_code(code: str) -> list[str]:
+    # An empty code spells nothing: empty list, not [""].
+    if not code:
+        return []
+    results: list[str] = []
+    path: list[str] = []
+
+    def backtrack(k: int) -> None:
+        if k == len(code):
+            # One letter committed per digit: the mnemonic is complete.
+            results.append(''.join(path))
+            return
+        # Each key lists its letters alphabetically, so visiting them in
+        # printed order emits the results in lexicographic order for free.
+        for ch in KEYPAD[code[k]]:
+            path.append(ch)    # choose a letter for digit k
+            backtrack(k + 1)   # explore the remaining digits
+            path.pop()         # unchoose before the key's next letter
+
+    backtrack(0)
+    return results
+`,
+        commentary: `
+This is backtracking with the training wheels still on — and that is exactly why it is worth doing once in isolation. The decision tree has **fixed depth** (one level per digit) and **no constraints at all**: every branch survives to the bottom, so every leaf is a solution and the unchoose step exists purely to let siblings share the one mutable \`path\`. What remains when you strip pruning away is the pattern's skeleton: choose, explore, unchoose, snapshot at the base case.
+
+The facet to take with you is **deterministic output order from deterministic branch order**. Nothing about the recursion is sorted afterward; the dictionary order of the result falls out of two facts composed together — digits are consumed left to right (earlier positions dominate the comparison) and each key's letters are tried alphabetically (ties at a position resolve correctly). When a problem dictates an output order, look first at whether the branch order can simply *be* that order.
+
+The empty-code guard matters more than it looks: the bare recursion would happily record \`''\` (the empty product has exactly one term), but the statement defines an empty code as spelling nothing. Read edge-case contracts; do not let the recursion decide them for you.
+`,
+        complexity: 'Time O(L * 4^L) where L = len(code) — up to 4^L mnemonics, each joined in O(L); Space O(L) for the path and recursion beyond the output',
+      },
+      testCases: [
+        {
+          input: ['23'],
+          expected: ['ad', 'ae', 'af', 'bd', 'be', 'bf', 'cd', 'ce', 'cf'],
+          label: 'two keys, nine mnemonics',
+        },
+        { input: ['7'], expected: ['p', 'q', 'r', 's'], label: 'single four-letter key' },
+        { input: [''], expected: [], label: 'empty code spells nothing' },
+        {
+          input: ['79'],
+          expected: [
+            'pw', 'px', 'py', 'pz', 'qw', 'qx', 'qy', 'qz',
+            'rw', 'rx', 'ry', 'rz', 'sw', 'sx', 'sy', 'sz',
+          ],
+          hidden: true,
+          label: 'two four-letter keys, 16 mnemonics',
+        },
+        {
+          input: ['222'],
+          expected: [
+            'aaa', 'aab', 'aac', 'aba', 'abb', 'abc', 'aca', 'acb', 'acc',
+            'baa', 'bab', 'bac', 'bba', 'bbb', 'bbc', 'bca', 'bcb', 'bcc',
+            'caa', 'cab', 'cac', 'cba', 'cbb', 'cbc', 'cca', 'ccb', 'ccc',
+          ],
+          hidden: true,
+          label: 'repeated key, 27 mnemonics',
+        },
+        { input: ['9'], expected: ['w', 'x', 'y', 'z'], hidden: true, label: 'last key alone' },
+        {
+          input: ['86'],
+          expected: ['tm', 'tn', 'to', 'um', 'un', 'uo', 'vm', 'vn', 'vo'],
+          hidden: true,
+          label: 'descending digits still ascend lexicographically',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 17. Letter Combinations of a Phone Number', note: 'the classic framing' },
+        { name: 'LeetCode 784. Letter Case Permutation', note: 'two-way branching per character' },
+      ],
+    },
+    {
+      id: 'reversible-pennant-cuts',
+      title: 'Reversible Pennant Cuts',
+      difficulty: 'medium',
+      statement: `
+A festival workshop turns a long fabric strip printed with lowercase letters into a string of pennants. The strip is cut into contiguous segments, each segment becomes one pennant, and because the pennants are sheer, every pennant must read **identically from both sides** — each segment must read the same forwards and backwards.
+
+Given the string \`strip\`, return **every** way to cut it into such segments, as a list of cuttings, where each cutting is the list of its segments in left-to-right order.
+
+Order the cuttings deterministically: comparing two cuttings at the **first segment where they differ**, the one with the **shorter** segment there comes first. (Both cut the same strip, so at that first difference one segment is always a prefix of the other.)
+`,
+      examples: [
+        {
+          input: 'strip = "aab"',
+          output: '[["a", "a", "b"], ["aa", "b"]]',
+          explanation:
+            'Both cuttings use only two-sided-readable segments. They first differ at segment one ("a" vs "aa"), and the shorter comes first.',
+        },
+        {
+          input: 'strip = "noon"',
+          output: '[["n", "o", "o", "n"], ["n", "oo", "n"], ["noon"]]',
+          explanation:
+            '"no" and "on" read differently reversed, so the only options are single letters, the "oo" pair, or the whole word — itself a palindrome.',
+        },
+        {
+          input: 'strip = "ab"',
+          output: '[["a", "b"]]',
+          explanation:
+            '"ab" reversed is "ba", so the whole strip cannot be one pennant; only the letter-by-letter cutting works.',
+        },
+      ],
+      constraints: [
+        '1 <= len(strip) <= 12',
+        'strip contains lowercase letters only',
+        'Every letter belongs to exactly one segment; segments keep their original left-to-right order',
+        'At least one cutting always exists (single letters always qualify)',
+      ],
+      hints: [
+        "Cut 'aab' by hand and list every valid cutting. Once you commit to a first segment, stare at the letters left over — they pose the very same task, just on a shorter strip.",
+        'Recurse on a start position. For each end where strip[start:end] reads the same reversed, commit that segment and solve the suffix beginning at end; uncommit before trying a longer first segment.',
+        'def backtrack(start): if start == len(strip): record path.copy(). For end in range(start + 1, len(strip) + 1): piece = strip[start:end]; if piece == piece[::-1]: append piece, backtrack(end), pop. Trying end in increasing order produces exactly the shortest-segment-first output order.',
+      ],
+      functionName: 'reversible_pennant_cuts',
+      starterCode: `def reversible_pennant_cuts(strip: str) -> list[list[str]]:
+    pass
+`,
+      solution: {
+        code: `def reversible_pennant_cuts(strip: str) -> list[list[str]]:
+    results: list[list[str]] = []
+    path: list[str] = []
+
+    def backtrack(start: int) -> None:
+        if start == len(strip):
+            # Every letter is on some pennant: record this cutting.
+            results.append(path.copy())
+            return
+        # Try every candidate next segment, shortest first — this branch
+        # order alone yields the required output order, no sort needed.
+        for end in range(start + 1, len(strip) + 1):
+            piece = strip[start:end]
+            if piece != piece[::-1]:
+                continue  # prune: this segment cannot read both ways
+            path.append(piece)  # choose: commit the segment
+            backtrack(end)      # explore: cut the remaining suffix
+            path.pop()          # unchoose: try a longer first segment
+
+    backtrack(0)
+    return results
+`,
+        commentary: `
+The new facet here is **what a "choice" is**. In subset and combination problems a choice picks an *item*; here a choice picks a *cut point* — how long the next segment should be. The decision tree's branching factor is the number of palindromic prefixes of the current suffix, and depth is at most the strip length. Everything else is the familiar heartbeat: commit a segment, recurse on what remains, pop.
+
+Notice the self-similarity that hint one points at: after committing \`strip[start:end]\`, the problem on \`strip[end:]\` is the *original problem on a shorter input*. Whenever cutting a prefix leaves you with an identical-but-smaller task, recursion on a start index is the natural shape — the same skeleton handles splitting digit strings into IP address octets or sentences into dictionary words; only the validity test on the piece changes.
+
+The prune is the palindrome test applied to the **segment, before descending** — a non-mirrorable segment kills its entire subtree of suffix cuttings unexplored. Worst case remains exponential and must: an all-equal strip like \`"aaaa"\` has a valid cutting for every subset of its n - 1 cut points, so the output itself holds 2^(n-1) cuttings. Output-bound problems cannot beat their own output size.
+`,
+        complexity: 'Time O(n * 2^n) worst case — up to 2^(n-1) cuttings, each costing O(n) to copy, plus O(n) per palindrome test; Space O(n) for the path and recursion beyond the output',
+      },
+      testCases: [
+        {
+          input: ['aab'],
+          expected: [['a', 'a', 'b'], ['aa', 'b']],
+          label: 'two cuttings',
+        },
+        {
+          input: ['noon'],
+          expected: [['n', 'o', 'o', 'n'], ['n', 'oo', 'n'], ['noon']],
+          label: 'whole strip is itself a pennant',
+        },
+        { input: ['ab'], expected: [['a', 'b']], label: 'only the letter-by-letter cutting' },
+        { input: ['a'], expected: [['a']], hidden: true, label: 'single letter' },
+        {
+          input: ['aaa'],
+          expected: [['a', 'a', 'a'], ['a', 'aa'], ['aa', 'a'], ['aaa']],
+          hidden: true,
+          label: 'all-equal strip, every cut point optional',
+        },
+        {
+          input: ['abba'],
+          expected: [['a', 'b', 'b', 'a'], ['a', 'bb', 'a'], ['abba']],
+          hidden: true,
+          label: 'even-length mirror word',
+        },
+        {
+          input: ['refer'],
+          expected: [['r', 'e', 'f', 'e', 'r'], ['r', 'efe', 'r'], ['refer']],
+          hidden: true,
+          label: 'odd-length mirror word',
+        },
+        { input: ['abc'], expected: [['a', 'b', 'c']], hidden: true, label: 'no multi-letter segment qualifies' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 131. Palindrome Partitioning', note: 'the classic framing' },
+        { name: 'LeetCode 132. Palindrome Partitioning II', note: 'minimum cuts only — DP, not enumeration' },
+        { name: 'LeetCode 93. Restore IP Addresses', note: 'same cut-a-prefix skeleton, different validity test' },
+      ],
+    },
+    {
+      id: 'slur-patterns',
+      title: 'Slur Nesting Patterns',
+      difficulty: 'medium',
+      statement: `
+Music engraving software draws **slurs** — curved phrase marks over the staff. Each slur contributes two anchors to the note line: an opening anchor, written \`(\`, and a closing anchor, written \`)\`. An anchor sequence is **printable** when a left-to-right renderer never meets a closing anchor without an unclosed slur to attach it to, and every opened slur eventually closes.
+
+Given the number of slurs \`n\`, return **every** printable anchor sequence of the \`2n\` anchors as a list of strings, in **lexicographic order**, where \`(\` sorts before \`)\`.
+
+For \`n = 0\` there is exactly one printable sequence: the empty string.
+`,
+      examples: [
+        {
+          input: 'n = 2',
+          output: '["(())", "()()"]',
+          explanation:
+            'Two slurs can nest or follow each other. Sequences like "())(" fail: the renderer meets the third anchor, a close, with nothing open.',
+        },
+        {
+          input: 'n = 3',
+          output: '["((()))", "(()())", "(())()", "()(())", "()()()"]',
+          explanation: 'All five printable arrangements of three slurs, in dictionary order with "(" before ")".',
+        },
+        {
+          input: 'n = 0',
+          output: '[""]',
+          explanation: 'Zero slurs admit exactly one rendering: nothing to draw.',
+        },
+      ],
+      constraints: [
+        '0 <= n <= 8',
+        'Each returned string has exactly 2 * n characters and uses only "(" and ")"',
+        "Output in lexicographic order with '(' ordering before ')'",
+      ],
+      hints: [
+        "Write out all six arrangements of two '(' and two ')' and circle the printable ones. For each rejected arrangement, find the exact character where a left-to-right reader first gets stuck — what was true of the counts at that moment?",
+        'Grow the sequence one anchor at a time, carrying two counters: slurs opened so far and slurs closed so far. One simple condition on the counters makes "(" legal to append; a different one makes ")" legal.',
+        "backtrack(opens, closes): when len(path) == 2 * n, record ''.join(path). Append '(' only while opens < n; append ')' only while closes < opens; recurse, then pop. Trying '(' before ')' at every step emits the list in lexicographic order automatically.",
+      ],
+      functionName: 'slur_patterns',
+      starterCode: `def slur_patterns(n: int) -> list[str]:
+    pass
+`,
+      solution: {
+        code: `def slur_patterns(n: int) -> list[str]:
+    results: list[str] = []
+    path: list[str] = []
+
+    def backtrack(opens: int, closes: int) -> None:
+        if len(path) == 2 * n:
+            # The guards below admit only balanced prefixes, so any
+            # full-length sequence is printable: record it.
+            results.append(''.join(path))
+            return
+        # Branch '(' before ')': '(' sorts first, so this order alone
+        # produces lexicographic output.
+        if opens < n:        # a slur remains to be opened
+            path.append('(')
+            backtrack(opens + 1, closes)
+            path.pop()
+        if closes < opens:   # an open slur is waiting for its close
+            path.append(')')
+            backtrack(opens, closes + 1)
+            path.pop()
+
+    backtrack(0, 0)
+    return results
+`,
+        commentary: `
+The facet on display is **feasibility captured in counters**. Other problems carry a visited grid or used-column sets; here the entire legality of a partial sequence compresses into two integers. \`opens < n\` says an opening anchor is still available; \`closes < opens\` says a close has something to attach to. Because both guards run *before* appending, no dead prefix is ever extended — and a pleasant consequence is that the base case needs **no validation at all**: any path that reaches length \`2n\` got there through 2n legal appends, hence is printable. Compare that with generate-and-filter over all 2^(2n) strings, where the filter does all the work at the leaves.
+
+The branching factor is at most two, and the guards frequently cut it to one (forced closes at the end, forced opens at the start). The number of leaves is the n-th Catalan number — about \`4^n / n^1.5\` — which is the true cost driver; the tree above the leaves only adds a constant factor.
+
+Order falls out structurally again: at every node the \`(\` branch is explored before the \`)\` branch, and \`(\` < \`)\`, so completed strings appear in dictionary order without a sort. When asked for "all valid sequences" of any bracket-like alphabet, reach for legality counters before reaching for post-hoc filtering.
+`,
+        complexity: 'Time O(Catalan(n) * n) ≈ O(4^n / sqrt(n)) — one O(n) join per emitted sequence; Space O(n) for the path and recursion beyond the output',
+      },
+      testCases: [
+        { input: [1], expected: ['()'], label: 'one slur' },
+        { input: [2], expected: ['(())', '()()'], label: 'nest or follow' },
+        {
+          input: [3],
+          expected: ['((()))', '(()())', '(())()', '()(())', '()()()'],
+          label: 'five printable patterns',
+        },
+        { input: [0], expected: [''], hidden: true, label: 'zero slurs — the empty rendering' },
+        {
+          input: [4],
+          expected: [
+            '(((())))', '((()()))', '((())())', '((()))()', '(()(()))',
+            '(()()())', '(()())()', '(())(())', '(())()()', '()((()))',
+            '()(()())', '()(())()', '()()(())', '()()()()',
+          ],
+          hidden: true,
+          label: 'fourteen patterns (Catalan 4)',
+        },
+        {
+          input: [5],
+          expected: [
+            '((((()))))', '(((()())))', '(((())()))', '(((()))())', '(((())))()',
+            '((()(())))', '((()()()))', '((()())())', '((()()))()', '((())(()))',
+            '((())()())', '((())())()', '((()))(())', '((()))()()', '(()((())))',
+            '(()(()()))', '(()(())())', '(()(()))()', '(()()(()))', '(()()()())',
+            '(()()())()', '(()())(())', '(()())()()', '(())((()))', '(())(()())',
+            '(())(())()', '(())()(())', '(())()()()', '()(((())))', '()((()()))',
+            '()((())())', '()((()))()', '()(()(()))', '()(()()())', '()(()())()',
+            '()(())(())', '()(())()()', '()()((()))', '()()(()())', '()()(())()',
+            '()()()(())', '()()()()()',
+          ],
+          hidden: true,
+          label: 'forty-two patterns (Catalan 5)',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 22. Generate Parentheses', note: 'the classic framing' },
+        { name: 'LeetCode 678. Valid Parenthesis String', note: 'checking instead of generating — greedy counters' },
+        { name: 'LeetCode 301. Remove Invalid Parentheses', note: 'harder: search over deletions' },
+      ],
+    },
+    {
+      id: 'blade-server-spacing',
+      title: 'Blade Server Spacing',
+      difficulty: 'hard',
+      statement: `
+A data-center bay is a grid of \`rows x cols\` rack slots. The facilities team must install exactly \`k\` high-draw blade servers, but the bay's cooling cannot handle two blades in **touching** slots — slots that are adjacent horizontally, vertically, **or diagonally**. The blades are identical, so an install plan is just the **set** of slots used: choosing the same slots in a different order is the same plan.
+
+Given \`rows\`, \`cols\`, and \`k\`, return the **number** of valid install plans. For \`k = 0\` the answer is 1: the single plan that installs nothing.
+`,
+      examples: [
+        {
+          input: 'rows = 2, cols = 2, k = 1',
+          output: '4',
+          explanation: 'A lone blade can take any of the four slots; with no second blade there is nothing to touch.',
+        },
+        {
+          input: 'rows = 2, cols = 2, k = 2',
+          output: '0',
+          explanation:
+            'Every pair of slots in a 2x2 bay touches — sharing a row, a column, or a diagonal corner — so no two-blade plan survives.',
+        },
+        {
+          input: 'rows = 2, cols = 3, k = 2',
+          output: '4',
+          explanation:
+            'Exactly four pairs keep their distance, each pairing a slot of the left column with one of the right column.',
+        },
+        {
+          input: 'rows = 3, cols = 3, k = 4',
+          output: '1',
+          explanation: 'Only the four corners hold four blades on a 3x3 bay; every other arrangement brings two within touching range.',
+        },
+      ],
+      constraints: [
+        '1 <= rows, cols <= 5',
+        '0 <= k <= rows * cols',
+        'Two slots touch when their rows differ by at most 1 AND their columns differ by at most 1',
+        'Blades are interchangeable: count sets of slots, not sequences; return an integer',
+      ],
+      hints: [
+        'Work the 2x2 bay with k = 2 by hand and watch all six slot pairs fail. Then number the slots of a 2x3 bay 0..5 in reading order and list its valid pairs — notice each pair shows up exactly once when you always name the smaller slot number first.',
+        'Scan slots in row-major order with a start index, seating each next blade strictly after the previous one: every SET of slots gets built exactly once, in increasing slot order. Keep the seated slots in a list so a candidate slot can be rejected the instant it touches one of them.',
+        'place(start, remaining): return 1 when remaining == 0; return 0 when n - start < remaining (too few slots left). Otherwise sum place(i + 1, remaining - 1) over each i >= start whose (r, c) = divmod(i, cols) has no seated blade with abs(dr) <= 1 and abs(dc) <= 1 — appending before the call, popping after.',
+      ],
+      functionName: 'count_blade_layouts',
+      starterCode: `def count_blade_layouts(rows: int, cols: int, k: int) -> int:
+    pass
+`,
+      solution: {
+        code: `def count_blade_layouts(rows: int, cols: int, k: int) -> int:
+    n = rows * cols
+    seated: list[tuple[int, int]] = []  # slots already holding a blade
+
+    def touches(r: int, c: int) -> bool:
+        # Two slots interfere when they differ by at most 1 on BOTH axes.
+        return any(abs(r - pr) <= 1 and abs(c - pc) <= 1 for pr, pc in seated)
+
+    def place(start: int, remaining: int) -> int:
+        if remaining == 0:
+            return 1  # all k blades seated: exactly one completed plan
+        if n - start < remaining:
+            return 0  # prune: fewer slots ahead than blades still to seat
+        total = 0
+        # Row-major start index: each SET of slots is built exactly once,
+        # in increasing slot order — blades are interchangeable.
+        for i in range(start, n):
+            r, c = divmod(i, cols)
+            if touches(r, c):
+                continue  # prune: this slot would overheat a seated blade
+            seated.append((r, c))                  # choose the slot
+            total += place(i + 1, remaining - 1)   # explore later slots only
+            seated.pop()                           # unchoose for the next slot
+        return total
+
+    return place(0, k)
+`,
+        commentary: `
+Two ideas from earlier problems fuse here, plus one new constraint shape.
+
+**The start index is doing anti-symmetry work, not ordering work.** Blades are interchangeable, so plans are sets; without the strictly-increasing slot rule, each k-blade plan would be counted once per ordering — k! times. Linearizing the grid (slot \`i\` maps to \`divmod(i, cols)\`) turns "choose a set of cells" into the same canonical-form trick used for combinations of numbers.
+
+**The conflict check is geometric, not arithmetic.** Queen-style placement enjoys a lovely closed form — each diagonal owns one \`r - c\` value — but a *proximity* constraint has no such global signature. Instead each candidate is tested against the seated list directly. With k <= 25 that scan is O(k) per candidate, and the list itself is the constraint state: append on the way down, pop on the way up.
+
+**The feasibility prune is about the future, not the past.** \`n - start < remaining\` rejects branches that are not (yet) in conflict but can no longer gather enough slots — a budget argument rather than a violation. Cheap forward-looking prunes like this routinely cut more of the tree than the conflict checks do, because they fire high up. Counting, as always, changes only the leaf: return 1 and sum, never materializing a single plan.
+`,
+        complexity: 'Time O(C(n, k) * k) with n = rows * cols — each explored node scans up to k seated blades, and pruning keeps explored nodes far below the binomial bound in practice; Space O(k) for the seated list and recursion',
+      },
+      testCases: [
+        { input: [2, 2, 1], expected: 4, label: 'lone blade, four slots' },
+        { input: [2, 3, 2], expected: 4, label: 'left column vs right column' },
+        { input: [3, 3, 4], expected: 1, label: 'corners only' },
+        { input: [2, 2, 2], expected: 0, hidden: true, label: 'every pair touches' },
+        { input: [1, 5, 3], expected: 1, hidden: true, label: 'single row forces slots 0, 2, 4' },
+        { input: [3, 3, 0], expected: 1, hidden: true, label: 'k = 0 — the empty plan' },
+        { input: [2, 2, 5], expected: 0, hidden: true, label: 'more blades than slots' },
+        { input: [3, 4, 3], expected: 34, hidden: true, label: 'mid-size bay' },
+        { input: [4, 4, 4], expected: 79, hidden: true, label: 'larger bay, four blades' },
+        { input: [5, 5, 5], expected: 1974, hidden: true, label: 'full-size bay stress case' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 52. N-Queens II', note: 'same counting skeleton, line constraints instead of proximity' },
+        { name: 'LeetCode 1349. Maximum Students Taking Exam', note: 'adjacency-constrained seating, bitmask-DP contrast' },
+        { name: 'LeetCode 526. Beautiful Arrangement', note: 'counting permutations under per-slot constraints' },
+      ],
+    },
+    {
+      id: 'distinct-bouquets',
+      title: 'Distinct Bouquets',
+      difficulty: 'medium',
+      statement: `
+A florist's morning bucket holds individual stems, each labeled with its flower type — and types repeat, like \`["rose", "iris", "rose"]\`. A display bouquet uses **exactly** \`k\` stems, each physical stem at most once. Customers only see types: two bouquets are **the same** when they use the same types with the same counts, no matter which physical stem of a type was pulled.
+
+Given \`stems\` and \`k\`, return every **distinct** bouquet as a list of lists: each bouquet's type names in **alphabetical order**, and the bouquets themselves in **lexicographic order** (compare two bouquets name by name). For \`k = 0\` return \`[[]]\` — the single empty bouquet.
+`,
+      examples: [
+        {
+          input: 'stems = ["rose", "iris", "rose"], k = 2',
+          output: '[["iris", "rose"], ["rose", "rose"]]',
+          explanation:
+            'Pairing the iris with the first rose or with the second rose reads identically on the card — one bouquet, not two. The two physical roses together make the second.',
+        },
+        {
+          input: 'stems = ["aster", "fern", "lily"], k = 2',
+          output: '[["aster", "fern"], ["aster", "lily"], ["fern", "lily"]]',
+          explanation: 'All types distinct, so every pair of stems is its own bouquet: three in total.',
+        },
+        {
+          input: 'stems = ["lily", "lily", "lily"], k = 2',
+          output: '[["lily", "lily"]]',
+          explanation: 'Three physical pairs exist, but every one of them reads "lily, lily" — a single distinct bouquet.',
+        },
+      ],
+      constraints: [
+        '1 <= len(stems) <= 10',
+        '0 <= k <= len(stems)',
+        'Type names are 1–12 lowercase letters; the same name may appear many times',
+        'Each physical stem may be used at most once per bouquet',
+        'Every distinct bouquet must appear exactly once, in the order specified',
+      ],
+      hints: [
+        'With stems rose, rose, iris and k = 2, list every handful by hand treating the two roses as physically different stems. Which handfuls collapse into the same bouquet on the card — and what, precisely, makes them collapse?',
+        'Sort the stems and pick with a start index so each bouquet is built in alphabetical order. The duplicate problem then shrinks to one situation: two equal names available as alternatives at the same level of the recursion.',
+        'for i in range(start, n): skip when i > start and pool[i] == pool[i - 1] — an equal sibling at this level already built everything this branch would build. Otherwise append pool[i], backtrack(i + 1), pop. Record path.copy() when len(path) == k; the sorted pool plus start index makes the output lexicographic with no final sort.',
+      ],
+      functionName: 'distinct_bouquets',
+      starterCode: `def distinct_bouquets(stems: list[str], k: int) -> list[list[str]]:
+    pass
+`,
+      solution: {
+        code: `def distinct_bouquets(stems: list[str], k: int) -> list[list[str]]:
+    # Sorting gives every bouquet a canonical (alphabetical) build order
+    # AND lines up equal names so the duplicate-skip rule can see them.
+    pool = sorted(stems)
+    n = len(pool)
+    results: list[list[str]] = []
+    path: list[str] = []
+
+    def backtrack(start: int) -> None:
+        if len(path) == k:
+            # Exactly k stems chosen, already in alphabetical order.
+            results.append(path.copy())
+            return
+        for i in range(start, n):
+            # Skip equal siblings: choosing pool[i] here, when the same
+            # name was available at this SAME level via pool[i-1],
+            # would rebuild a bouquet that sibling already produced.
+            if i > start and pool[i] == pool[i - 1]:
+                continue
+            if n - i < k - len(path):
+                break  # prune: too few stems remain to reach k
+            path.append(pool[i])  # choose this physical stem
+            backtrack(i + 1)      # explore: each stem used at most once
+            path.pop()            # unchoose for the next type
+
+    backtrack(0)
+    return results
+`,
+        commentary: `
+The fresh facet is **duplicates in the pool**. The start index alone canonicalizes *order* — it stops \`["iris", "rose"]\` and \`["rose", "iris"]\` from both appearing — but it cannot tell the two physical roses apart, so iris-with-rose#1 and iris-with-rose#2 would still each be emitted. The fix is structural, not a dedupe pass: after sorting, equal names sit adjacent, and the rule \`i > start and pool[i] == pool[i - 1]\` refuses to *start a branch* with a name that an earlier sibling at the same level already started one with. The first copy of each name at a level explores everything that name can do; later copies are pure repetition.
+
+Read the condition's two halves separately, because mixing them up is the classic bug. \`pool[i] == pool[i - 1]\` finds a repeated name; \`i > start\` restricts the skip to *siblings* — alternatives at the same level. When \`i == start\`, the equal name is being stacked *deeper* onto its own twin (rose then rose again), which is exactly how \`["rose", "rose"]\` gets built and must stay legal.
+
+Contrast the three combination regimes now covered by this module: unlimited reuse recurses with \`i\` (counterweight kits); distinct items, no reuse recurses with \`i + 1\` (flag subsets); duplicated physical items, no reuse recurses with \`i + 1\` *plus* the equal-sibling skip. One loop skeleton, three policies. The \`n - i < k - len(path)\` break is the same forward-looking budget prune as the blade-server problem — sorted iteration makes \`break\` (not \`continue\`) safe, since every later index leaves even fewer stems.
+`,
+        complexity: 'Time O(k * C(n, k)) worst case — at most one explored node per distinct partial bouquet, each completed bouquet copied in O(k); Space O(k) for the path and recursion beyond the output',
+      },
+      testCases: [
+        {
+          input: [['rose', 'iris', 'rose'], 2],
+          expected: [['iris', 'rose'], ['rose', 'rose']],
+          label: 'twin roses collapse',
+        },
+        {
+          input: [['aster', 'fern', 'lily'], 2],
+          expected: [['aster', 'fern'], ['aster', 'lily'], ['fern', 'lily']],
+          label: 'all types distinct',
+        },
+        {
+          input: [['lily', 'lily', 'lily'], 2],
+          expected: [['lily', 'lily']],
+          label: 'three physical pairs, one bouquet',
+        },
+        { input: [['rose'], 0], expected: [[]], hidden: true, label: 'k = 0 — the empty bouquet' },
+        {
+          input: [['rose', 'rose', 'iris', 'iris'], 2],
+          expected: [['iris', 'iris'], ['iris', 'rose'], ['rose', 'rose']],
+          hidden: true,
+          label: 'two duplicated types',
+        },
+        { input: [['tulip', 'tulip'], 3], expected: [], hidden: true, label: 'k exceeds the bucket' },
+        {
+          input: [['mum', 'aster', 'mum', 'aster', 'poppy'], 3],
+          expected: [
+            ['aster', 'aster', 'mum'],
+            ['aster', 'aster', 'poppy'],
+            ['aster', 'mum', 'mum'],
+            ['aster', 'mum', 'poppy'],
+            ['mum', 'mum', 'poppy'],
+          ],
+          hidden: true,
+          label: 'unsorted bucket, mixed multiplicities',
+        },
+        {
+          input: [['iris', 'iris', 'iris', 'rose'], 3],
+          expected: [['iris', 'iris', 'iris'], ['iris', 'iris', 'rose']],
+          hidden: true,
+          label: 'triple of one type',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 40. Combination Sum II', note: 'the same skip rule under a sum target' },
+        { name: 'LeetCode 90. Subsets II', note: 'all sizes at once instead of exactly k' },
+        { name: 'LeetCode 47. Permutations II', note: 'the skip rule transplanted to orderings' },
+      ],
+    },
   ],
   quiz: [
     {

@@ -436,6 +436,485 @@ The traps are the no-ops. A \`#\` on an empty draft must record nothing — othe
         { name: 'LeetCode 946. Validate Stack Sequences', note: 'reason about what a stack could have done' },
       ],
     },
+    {
+      id: 'plate-peg-audit',
+      title: 'Weight Peg Audit',
+      difficulty: 'easy',
+      statement: `
+A strength gym stores its weight plates on a vertical floor peg: plates slide on and off **only at the top**. The coaching app records a session as a list of operations and must answer "what is the lightest plate currently on the peg?" instantly, even mid-set with hundreds of plates loaded.
+
+Given \`ops\`, a list of operations where each operation is one of:
+
+- \`["load", w]\` — slide a plate weighing \`w\` kg onto the top of the peg;
+- \`["unload"]\` — remove the top plate (only issued when the peg is non-empty);
+- \`["lightest"]\` — report the minimum weight currently on the peg, or \`None\` if the peg is empty.
+
+Return a list containing the answer to each \`"lightest"\` operation, in the order the queries appear. Every operation — including \`"lightest"\` — should take \`O(1)\` time.
+`,
+      examples: [
+        {
+          input: 'ops = [["load", 45], ["load", 10], ["lightest"], ["unload"], ["lightest"]]',
+          output: '[10, 45]',
+          explanation:
+            'While the 10 kg plate sits on top the minimum is 10. Unloading it must bring the answer back to 45 — without rescanning the peg.',
+        },
+        {
+          input: 'ops = [["lightest"], ["load", 25], ["lightest"]]',
+          output: '[None, 25]',
+          explanation: 'A query on an empty peg records None; after one plate loads, that plate is the minimum.',
+        },
+        {
+          input: 'ops = [["load", 20], ["load", 5], ["load", 30], ["lightest"], ["unload"], ["lightest"], ["unload"], ["lightest"]]',
+          output: '[5, 5, 20]',
+          explanation:
+            'Removing the 30 kg plate does not change the minimum, but removing the 5 kg plate does — the answer must recover 20 in O(1).',
+        },
+      ],
+      constraints: [
+        '1 <= len(ops) <= 100_000',
+        '1 <= w <= 10_000',
+        '"unload" is only issued when the peg is non-empty',
+        '"lightest" on an empty peg records None',
+        'Every operation must run in O(1) time',
+      ],
+      hints: [
+        'Rescanning the whole peg on every "lightest" query is O(n) per query. Think about when the minimum can actually CHANGE: which operations can affect it, and how much of the peg do they really touch?',
+        'The moment a plate is loaded, you can compute the lightest weight among it and everything beneath it — and that fact stays correct for as long as that plate remains on the peg. Where could you keep one such fact per plate?',
+        'Stack pairs: on "load", push [w, min(w, min_of_pair_below)]. The current minimum is always the second slot of the TOP pair, and "unload" pops the whole pair, so older minimums restore themselves automatically. On "lightest", record stack[-1][1], or None when the stack is empty.',
+      ],
+      functionName: 'lightest_on_peg',
+      starterCode: `def lightest_on_peg(ops: list[list]) -> list:
+    pass
+`,
+      solution: {
+        code: `def lightest_on_peg(ops: list[list]) -> list:
+    stack = []    # pairs [weight, lightest weight at-or-below this plate]
+    answers = []  # one entry per "lightest" query, in order
+    for op in ops:
+        if op[0] == 'load':
+            w = op[1]
+            # The minimum including this plate is either the plate itself
+            # or whatever was already the minimum just beneath it.
+            best = w if not stack or w < stack[-1][1] else stack[-1][1]
+            stack.append([w, best])
+        elif op[0] == 'unload':
+            # Popping discards this plate's min-fact along with it; the
+            # pair below already knows the minimum of everything under it.
+            stack.pop()
+        else:  # "lightest"
+            answers.append(stack[-1][1] if stack else None)
+    return answers
+`,
+        commentary: `
+A single running-minimum variable fails the moment the minimum plate is **unloaded**: to find the new minimum you would have to rescan the peg, and the O(1) promise dies. The trick is to realize the minimum only ever needs to "roll back" in exactly the reverse order it was established — which is the stack's specialty.
+
+So each level of the stack carries a **snapshot**: \`[weight, lightest from here down]\`, computed in O(1) at push time by comparing the new weight against the snapshot one level below. These snapshots are immutable once written — loading plates above never changes what is true beneath — so unloading simply discards the top snapshot and the previous truth is *already sitting there* on the new top. No recomputation, no scan: history restores itself by LIFO discipline, the same idea as the undo-record stack but applied to an aggregate.
+
+The pattern generalizes: any **fold over stack contents** (min, max, gcd, sum) can be answered in O(1) by snapshotting the running fold per level. A common variant stores the minimum in a second, parallel stack that only pushes when a new value ties or beats the current minimum — less memory in the average case, same idea. The pitfall either way is forgetting that ties must also be pushed in the sparse variant, or popping the aggregate out of sync with the data.
+`,
+        complexity: 'Time O(1) per operation (O(n) total), Space O(n)',
+      },
+      testCases: [
+        {
+          input: [[['load', 45], ['load', 10], ['lightest'], ['unload'], ['lightest']]],
+          expected: [10, 45],
+          label: 'min changes after unload',
+        },
+        {
+          input: [[['lightest'], ['load', 25], ['lightest']]],
+          expected: [null, 25],
+          label: 'query on empty peg',
+        },
+        {
+          input: [[['load', 20], ['load', 5], ['load', 30], ['lightest'], ['unload'], ['lightest'], ['unload'], ['lightest']]],
+          expected: [5, 5, 20],
+          label: 'min survives one unload, not two',
+        },
+        {
+          input: [[['load', 7], ['load', 7], ['lightest'], ['unload'], ['lightest']]],
+          expected: [7, 7],
+          hidden: true,
+          label: 'duplicate minimum',
+        },
+        {
+          input: [[['load', 9], ['load', 8], ['load', 7], ['lightest'], ['unload'], ['lightest'], ['unload'], ['lightest']]],
+          expected: [7, 8, 9],
+          hidden: true,
+          label: 'minimum rolls back step by step',
+        },
+        {
+          input: [[['load', 3], ['unload'], ['lightest']]],
+          expected: [null],
+          hidden: true,
+          label: 'emptied peg queries as None',
+        },
+        {
+          input: [[['load', 4], ['unload']]],
+          expected: [],
+          hidden: true,
+          label: 'no queries at all',
+        },
+        {
+          input: [[['load', 2], ['load', 6], ['lightest']]],
+          expected: [2],
+          hidden: true,
+          label: 'minimum buried at the bottom',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 155. Min Stack', note: 'the canonical design version' },
+        { name: 'LeetCode 716. Max Stack', note: 'harder: popMax breaks the pure-LIFO snapshot trick' },
+        { name: 'LeetCode 895. Maximum Frequency Stack', note: 'snapshot idea applied to frequencies' },
+      ],
+    },
+    {
+      id: 'bottling-line',
+      title: 'Crate-Packing Conveyor',
+      difficulty: 'medium',
+      statement: `
+A craft-soda plant stamps each bottle with a one-letter flavor code, and bottles ride single-file down a conveyor toward shipping. A crating robot watches the line: the instant \`k\` bottles of the **same flavor** stand consecutively, it lifts all \`k\` of them into a crate, removing them from the line. The bottles behind close the gap immediately — which can bring identical flavors together and trigger another crating, cascading as far as it can.
+
+Given the lineup \`flavors\` (front of the line first) and the crate size \`k\`, return the lineup that remains once the robot can crate nothing more. The final lineup is unique. The plant runs long shifts, so aim for a single pass rather than repeatedly rescanning the line after each crate.
+`,
+      examples: [
+        {
+          input: 'flavors = "aabbbacc", k = 3',
+          output: '"cc"',
+          explanation:
+            'Crating "bbb" closes the gap into "aaacc"; the three a\'s now stand together and get crated too, leaving "cc".',
+        },
+        {
+          input: 'flavors = "abba", k = 2',
+          output: '""',
+          explanation: 'Crating "bb" brings the two a\'s together; crating them empties the line.',
+        },
+        {
+          input: 'flavors = "aaab", k = 4',
+          output: '"aaab"',
+          explanation: 'Only three a\'s stand together — never k of them — so nothing is ever crated.',
+        },
+      ],
+      constraints: [
+        '1 <= len(flavors) <= 100_000',
+        '2 <= k <= 10_000 (k may exceed the line length)',
+        'flavors contains lowercase letters only',
+        'Crating cascades until no k identical bottles stand consecutively',
+      ],
+      hints: [
+        'Literally deleting k characters from a string and rescanning from the front can cascade O(n) times — O(n^2) overall. When a crate is lifted, where is the ONLY place on the line a brand-new run of k can appear?',
+        'Compress the bottles still on the line into runs: pairs of (flavor, run length). Only the most recent run can grow when the next bottle arrives — and when a crate is lifted, only the run it exposes can fuse with what comes next.',
+        'Keep a stack of [flavor, count]. For each bottle: if it matches the top run\'s flavor, increment that count, and pop the run the moment its count hits k; otherwise push [flavor, 1]. At the end, rebuild the answer as flavor * count for each surviving run, bottom to top.',
+      ],
+      functionName: 'pack_conveyor',
+      starterCode: `def pack_conveyor(flavors: str, k: int) -> str:
+    pass
+`,
+      solution: {
+        code: `def pack_conveyor(flavors: str, k: int) -> str:
+    # Each entry is a run of identical bottles still on the line:
+    # [flavor, count]. Invariants: no count ever reaches k (it would
+    # have been crated), and adjacent entries differ in flavor.
+    stack = []
+    for ch in flavors:
+        if stack and stack[-1][0] == ch:
+            stack[-1][1] += 1        # the newest run grows by one bottle
+            if stack[-1][1] == k:
+                stack.pop()          # crate lifted: the run vanishes
+        else:
+            stack.append([ch, 1])    # a different flavor starts a new run
+    # Expand the surviving runs back into bottles, front to back.
+    return ''.join(flavor * count for flavor, count in stack)
+`,
+        commentary: `
+The naive simulation does literal string surgery — find a run of k, slice it out, restart the scan because the deletion may have created a new run *behind* the cut. Each cascade step costs O(n), and a worst case like \`"aa...abb...b"\` chains them, giving O(n^2). The stack version never rescans because of one observation: a new run can only ever form **at the seam** where a crate was just lifted, and the seam is always the most recently written part of the kept line. "Most recent" is the stack's home turf.
+
+Instead of single characters, the stack stores **run-length compressed** entries \`[flavor, count]\`. An arriving bottle either extends the top run or starts a new one. The moment a count hits \`k\`, popping the entry *is* the crating — and the next arriving bottle naturally compares against the newly exposed run beneath, which is exactly the fusion-at-the-seam behavior. No special cascade handling is needed: a cascade is just several pops happening over successive arrivals.
+
+Why is the result well-defined without simulating the robot's exact timing? Adjacent stack entries always hold different flavors (an equal flavor would have merged), so popping the top can never make two *stored* runs mergeable — the only merge point is with future arrivals. That structural invariant is what makes the greedy left-to-right pass produce the unique final lineup. Each bottle is pushed (as +1 to a count) once and removed at most once, so the whole shift processes in O(n), and the count trick also handles \`k\` larger than the line — counts simply never reach it.
+`,
+        complexity: 'Time O(n), Space O(n)',
+      },
+      testCases: [
+        { input: ['aabbbacc', 3], expected: 'cc', label: 'one cascade' },
+        { input: ['abba', 2], expected: '', label: 'cascades to empty' },
+        { input: ['aaab', 4], expected: 'aaab', label: 'run shorter than k' },
+        { input: ['q', 5], expected: 'q', label: 'k larger than the line' },
+        { input: ['aaaaa', 2], expected: 'a', hidden: true, label: 'long run crated in pairs' },
+        { input: ['mwwmttmoo', 2], expected: 'm', hidden: true, label: 'repeated fusions at the seam' },
+        { input: ['zzz', 3], expected: '', hidden: true, label: 'whole line is exactly one crate' },
+        { input: ['aabccbaa', 2], expected: '', hidden: true, label: 'deep symmetric cascade' },
+        { input: ['xyxyx', 2], expected: 'xyxyx', hidden: true, label: 'alternating flavors never crate' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 1209. Remove All Adjacent Duplicates in String II', note: 'the canonical k-collapse' },
+        { name: 'LeetCode 1047. Remove All Adjacent Duplicates In String', note: 'the k = 2 warm-up' },
+        { name: 'LeetCode 2390. Removing Stars From a String', note: 'deletion arriving as an explicit token' },
+      ],
+    },
+    {
+      id: 'trail-canonicalizer',
+      title: 'Trail Route Canonicalizer',
+      difficulty: 'medium',
+      statement: `
+A hiking app records routes as slash-separated chains of junction names measured from the trailhead. Raw GPS exports are messy: repeated slashes, \`.\` tokens meaning "stay at the current junction", and \`..\` tokens meaning "backtrack to the previous junction". The map screen needs one **canonical form** per route so that identical hikes deduplicate.
+
+Given \`route\` (always starting with \`/\`, the trailhead), return its canonical form:
+
+- it begins with a single \`/\`;
+- junction names are separated by exactly one \`/\`;
+- it does not end with \`/\` (unless the whole route is just the trailhead \`"/"\`);
+- no \`.\` or \`..\` tokens remain; a \`..\` at the trailhead is ignored — you cannot backtrack past the start;
+- any other token, including names made of three or more dots like \`...\` or names containing dots, is an ordinary junction name and is kept as-is.
+`,
+      examples: [
+        {
+          input: 'route = "/peak/./north/../east//cabin/"',
+          output: '"/peak/east/cabin"',
+          explanation:
+            "'.' stays put, '..' cancels north, the double slash and trailing slash are noise.",
+        },
+        {
+          input: 'route = "/../"',
+          output: '"/"',
+          explanation: 'Backtracking at the trailhead is ignored; the canonical route is just the trailhead.',
+        },
+        {
+          input: 'route = "/ridge/.../.."',
+          output: '"/ridge"',
+          explanation: "'...' is a legal junction name, not a double-backtrack; the final '..' then backtracks off it.",
+        },
+      ],
+      constraints: [
+        '1 <= len(route) <= 10_000',
+        "route starts with '/'",
+        "route consists of lowercase letters, digits, '.', '-', '_' and '/'",
+        "Only the exact tokens '.' and '..' are special; '...' and longer are ordinary names",
+      ],
+      hints: [
+        "Split the route on '/' and list the kinds of token you can get: ordinary names, empty strings, '.', and '..'. Which of these carry information about the final position, and which are pure noise?",
+        "Walk the tokens left to right while keeping the junctions you are currently committed to, in order. A name adds a commitment; '..' cancels the most recent one — if there is one to cancel.",
+        "Push names onto a stack; on '..' pop only if the stack is non-empty (silently ignore it at the trailhead); skip '' and '.' entirely. The answer is '/' plus the stack joined with '/' — which collapses to just '/' when the stack is empty.",
+      ],
+      functionName: 'canonical_trail',
+      starterCode: `def canonical_trail(route: str) -> str:
+    pass
+`,
+      solution: {
+        code: `def canonical_trail(route: str) -> str:
+    stack = []  # junction names currently committed to, trailhead first
+    for token in route.split('/'):
+        if token == '' or token == '.':
+            continue             # noise: repeated slashes / "stay here"
+        if token == '..':
+            if stack:
+                stack.pop()      # backtrack: cancel the latest junction
+            # at the trailhead there is nothing to cancel -- ignore
+        else:
+            stack.append(token)  # ordinary name, including '...' etc.
+    # Rebuild: a single leading slash, names joined by single slashes.
+    # When nothing survived, this is exactly the trailhead "/".
+    return '/' + '/'.join(stack)
+`,
+        commentary: `
+The shape of the problem is hidden until you notice what \`..\` really is: an **undo for the most recent committed junction**. "Most recent un-cancelled thing" is the stack's defining question, so the committed junctions live on a stack — names push, \`..\` pops, and everything else changes nothing. The route's surface syntax (slashes, dots) is just noise wrapped around that core.
+
+Tokenizing first with \`split('/')\` does a lot of silent work. Repeated slashes become empty tokens, a trailing slash becomes one final empty token, and tricky names like \`...\` or \`.hidden\` arrive as complete tokens — so the special-casing reduces to exact string comparison against \`'.'\` and \`'..'\`. A character-by-character scanner has to re-derive all of that with fiddly state, and "is this dot part of \`..\` or of a name?" is precisely where those solutions break.
+
+Two classic traps. First, \`..\` at the trailhead: the pop must be guarded, and the right behavior is to *ignore* it, not to fail — \`"/../"\` canonicalizes to \`"/"\`. Second, reconstruction: building the answer from the surviving stack guarantees every formatting rule at once (single leading slash, single separators, no trailing slash), and the empty-stack case degenerates to \`"/"\` for free. Trying to fix up the original string in place instead of rebuilding is how trailing-slash bugs are born. One pass over the tokens, O(n) overall.
+`,
+        complexity: 'Time O(n), Space O(n)',
+      },
+      testCases: [
+        { input: ['/peak/./north/../east//cabin/'], expected: '/peak/east/cabin', label: 'all the noise at once' },
+        { input: ['/../'], expected: '/', label: 'backtrack at the trailhead' },
+        { input: ['/ridge/.../..'], expected: '/ridge', label: 'dots that are a real name' },
+        { input: ['/.scenic/./overlook'], expected: '/.scenic/overlook', label: 'name starting with a dot' },
+        { input: ['/'], expected: '/', hidden: true, label: 'bare trailhead' },
+        { input: ['//////'], expected: '/', hidden: true, label: 'slashes only' },
+        { input: ['/a/b/c/../../..'], expected: '/', hidden: true, label: 'unwinds exactly to the trailhead' },
+        { input: ['/camp/../../../basin'], expected: '/basin', hidden: true, label: 'excess backtracks then a name' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 71. Simplify Path', note: 'the canonical version' },
+        { name: 'LeetCode 1598. Crawler Log Folder', note: 'only the depth matters — the stack shrinks to a counter' },
+        { name: 'LeetCode 388. Longest Absolute File Path', note: 'paths again, but the stack tracks lengths per depth' },
+      ],
+    },
+    {
+      id: 'gauge-spans',
+      title: 'Flood-Watch Streaks',
+      difficulty: 'medium',
+      statement: `
+A river monitoring station logs one depth reading per day, in millimetres relative to a datum mark — negative in a drought. The flood-watch dashboard shows each day's **streak**: the number of consecutive days ending on that day (the day itself included) in which the river never ran deeper than that day's reading.
+
+Given \`depths\`, return a list \`spans\` of the same length where \`spans[i]\` is the largest \`s\` such that every reading in \`depths[i-s+1 .. i]\` is \`<= depths[i]\`. Ties extend the streak: a day exactly as deep does **not** break it. Station archives go back decades, so compute all streaks in a single pass.
+`,
+      examples: [
+        {
+          input: 'depths = [310, 290, 250, 270, 250, 300]',
+          output: '[1, 1, 1, 2, 1, 5]',
+          explanation:
+            'Day 3 (270) covers itself and the 250 before it. Day 5 (300) reaches back over 250, 270, 250 and 290 but is stopped by day 0\'s 310.',
+        },
+        {
+          input: 'depths = [3, 3, 3]',
+          output: '[1, 2, 3]',
+          explanation: 'Equal readings never break a streak — each day extends over all the ties before it.',
+        },
+        {
+          input: 'depths = [40, 10, 40, 10, 40]',
+          output: '[1, 1, 3, 1, 5]',
+          explanation: 'Each later 40 reaches back across the earlier 40s, because "never deeper" allows ties.',
+        },
+      ],
+      constraints: [
+        '0 <= len(depths) <= 100_000',
+        '-10_000 <= depths[i] <= 10_000',
+        'The streak includes the day itself, so every span is >= 1',
+        'Target a single O(n) pass',
+      ],
+      hints: [
+        'Walking backwards from each day re-reads the same readings over and over — a falling-then-spiking series makes that O(n^2). Try rephrasing the streak: instead of which days are IN it, which single earlier day is the one that STOPS it?',
+        "Day i's streak is stopped by the nearest earlier day that was STRICTLY deeper. And here is the key economy: any day at-or-below today's reading can never stop a future day without today stopping it first — so after today is processed, such days are dead weight. Keep only the days that could still stop someone.",
+        'Maintain a stack of indices whose depths run strictly decreasing bottom to top. For each day i: pop while the top index\'s depth is <= depths[i]; then spans[i] = i - stack[-1] if the stack is non-empty, else i + 1; finally push i.',
+      ],
+      functionName: 'flow_spans',
+      starterCode: `def flow_spans(depths: list[int]) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `def flow_spans(depths: list[int]) -> list[int]:
+    spans = []
+    stack = []  # indices of possible "blockers"; depths strictly decreasing
+    for i, d in enumerate(depths):
+        # Any day at-or-below today can never stop a later day without
+        # today stopping it first -- discard those days for good.
+        while stack and depths[stack[-1]] <= d:
+            stack.pop()
+        # The nearest strictly deeper day (if any) bounds the streak.
+        spans.append(i - stack[-1] if stack else i + 1)
+        stack.append(i)  # today may yet block future days
+    return spans
+`,
+        commentary: `
+The reframing carries the whole solution: a streak is defined not by its members but by its **blocker** — the nearest earlier day with a strictly deeper reading. Once you ask "who blocks day i?" instead of "which days does i cover?", the brute-force backward walk becomes a nearest-greater-to-the-LEFT query, the mirror image of next-greater-to-the-right, and the span is just the index gap: \`i - blocker\`, or \`i + 1\` when no blocker exists.
+
+Why may popped days be thrown away forever? **Dominance.** If \`depths[j] <= depths[i]\` with \`j < i\`, then any future day deep enough to be blocked by \`j\` is also blocked by \`i\` — and \`i\` is closer. Day \`j\` can never again be anyone's answer, so it is popped and never revisited. What survives on the stack is a strictly decreasing sequence of still-relevant blockers, which is why the answer is always sitting at the top after the pops.
+
+Note which comparison is non-strict and why. Ties *extend* the streak ("never deeper" allows equal), so a tied day must not act as a blocker — the pop condition is \`<=\`, evicting ties along with shallower days. Flip it to \`<\` and \`[3, 3, 3]\` comes out \`[1, 1, 1]\` instead of \`[1, 2, 3]\`: with monotonic stacks the strictness of one comparison is the entire spec. The structure is also naturally **streaming** — each new reading is answered from the stack alone, with no need to know the future, which is exactly how a live dashboard would consume the gauge feed. Amortized O(n): each index is pushed once and popped at most once.
+`,
+        complexity: 'Time O(n) amortized, Space O(n)',
+      },
+      testCases: [
+        { input: [[310, 290, 250, 270, 250, 300]], expected: [1, 1, 1, 2, 1, 5], label: 'mixed readings' },
+        { input: [[3, 3, 3]], expected: [1, 2, 3], label: 'ties extend the streak' },
+        { input: [[40, 10, 40, 10, 40]], expected: [1, 1, 3, 1, 5], label: 'spans reach across equal peaks' },
+        { input: [[]], expected: [], hidden: true, label: 'no readings yet' },
+        { input: [[7]], expected: [1], hidden: true, label: 'single day' },
+        { input: [[1, 2, 3, 4, 5]], expected: [1, 2, 3, 4, 5], hidden: true, label: 'steadily rising river' },
+        { input: [[9, 7, 5, 3, 1]], expected: [1, 1, 1, 1, 1], hidden: true, label: 'steadily falling river' },
+        { input: [[-5, -5, -9, -2]], expected: [1, 2, 1, 4], hidden: true, label: 'drought readings below datum' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 901. Online Stock Span', note: 'the canonical span problem, fully streaming' },
+        { name: 'LeetCode 739. Daily Temperatures', note: 'the same stack pointed at the future instead of the past' },
+        { name: 'LeetCode 907. Sum of Subarray Minimums', note: 'spans on both sides at once' },
+      ],
+    },
+    {
+      id: 'stitch-expander',
+      title: 'Loom Program Expander',
+      difficulty: 'hard',
+      statement: `
+A computerized embroidery loom accepts compact **stitch programs** instead of raw stitch lists. In a program, each lowercase letter is a single stitch, executed in order. A repeat block \`n[...]\` tells the loom to run the enclosed sub-program \`n\` times before continuing. Blocks nest to any depth, repeat counts can have several digits, and literal stitches may appear before, between, and after blocks.
+
+The loom's firmware is too simple to interpret blocks, so the driver must flatten the program first. Given \`program\` (guaranteed well-formed), return the fully expanded stitch sequence the loom should execute.
+`,
+      examples: [
+        {
+          input: 'program = "3[ab]"',
+          output: '"ababab"',
+          explanation: 'The block "ab" runs three times.',
+        },
+        {
+          input: 'program = "2[x3[y]]"',
+          output: '"xyyyxyyy"',
+          explanation: 'The inner block expands first: x followed by yyy gives "xyyy", which the outer block runs twice.',
+        },
+        {
+          input: 'program = "st2[op]"',
+          output: '"stopop"',
+          explanation: 'Literal stitches and blocks mix freely in one program.',
+        },
+        {
+          input: 'program = "10[z]"',
+          output: '"zzzzzzzzzz"',
+          explanation: 'Repeat counts can be multi-digit — "10" is ten, not a 1 followed by a 0.',
+        },
+      ],
+      constraints: [
+        '1 <= len(program) <= 100',
+        "program contains only lowercase letters, digits, '[' and ']'",
+        "Every repeat count is an integer in [1, 300] and is immediately followed by '['",
+        'program is well-formed and the expanded result has length <= 100_000',
+      ],
+      hints: [
+        'Expand "2[x3[y]]" by hand. Midway through the inner block you are juggling several pending facts — the "x" you already produced, the waiting ×2, the waiting ×3. In what order do those pending facts get used as the blocks finish?',
+        "Each '[' SUSPENDS work in progress: the text built so far at the current level, plus the count that will eventually multiply whatever the block produces. Suspended work resumes newest-first — the innermost open block always finishes before any block around it.",
+        "Keep a current text and a current number. On a digit: num = num * 10 + digit. On '[': push (current, num) and reset both. On ']': pop (prefix, n) and set current = prefix + current * n. Letters append to current; when the scan ends, current is the answer.",
+      ],
+      functionName: 'expand_stitches',
+      starterCode: `def expand_stitches(program: str) -> str:
+    pass
+`,
+      solution: {
+        code: `def expand_stitches(program: str) -> str:
+    stack = []    # suspended contexts: (text before the block, repeat count)
+    current = []  # stitches produced at the current nesting level
+    num = 0       # repeat count being read, digit by digit
+    for ch in program:
+        if ch.isdigit():
+            # Counts can be multi-digit: "10" must become ten.
+            num = num * 10 + int(ch)
+        elif ch == '[':
+            # Entering a block: suspend this level's text together with
+            # the count that will apply when the block closes.
+            stack.append((''.join(current), num))
+            current = []
+            num = 0
+        elif ch == ']':
+            # The innermost open block just finished -- resume its owner.
+            prefix, count = stack.pop()
+            current = [prefix + ''.join(current) * count]
+        else:
+            current.append(ch)  # a literal stitch at this level
+    return ''.join(current)
+`,
+        commentary: `
+A repeat count is the purest case of work you **cannot settle on arrival**: when the scanner reads \`2[\`, the text that ×2 applies to has not been produced yet — and before it is finished, another \`3[\` may open inside it, suspending the suspension. Pending multipliers therefore resolve strictly **newest-first** (the inner \`]\` always precedes the outer one in a well-formed program), and newest-first resolution is the definition of a stack.
+
+What exactly gets pushed is the subtle design decision. At each \`[\`, *two* things go dormant together: the partial text already built at that level (the \`x\` in \`2[x3[y]]\`) and the multiplier waiting for the block's result. Pushing them as one frame, then resetting \`current\` and \`num\`, makes every nesting level start with a clean slate — and the \`]\` handler becomes a single equation: \`current = prefix + current * count\`. The result re-enters \`current\` as ordinary text, indistinguishable from literal stitches, which is why arbitrary nesting depth needs no extra logic. This is the call stack made visible: \`[\` is a call (arguments saved, fresh locals), \`]\` is a return (result spliced into the caller), and the frames are exactly the suspended contexts.
+
+Two pitfalls account for most wrong submissions. **Multi-digit counts**: handling \`num = num * 10 + int(ch)\` keeps \`10[z]\` from becoming one \`z\` followed by garbage; resetting \`num\` after each \`[\` is its mirror twin. **Quadratic concatenation**: appending characters to a list and joining at block boundaries keeps the work proportional to text produced rather than re-copying a growing string per stitch. Cost is O(n + m), where m is the expanded length — m, not n, dominates, and the output-size constraint exists precisely because expansion can be exponential in the nesting depth.
+`,
+        complexity: 'Time O(n + m) where m is the expanded length, Space O(n + m)',
+      },
+      testCases: [
+        { input: ['3[ab]'], expected: 'ababab', label: 'single block' },
+        { input: ['2[x3[y]]'], expected: 'xyyyxyyy', label: 'nested blocks' },
+        { input: ['st2[op]'], expected: 'stopop', label: 'literals before a block' },
+        { input: ['2[ab]3[cd]e'], expected: 'ababcdcdcde', label: 'sibling blocks and a tail' },
+        { input: ['10[z]'], expected: 'zzzzzzzzzz', hidden: true, label: 'multi-digit count' },
+        { input: ['knots'], expected: 'knots', hidden: true, label: 'no blocks at all' },
+        { input: ['2[2[2[k]]]'], expected: 'kkkkkkkk', hidden: true, label: 'deep pure nesting' },
+        { input: ['3[a2[bc]d]'], expected: 'abcbcdabcbcdabcbcd', hidden: true, label: 'literals on both sides of an inner block' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 394. Decode String', note: 'the canonical nested-repeat decoder' },
+        { name: 'LeetCode 726. Number of Atoms', note: 'same frames, but counts multiply dictionaries' },
+        { name: 'LeetCode 1190. Reverse Substrings Between Each Pair of Parentheses', note: 'nesting again, with reversal instead of repetition' },
+      ],
+    },
   ],
   quiz: [
     {

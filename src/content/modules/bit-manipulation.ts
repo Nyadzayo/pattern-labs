@@ -451,6 +451,493 @@ A Python-specific check: left shifts can normally grow past bit 31 because Pytho
         { name: 'LeetCode 393. UTF-8 Validation', note: 'byte-level stencils on a real wire format' },
       ],
     },
+    {
+      id: 'retired-hulls',
+      title: 'The Two Boats That Never Finished',
+      difficulty: 'medium',
+      statement: `
+A coastal regatta times its fleet with a committee buoy that logs each boat's hull transponder twice: once crossing the start line outbound, once crossing the finish. This year **two different boats retired** mid-race — each of their hull numbers appears in the log **exactly once** (the start ping only), while every other hull number appears **exactly twice**.
+
+Given the buoy log \`pings\` as a list of non-negative integers in arbitrary interleaved order, return the two retired hull numbers as a list of two integers **in increasing order**.
+
+The buoy's timing computer is a salt-crusted relic: you may make **at most two passes** over the log and use **O(1) extra memory** — no dictionaries, no sets over the log, no sorting of the log itself.
+`,
+      examples: [
+        {
+          input: 'pings = [7, 3, 7, 12]',
+          output: '[3, 12]',
+          explanation: 'Hull 7 pinged at both lines; hulls 3 and 12 only pinged the start.',
+        },
+        {
+          input: 'pings = [5, 9]',
+          output: '[5, 9]',
+          explanation: 'Both entrants retired — each pinged exactly once.',
+        },
+        {
+          input: 'pings = [1, 2, 3, 1, 2, 8]',
+          output: '[3, 8]',
+          explanation: 'Hulls 1 and 2 finished and cancel out of consideration; 3 and 8 are the retirees.',
+        },
+      ],
+      constraints: [
+        '2 <= len(pings) <= 200_000 and len(pings) is even',
+        '0 <= pings[k] <= 10^9',
+        'Exactly two distinct hull numbers appear once; every other hull number appears exactly twice',
+        'At most two passes, O(1) extra space',
+        'Return the two hull numbers in increasing order',
+      ],
+      hints: [
+        'Forget the second boat for a moment. You already know a memory-free way to find ONE unpaired entry in a log of pairs. Run that idea here mentally: it does not crash, and it returns something. What exactly is that something — and is it really useless?',
+        'The full fold yields a ^ b, the XOR of the two retirees — never zero, because the hulls differ. Every set bit of a ^ b marks a position where a and b disagree. Could one such bit split the fleet into two sub-logs, each containing exactly one retiree?',
+        'Isolate the lowest set bit with d = x & -x. Partition pings by whether that bit is set: both pings of any finisher land on the same side and still cancel, while a and b land on opposite sides. Fold the d-side to get one retiree, XOR with x for the other, return sorted.',
+      ],
+      functionName: 'find_retired_hulls',
+      starterCode: `def find_retired_hulls(pings: list[int]) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `def find_retired_hulls(pings: list[int]) -> list[int]:
+    # Pass 1: XOR everything. Paired pings annihilate, leaving
+    # x = a ^ b, the XOR of the two retired hulls. It is nonzero
+    # because the two hull numbers are distinct.
+    x = 0
+    for p in pings:
+        x ^= p
+    # Any set bit of x is a position where a and b disagree.
+    # Two's complement makes x & -x keep ONLY the lowest set bit.
+    d = x & -x
+    # Pass 2: fold only the pings that HAVE that bit. Both pings of
+    # any finishing boat carry identical bits, so they land on the
+    # same side and still cancel; exactly one retiree is on this
+    # side and survives the fold.
+    a = 0
+    for p in pings:
+        if p & d:
+            a ^= p
+    # The other retiree falls out of the pair XOR.
+    b = x ^ a
+    # Deterministic output order, as the statement requires.
+    return sorted([a, b])
+`,
+        commentary: `
+The single-unknown fold from the easier problem does not break here — it just answers a different question. XORing the whole log cancels every finisher and returns \`a ^ b\`: not either retiree, but a **fingerprint of how they differ**. The key realization is that this fingerprint is guaranteed nonzero (the hulls are distinct), so it has at least one set bit, and that bit is a position where \`a\` and \`b\` *provably disagree*.
+
+That disagreement bit is a perfect partition key. Split the fleet into "bit set" and "bit clear" sub-logs: the two pings of any finishing boat are identical numbers, so they always fall into the *same* sub-log and keep cancelling — the pairing guarantee survives the split. Meanwhile \`a\` and \`b\` are forced into *different* sub-logs by construction. Each sub-log is now exactly the one-unknown problem we already know how to fold in O(1) space.
+
+\`x & -x\` isolates the lowest set bit because two's-complement negation flips all bits above the lowest 1 and leaves the lowest 1 and the zeros below it intact — so \`x\` and \`-x\` agree only at that single position. Any set bit of \`x\` would work as the splitter; the lowest is simply the cheapest to extract. The final \`sorted\` costs O(1) (two elements) and makes the output deterministic.
+`,
+        complexity: 'Time O(n) (two passes), Space O(1)',
+      },
+      testCases: [
+        { input: [[7, 3, 7, 12]], expected: [3, 12], label: 'one finisher, two retirees' },
+        { input: [[5, 9]], expected: [5, 9], label: 'minimal log: both retired' },
+        { input: [[1, 2, 3, 1, 2, 8]], expected: [3, 8], label: 'interleaved finishers' },
+        { input: [[0, 6, 4, 6]], expected: [0, 4], hidden: true, label: 'hull number zero retires' },
+        {
+          input: [[1000000000, 1, 999999999, 1, 1000000000, 123456789]],
+          expected: [123456789, 999999999],
+          hidden: true,
+          label: 'large hull numbers',
+        },
+        {
+          input: [[2, 4, 2, 4, 16, 17]],
+          expected: [16, 17],
+          hidden: true,
+          label: 'retirees differ only in the lowest bit',
+        },
+        {
+          input: [[10, 20, 30, 20, 10, 40]],
+          expected: [30, 40],
+          hidden: true,
+          label: 'retirees at the middle and end',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 260. Single Number III', note: 'the classic form of this split fold' },
+        { name: 'LeetCode 136. Single Number', note: 'the one-unknown base case' },
+      ],
+    },
+    {
+      id: 'adder-without-plus',
+      title: 'The ALU With No Add Instruction',
+      difficulty: 'medium',
+      statement: `
+You are writing an emulator for a fantasy game console whose documented ALU offers only AND, OR, XOR, and shifts — the add instruction was cut from the spec sheet to save silicon, and games synthesized addition in software. Your emulator must do the same.
+
+Given two integers \`a\` and \`b\` that each fit in a **signed 32-bit register**, return \`a + b\` (which is guaranteed to also fit in a signed 32-bit register) **without using** the \`+\`, \`-\`, \`*\`, \`/\`, or \`//\` operators or the \`sum\` builtin anywhere in your arithmetic. Comparisons and bitwise operators are allowed.
+
+Remember that Python integers are unbounded: your job includes faithfully emulating the 32-bit register width, including negative operands stored in two's complement.
+`,
+      examples: [
+        {
+          input: 'a = 2, b = 3',
+          output: '5',
+          explanation:
+            '0b010 and 0b011: the columns disagree at bit 0 and agree-with-ones at bit 1, and combining the two effects yields 0b101.',
+        },
+        {
+          input: 'a = -2, b = 3',
+          output: '1',
+          explanation: 'Two\'s-complement -2 plus 3: carries ripple and fall off the 32-bit register, leaving 1.',
+        },
+        {
+          input: 'a = 15, b = 1',
+          output: '16',
+          explanation: '0b1111 + 0b0001 makes a carry chain run through four columns before settling.',
+        },
+        {
+          input: 'a = 0, b = 0',
+          output: '0',
+          explanation: 'Nothing to add; the register stays clear.',
+        },
+      ],
+      constraints: [
+        '-2^31 <= a, b <= 2^31 - 1',
+        '-2^31 <= a + b <= 2^31 - 1 (the true sum fits in a signed 32-bit register)',
+        'No +, -, *, /, // operators and no sum() — bitwise operators, comparisons, and assignment only',
+        'Must terminate in at most ~32 iterations of constant work',
+      ],
+      hints: [
+        'Add two small binary numbers on paper the way you learned in school, one column at a time. Watch a single column closely: part of what you produce stays in that column, and part of it moves left. Can you compute each of those two parts for ALL columns at once?',
+        'The stay-in-place part of every column is a ^ b (sum ignoring carries). The columns that generate a carry are exactly a & b, and a carry lands one slot left: (a & b) << 1. You now hold two numbers whose sum equals the original sum — a smaller instance of the same problem, since the carry word keeps gaining trailing zeros.',
+        'Loop: carry = ((a & b) << 1) & 0xFFFFFFFF; a = a ^ b; b = carry — until b == 0, masking with 0xFFFFFFFF each round to emulate the register. Finally re-interpret the 32-bit pattern as signed without minus: a if a < 0x80000000 else ~(a ^ 0xFFFFFFFF).',
+      ],
+      functionName: 'add_without_plus',
+      starterCode: `def add_without_plus(a: int, b: int) -> int:
+    pass
+`,
+      solution: {
+        code: `def add_without_plus(a: int, b: int) -> int:
+    # Emulate a 32-bit register: Python ints are unbounded, so we
+    # clamp to the low 32 bits after every operation. Negative
+    # operands become their two's-complement bit patterns here.
+    MASK = 0xFFFFFFFF
+    a &= MASK
+    b &= MASK
+    while b:
+        # XOR is per-column addition with the carries thrown away.
+        # AND finds the columns where BOTH inputs had a 1 -- exactly
+        # the columns that generate a carry -- and << 1 delivers each
+        # carry one column to the left.
+        carry = ((a & b) << 1) & MASK
+        a = a ^ b
+        b = carry
+    # a now holds the 32-bit two's-complement pattern of the sum.
+    # Re-interpret as signed without using minus: a ^ MASK flips the
+    # low 32 bits, and ~ negates-and-decrements, so ~(a ^ MASK)
+    # equals a - 2^32 for patterns with the sign bit set.
+    return a if a < 0x80000000 else ~(a ^ MASK)
+`,
+        commentary: `
+Schoolbook column addition does two separable jobs per column: it writes a digit (the column sum modulo 2) and it forwards a carry (whether both inputs were 1). Bitwise operators do each job for **all 32 columns simultaneously**: \`a ^ b\` is the written digits, \`a & b\` marks the carry-generating columns, and \`<< 1\` moves each carry to its destination.
+
+The loop's invariant is that \`a + b\` (as register patterns, modulo \`2^32\`) never changes: we just shovel more and more of the sum out of the carry word and into the digit word. Termination is guaranteed because every iteration shifts the carry word left — its lowest set bit strictly rises — so within 32 rounds the carries either resolve or fall off the top of the register, exactly as hardware overflow does. The statement's promise that the true sum fits in a signed 32-bit register makes that falling-off harmless.
+
+Two Python-specific traps make this problem more than transcription. First, Python has no register: without \`& MASK\` the carry of a negative operand would grow forever and the loop would never end. Second, the result of the loop is a *pattern*, not a value — \`0xFFFFFFFE\` means \`-2\`. The branchless-looking finisher \`~(a ^ MASK)\` converts pattern to value using only bitwise ops: flipping the low 32 bits and applying \`~\` (which maps \`v\` to \`-v - 1\`) lands precisely on \`a - 2^32\`.
+`,
+        complexity: 'Time O(w) = O(32) iterations worst case, Space O(1)',
+      },
+      testCases: [
+        { input: [2, 3], expected: 5, label: 'small positives' },
+        { input: [15, 1], expected: 16, label: 'long carry chain' },
+        { input: [-2, 3], expected: 1, label: 'negative plus positive' },
+        { input: [0, 0], expected: 0, label: 'zeros' },
+        { input: [-5, -7], expected: -12, hidden: true, label: 'both negative' },
+        { input: [-1, 1], expected: 0, hidden: true, label: 'carry falls off the register' },
+        { input: [123456, 654321], expected: 777777, hidden: true, label: 'mid-size values' },
+        {
+          input: [2147483647, -2147483647],
+          expected: 0,
+          hidden: true,
+          label: 'extremes cancel',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 371. Sum of Two Integers', note: 'the classic form of this adder' },
+        { name: 'LeetCode 29. Divide Two Integers', note: 'shift-and-subtract: the sibling for division' },
+      ],
+    },
+    {
+      id: 'encoder-code-disk',
+      title: 'Etching the Encoder Drum',
+      difficulty: 'easy',
+      statement: `
+A factory etches optical code disks for rotary position encoders. A disk for an \`n\`-bit encoder has \`2^n\` angular positions, each etched with an \`n\`-bit label. If two neighbouring positions differed in **two or more bits**, a read taken exactly on their boundary could mix old and new bits and report a wildly wrong angle — so adjacent positions (including the wrap-around from the last back to the first) must differ in **exactly one bit**.
+
+Return the factory's canonical labeling as a list of \`2^n\` integers, defined constructively: for \`n = 0\` the list is \`[0]\`; to grow a \`k\`-bit list into a \`(k+1)\`-bit list, keep the current list, then append a **reversed copy** of it with bit \`k\` set in every appended label. Your function receives \`n\` and must return exactly this sequence, in order, starting at \`0\`.
+`,
+      examples: [
+        {
+          input: 'n = 2',
+          output: '[0, 1, 3, 2]',
+          explanation:
+            'Grow [0, 1] by appending its reverse with bit 1 set: [1 | 2, 0 | 2] = [3, 2]. Every neighbour pair — including 2 back to 0 — differs in one bit.',
+        },
+        {
+          input: 'n = 0',
+          output: '[0]',
+          explanation: 'A zero-bit disk has a single position labeled 0.',
+        },
+        {
+          input: 'n = 3',
+          output: '[0, 1, 3, 2, 6, 7, 5, 4]',
+          explanation: 'The 2-bit list, then its reverse [2, 3, 1, 0] with bit 2 (value 4) painted on.',
+        },
+      ],
+      constraints: [
+        '0 <= n <= 12',
+        'Return exactly 2^n integers, each in [0, 2^n - 1], each label appearing exactly once',
+        'Consecutive labels (and the last/first pair) differ in exactly one bit',
+        'The sequence must be the canonical reflect-and-prefix order defined in the statement',
+      ],
+      hints: [
+        'Write the n = 1 list, then try to grow it into the n = 2 list by hand without ever breaking the one-bit rule — especially at the moment you cross from the old labels to the new ones. What arrangement of the old list makes that crossing seam safe?',
+        'The construction is literal code: second_half = [label | (1 << k) for label in reversed(first_half)]. The seam works because the reversed copy starts with the OLD list\'s last element (one new bit set is the only change), and the wrap-around works because the final element differs from label 0 only in bit k.',
+        'There is also a closed form: position i carries label i ^ (i >> 1). Build the list by repeated reflection, or emit [i ^ (i >> 1) for i in range(1 << n)] — the two produce the identical sequence.',
+      ],
+      functionName: 'encoder_code_sequence',
+      starterCode: `def encoder_code_sequence(n: int) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `def encoder_code_sequence(n: int) -> list[int]:
+    # Closed form of the reflect-and-prefix construction: the label
+    # at angular position i is i ^ (i >> 1).
+    #
+    # Why one bit per step: output bit j equals (bit j of i) XOR
+    # (bit j+1 of i). Incrementing i flips a block of trailing 1s
+    # to 0 and the 0 above them to 1 -- a contiguous flipped suffix.
+    # Inside that suffix every adjacent-bit XOR is unchanged (both
+    # operands flipped); below it nothing changed; only at the
+    # suffix's upper boundary does exactly ONE operand flip --
+    # so exactly one output bit changes.
+    return [i ^ (i >> 1) for i in range(1 << n)]
+`,
+        commentary: `
+The statement's reflect-and-prefix recipe is self-evidently correct at the seams: the appended half opens with the old list's *last* label (changed only by the new bit), and it closes with the old list's *first* label plus the new bit, so the wrap-around to position 0 also differs in exactly that one bit. Interior steps inside each half are one-bit by induction. The construction also explains the count: each growth step exactly doubles the list, giving \`2^n\` labels with no repeats — the new bit cleanly separates the two halves.
+
+The delightful part is that this recursive mirror collapses to one XOR: \`label(i) = i ^ (i >> 1)\`. Read it as "each output bit is the XOR of two adjacent index bits." When \`i\` increments, binary carry flips a *contiguous suffix* of \`i\` — and a contiguous flip leaves every adjacent-pair XOR inside it intact, disturbing only the single pair that straddles the suffix's top edge. One index step, one label bit: the encoder guarantee falls straight out of how carries propagate.
+
+Either implementation is fine; the closed form is preferred here because it is \`O(1)\` per label, allocation-free beyond the output, and impossible to get the seams wrong. The reflection builder is the better mental model; the formula is the better program.
+`,
+        complexity: 'Time O(2^n) to emit the list, Space O(2^n) for the output',
+      },
+      testCases: [
+        { input: [2], expected: [0, 1, 3, 2], label: 'two-bit disk' },
+        { input: [0], expected: [0], label: 'degenerate zero-bit disk' },
+        { input: [1], expected: [0, 1], label: 'one-bit disk' },
+        {
+          input: [3],
+          expected: [0, 1, 3, 2, 6, 7, 5, 4],
+          hidden: true,
+          label: 'three-bit disk',
+        },
+        {
+          input: [4],
+          expected: [0, 1, 3, 2, 6, 7, 5, 4, 12, 13, 15, 14, 10, 11, 9, 8],
+          hidden: true,
+          label: 'four-bit disk',
+        },
+        {
+          input: [5],
+          expected: [
+            0, 1, 3, 2, 6, 7, 5, 4, 12, 13, 15, 14, 10, 11, 9, 8, 24, 25, 27, 26, 30, 31, 29, 28,
+            20, 21, 23, 22, 18, 19, 17, 16,
+          ],
+          hidden: true,
+          label: 'five-bit disk, full reflection depth',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 89. Gray Code', note: 'the classic form of this sequence' },
+        { name: 'LeetCode 1238. Circular Permutation in Binary Representation', note: 'same cycle, rotated start' },
+      ],
+    },
+    {
+      id: 'mesh-link-budget',
+      title: 'Total Capability Overlap of the Mesh',
+      difficulty: 'medium',
+      statement: `
+Nodes in a smart-building mesh network each broadcast a 20-bit **capability word**; feature bit \`b\` (worth \`2^b\` in the planner's weighting, since higher bits encode higher-bandwidth features) is usable on a link only when **both** endpoints advertise it. So the score of a link between two nodes is the integer value of the bitwise AND of their capability words.
+
+Given the fleet's words as a list of integers, return the **sum of link scores over every unordered pair of nodes** \`(i, j)\` with \`i < j\`.
+
+The commissioning tool runs on fleets of up to 100,000 nodes, so comparing every pair is off the table: find a way to total the contributions without ever forming the pairs.
+`,
+      examples: [
+        {
+          input: 'words = [3, 5, 6]',
+          output: '7',
+          explanation: '3&5 = 1, 3&6 = 2, 5&6 = 4; the three links total 1 + 2 + 4 = 7.',
+        },
+        {
+          input: 'words = [8, 4, 2, 1]',
+          output: '0',
+          explanation: 'No two nodes share any feature bit, so every link scores 0.',
+        },
+        {
+          input: 'words = [7, 7, 7]',
+          output: '21',
+          explanation: 'Each of the 3 pairs scores 7&7 = 7, totalling 21.',
+        },
+      ],
+      constraints: [
+        '2 <= len(words) <= 100_000',
+        '0 <= words[k] < 2^20',
+        'Target O(B * n) for B = 20 feature bits — pair-by-pair O(n^2) is too slow at fleet scale',
+        'Return a single integer (the exact total; Python ints do not overflow)',
+      ],
+      hints: [
+        'Summing pair by pair answers one question per pair. Try flipping the table: instead of asking "what does this pair score", ask "how much does this single feature contribute to the grand total". Does any pair interfere with that per-feature accounting?',
+        'Feature bit b survives the AND for a pair exactly when BOTH endpoints advertise it. If c nodes advertise bit b, how many unordered pairs gain 2^b from that feature? Count pairs within a group of c.',
+        'For each bit b in 0..19: count c = how many words have bit b set, then add (c * (c - 1) // 2) << b to the total. Twenty O(n) counting passes replace the O(n^2) double loop.',
+      ],
+      functionName: 'total_link_score',
+      starterCode: `def total_link_score(words: list[int]) -> int:
+    pass
+`,
+      solution: {
+        code: `def total_link_score(words: list[int]) -> int:
+    total = 0
+    # Account feature by feature instead of pair by pair. AND keeps
+    # bit b for a pair exactly when BOTH endpoints advertise it, so
+    # the feature's total contribution depends only on HOW MANY
+    # words carry the bit -- not on which pairs we form.
+    for b in range(20):
+        c = 0
+        for w in words:
+            c += (w >> b) & 1          # does this node advertise feature b?
+        # c advertising nodes form c-choose-2 links that keep the
+        # bit, and each such link banks 2^b points for it.
+        total += (c * (c - 1) // 2) << b
+    return total
+`,
+        commentary: `
+The score of one link is a 20-term sum (one term per feature bit), so the grand total is a double sum: over pairs, then over bits. Addition does not care about the order of summation — **swap the sums**. Now the outer loop is over the 20 feature bits, and the inner question becomes: across all unordered pairs, how many times does bit \`b\` survive the AND?
+
+That question has a closed-form answer because bit \`b\` of \`x & y\` depends only on bit \`b\` of each operand — bits never interact across positions in an AND. If \`c\` of the \`n\` words have the bit set, the surviving pairs are exactly the pairs drawn from those \`c\` words: \`c * (c - 1) / 2\` of them, each contributing \`2^b\`. Nodes lacking the bit are invisible to this feature entirely.
+
+The complexity collapse is the point: \`n = 100{,}000\` means about five billion pairs — hopeless — but only \`20 x 100{,}000 = 2\` million bit reads. This "transpose the aggregation, then count per bit position" move is a workhorse for pairwise bitwise aggregates (the same idea computes total pairwise Hamming distance with \`c * (n - c)\` instead of \`c\` choose 2), and it works precisely because bitwise operators treat every position independently.
+`,
+        complexity: 'Time O(B * n) with B = 20 bits, Space O(1)',
+      },
+      testCases: [
+        { input: [[3, 5, 6]], expected: 7, label: 'three nodes, mixed overlap' },
+        { input: [[8, 4, 2, 1]], expected: 0, label: 'pairwise disjoint features' },
+        { input: [[7, 7, 7]], expected: 21, label: 'identical words' },
+        { input: [[1, 1]], expected: 1, label: 'minimal fleet' },
+        { input: [[0, 0, 0, 0]], expected: 0, hidden: true, label: 'all-zero capability words' },
+        { input: [[6, 10, 12]], expected: 14, hidden: true, label: 'each pair shares a different bit' },
+        {
+          input: [[1048575, 1048575]],
+          expected: 1048575,
+          hidden: true,
+          label: 'two full 20-bit words',
+        },
+        { input: [[5, 5, 5, 5]], expected: 30, hidden: true, label: 'six identical pairs' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 477. Total Hamming Distance', note: 'same transposed counting with XOR: c * (n - c) per bit' },
+        { name: 'LeetCode 1863. Sum of All Subset XOR Totals', note: 'per-bit accounting over subsets instead of pairs' },
+      ],
+    },
+    {
+      id: 'spreading-code-pair',
+      title: 'The Most Separated Spreading Codes',
+      difficulty: 'hard',
+      statement: `
+A CubeSat ground segment whitens each downlink with a 31-bit **spreading code** from its catalog. When two stations transmit at once, cross-talk is governed by where their codes disagree, with high-order chip positions mattering exponentially more — so the engineers define the **separation** of two codes as the integer value of their bitwise XOR, and they want the catalog's best case.
+
+Given the catalog \`codes\` as a list of integers, return the **maximum separation over any two entries**: the largest value of \`codes[i] ^ codes[j]\` over all index pairs \`i != j\`.
+
+Catalogs run to 100,000 entries, so scoring every pair is far too slow. Exploit the metric's structure: its value is dominated by the highest bit where a pair disagrees.
+`,
+      examples: [
+        {
+          input: 'codes = [9, 14, 3, 21]',
+          output: '28',
+          explanation:
+            '9 ^ 21 = 0b01001 ^ 0b10101 = 0b11100 = 28; no other pair disagrees at both of the two highest positions.',
+        },
+        {
+          input: 'codes = [1, 2]',
+          output: '3',
+          explanation: 'Only one pair exists: 0b01 ^ 0b10 = 0b11 = 3.',
+        },
+        {
+          input: 'codes = [5, 5]',
+          output: '0',
+          explanation: 'Identical codes have zero separation — duplicates are legal catalog entries.',
+        },
+      ],
+      constraints: [
+        '2 <= len(codes) <= 100_000',
+        '0 <= codes[k] < 2^31 (codes may repeat)',
+        'Target O(n * 31) — the O(n^2) pairwise scan is too slow at catalog scale',
+        'Return a single integer',
+      ],
+      hints: [
+        'The metric is a number whose value is dominated by its highest set bit: winning bit 30 beats winning all of bits 29 down to 0 combined. If someone claimed "the best separation starts 0b110...", could you VERIFY that claim against the catalog faster than trying all pairs? What yes/no question would you ask?',
+        'Decide the answer one bit at a time from the top. Suppose the bits chosen so far form prefix P, and you hope the next bit is 1, giving target t. A pair with code prefixes p and q achieves t iff p ^ q = t — and since p ^ q = t means q = p ^ t, you can test "does any achieving pair exist?" with one set of all code prefixes and a membership probe per element.',
+        'For b = 30 down to 0: widen mask |= 1 << b; build prefixes = {c & mask for c in codes}; set candidate = best | (1 << b); if any candidate ^ p is in prefixes, commit best = candidate. Greedy is safe because a higher bit outweighs every lower bit combined. 31 rounds of O(n).',
+      ],
+      functionName: 'max_code_separation',
+      starterCode: `def max_code_separation(codes: list[int]) -> int:
+    pass
+`,
+      solution: {
+        code: `def max_code_separation(codes: list[int]) -> int:
+    best = 0   # answer bits committed so far (top-down)
+    mask = 0   # which high-order bits are currently in view
+    # Build the answer one bit at a time, most significant first.
+    for b in range(30, -1, -1):
+        mask |= 1 << b
+        # Every code truncated to the bits decided so far.
+        prefixes = {c & mask for c in codes}
+        # Optimistically hope the answer also has THIS bit set.
+        candidate = best | (1 << b)
+        # A pair (p, q) achieves p ^ q == candidate iff q == p ^ candidate,
+        # so a witness pair exists iff some prefix XORed with the
+        # candidate is itself a prefix in the set.
+        if any((candidate ^ p) in prefixes for p in prefixes):
+            best = candidate   # witness found: the bit is achievable
+        # otherwise leave the bit at 0 and move to the next position
+    return best
+`,
+        commentary: `
+Brute force asks \`n(n-1)/2\` independent questions. The structure that collapses them is **place value**: bit 30 of the XOR is worth more than bits 29..0 put together, so the optimal answer can be constructed greedily, top bit first — committing a 1 whenever *any* pair can realize it costs us nothing, because no combination of lower bits can ever compensate for giving up a higher one. This is the same reasoning that makes "compare numbers by their first differing digit" valid.
+
+The per-bit test is where XOR's algebra earns its keep. Restricted to the bits seen so far (\`c & mask\`), we want to know whether two prefixes XOR to the hoped-for \`candidate\`. Solving the equation \`p ^ q = candidate\` for \`q\` gives \`q = p ^ candidate\` — XOR is its own inverse — which converts an all-pairs search into \`n\` set-membership probes: for each prefix \`p\`, is its unique required partner present? This is the bitwise cousin of the two-sum hash trick, with XOR playing the role of subtraction.
+
+One subtlety: the candidate always extends the *committed* \`best\`, never a hypothetical, so witnesses for later bits are automatically consistent with earlier decisions — different rounds may rely on different witness pairs, and that is fine, because the final \`best\` is validated bitwise: some pair achieves a XOR with all of \`best\`'s set bits at or above each decision point, and the greedy argument guarantees the maximum equals \`best\`. Total cost: 31 rounds of an \`O(n)\` set build plus probes, versus five billion pairs at \`n = 100{,}000\`.
+`,
+        complexity: 'Time O(n * 31), Space O(n) for the prefix set',
+      },
+      testCases: [
+        { input: [[9, 14, 3, 21]], expected: 28, label: 'four-code catalog' },
+        { input: [[1, 2]], expected: 3, label: 'minimal catalog' },
+        { input: [[5, 5]], expected: 0, label: 'duplicate codes only' },
+        { input: [[1, 2, 4, 8, 16]], expected: 24, label: 'distinct powers of two' },
+        { input: [[8, 10, 2]], expected: 10, hidden: true, label: 'best pair excludes the largest code' },
+        { input: [[7, 7, 7]], expected: 0, hidden: true, label: 'all identical' },
+        {
+          input: [[0, 2147483647]],
+          expected: 2147483647,
+          hidden: true,
+          label: 'full 31-bit separation',
+        },
+        {
+          input: [[536870912, 1, 536870913]],
+          expected: 536870913,
+          hidden: true,
+          label: 'high bit and low bit combine',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 421. Maximum XOR of Two Numbers in an Array', note: 'the classic form; also solvable with a bitwise trie' },
+        { name: 'LeetCode 1707. Maximum XOR With an Element From Array', note: 'the trie version with constraints' },
+      ],
+    },
   ],
   quiz: [
     {

@@ -531,6 +531,555 @@ Each word costs at most its own length, so the whole rewrite is linear in the re
         { name: 'LeetCode 820. Short Encoding of Words', note: 'flip the idea: suffix sharing via a reversed-word trie' },
       ],
     },
+    {
+      id: 'keypad-code-audit',
+      title: 'Audio Guide Keypad Audit',
+      difficulty: 'easy',
+      statement: `
+A museum's handheld audio guide has a numeric keypad and no confirm button: playback starts the instant the digits entered so far match a registered exhibit code. That design only works if the code list is **instantly decodable** — no code may be a prefix of another, or the longer exhibit could never be played (the guide fires on the shorter code first). A duplicated code is equally broken: two exhibits would claim the same input.
+
+Given \`codes\`, the list of exhibit codes (strings of digits), return \`true\` if no code is a prefix of any other code — where a duplicate counts as a violation — and \`false\` otherwise. A code counts as a prefix of itself only when it appears twice. An empty list or a single code is trivially valid.
+
+Curators upload tens of thousands of codes at a time, so comparing every pair of codes is too slow.
+`,
+      examples: [
+        {
+          input: 'codes = ["302", "45", "718"]',
+          output: 'true',
+          explanation:
+            'No code opens another: the three first digits already differ, so nothing can be a prefix of anything else.',
+        },
+        {
+          input: 'codes = ["91", "915", "30"]',
+          output: 'false',
+          explanation:
+            '"91" is a prefix of "915": the moment a visitor keys 9 then 1, the guide starts exhibit 91 and exhibit 915 becomes unreachable.',
+        },
+        {
+          input: 'codes = ["555", "55"]',
+          output: 'false',
+          explanation: 'Order does not matter — "55" prefixes "555" no matter which was registered first.',
+        },
+      ],
+      constraints: [
+        '0 <= len(codes) <= 50_000',
+        "1 <= len(code) <= 12 for every code; characters are digits '0'-'9'",
+        'Duplicate codes may appear and make the list invalid',
+        'Return true for an empty list or a single code',
+      ],
+      hints: [
+        'Two codes conflict only when one is a wholesale copy of the other\'s opening digits. Comparing every code against every other re-reads the same openings thousands of times — and most comparisons fail on the very first digit. What would let codes that share openings also share the comparison work?',
+        'Insert the codes one at a time into a digit-keyed prefix tree, marking the node where each code ends. A violation is visible DURING an insertion walk — think about what an in-progress insert can bump into.',
+        'Two observable events cover every violation: if the walk passes a marked node (including at its own last digit), an earlier code is a prefix of this one — or its duplicate; if the walk ends on a node that already has children, this code is a prefix of an earlier, longer one. Either way return false on the spot; otherwise mark the final node and continue. All inserts clean: return true.',
+      ],
+      functionName: 'is_prefix_free',
+      starterCode: `class TrieNode:
+    def __init__(self):
+        self.children: dict[str, "TrieNode"] = {}
+        self.is_code = False
+
+
+def is_prefix_free(codes: list[str]) -> bool:
+    pass
+`,
+      solution: {
+        code: `class TrieNode:
+    def __init__(self):
+        self.children = {}    # digit -> TrieNode
+        self.is_code = False  # a registered exhibit code ends exactly here
+
+
+def is_prefix_free(codes: list[str]) -> bool:
+    root = TrieNode()
+    for code in codes:
+        node = root
+        for ch in code:
+            node = node.children.setdefault(ch, TrieNode())
+            if node.is_code:
+                # An earlier code ends on this node. Either it is a proper
+                # prefix of the new code (digits remain) or the new code
+                # duplicates it (this was the last digit). Both break
+                # instant decodability, so stop immediately.
+                return False
+        if node.children:
+            # The new code stops at a node that already continues deeper,
+            # so the new code is a prefix of some earlier, longer code.
+            return False
+        node.is_code = True   # clean insert: mark and keep going
+    return True
+`,
+        commentary: `
+The pairwise check (\`a.startswith(b)\` over all ordered pairs) is \`O(n^2 * L)\` and re-reads shared openings endlessly. Sorting and comparing neighbors cuts that to \`O(n L log n)\`, but the trie does better AND exposes the structure of the problem: build incrementally, and every violation becomes a geometric event you can observe mid-insertion.
+
+There are only two ways prefix-freeness can die, and one insertion walk witnesses both. **Passing a marked node** means a previously registered code ends strictly inside the code being inserted (a proper prefix) or exactly at its end (a duplicate). **Finishing on a node that already has children** means the structure continues below the new code's endpoint, so the new code is a prefix of something inserted earlier. Insertion order never matters because the two checks are mirror images: whichever member of a conflicting pair arrives second, one of the two events fires.
+
+The early return is not just politeness — it is what keeps the whole audit \`O(total digits)\`: each digit of each code is touched at most once before a verdict. The "instant playback" framing is the everyday face of a classic idea: a code set where no entry prefixes another is exactly a set a device can decode with no terminator symbol — the same property that makes variable-length schemes like Huffman codes decodable.
+`,
+        complexity: 'Time O(total digits across all codes), Space O(total digits)',
+      },
+      testCases: [
+        { input: [['302', '45', '718']], expected: true, label: 'distinct openings' },
+        { input: [['91', '915', '30']], expected: false, label: 'shorter code inserted first' },
+        { input: [['555', '55']], expected: false, label: 'longer code inserted first' },
+        { input: [['12345']], expected: true, label: 'single code' },
+        { input: [['7', '7']], expected: false, hidden: true, label: 'exact duplicate' },
+        { input: [[]], expected: true, hidden: true, label: 'empty list' },
+        { input: [['1', '21', '321', '4321']], expected: true, hidden: true, label: 'shared digits but never at the start' },
+        { input: [['604', '60', '6']], expected: false, hidden: true, label: 'chain of nested prefixes, longest first' },
+      ],
+      furtherPractice: [
+        { name: 'Phone List (Kattis)', note: 'the classic prefix-consistency check over phone numbers' },
+        { name: 'LeetCode 1804. Implement Trie II (Prefix Tree)', note: 'counted markers that make prefix bookkeeping richer' },
+      ],
+    },
+    {
+      id: 'letter-ladder-champion',
+      title: 'Spelling Ladder Champion',
+      difficulty: 'medium',
+      statement: `
+A children's spelling app awards its **ladder badge** for words a learner can grow one letter at a time: starting from a single letter and appending one letter per step, every intermediate stage must itself be a word on the learner's practice list. For example, \`sand\` earns the badge only if \`s\`, \`sa\`, \`san\`, and \`sand\` are all on the list.
+
+Given \`words\`, the practice list (duplicates may appear), return the longest word that earns the ladder badge. If several qualifying words tie for the longest, return the one that comes first alphabetically. If no word qualifies at all, return the empty string \`""\`.
+
+The practice list can be large, and most of it may be dead weight — words whose ladders break on the very first letter — so avoid paying for words that can never qualify.
+`,
+      examples: [
+        {
+          input: 'words = ["w", "wo", "wor", "worl", "world"]',
+          output: '"world"',
+          explanation: 'Every stage from "w" upward is on the list, so "world" can be grown letter by letter.',
+        },
+        {
+          input: 'words = ["a", "banana", "app", "appl", "ap", "apply", "apple"]',
+          output: '"apple"',
+          explanation:
+            '"apple" and "apply" are both fully buildable and tie at five letters; "apple" wins alphabetically. "banana" never qualifies because "b" is not on the list.',
+        },
+        {
+          input: 'words = ["cat", "cats"]',
+          output: '""',
+          explanation: 'No single-letter word exists, so no ladder can even start.',
+        },
+      ],
+      constraints: [
+        '0 <= len(words) <= 10_000',
+        '1 <= len(word) <= 30 for every word; lowercase letters a-z only',
+        'Duplicates may appear',
+        'Ties on length break to the alphabetically smallest word',
+        'Return "" if no word qualifies',
+      ],
+      hints: [
+        '"sand" can only qualify if "san" qualifies, which needs "sa", which needs "s". Qualification flows down a chain of one-letter extensions — what shape do all those chains form if you draw each word connected to the word one letter shorter than it?',
+        'Build a prefix tree of the practice list with end-of-word markers. A word is buildable exactly when EVERY node on its root-to-end path is marked, so the buildable words form one connected region hanging off the root. Nothing outside that region can ever matter.',
+        'DFS from the root, but descend into a child only if that child is marked; remember the deepest prefix reached. Visit children in alphabetical order and replace your best only on a STRICTLY longer find — the first word reached at any depth is then automatically the alphabetically smallest, settling ties for free.',
+      ],
+      functionName: 'longest_buildable_word',
+      starterCode: `class TrieNode:
+    def __init__(self):
+        self.children: dict[str, "TrieNode"] = {}
+        self.is_word = False
+
+
+def longest_buildable_word(words: list[str]) -> str:
+    pass
+`,
+      solution: {
+        code: `class TrieNode:
+    def __init__(self):
+        self.children = {}    # char -> TrieNode
+        self.is_word = False  # a practice-list word ends exactly here
+
+
+def longest_buildable_word(words: list[str]) -> str:
+    # Build the trie; duplicates just re-mark the same node.
+    root = TrieNode()
+    for word in words:
+        node = root
+        for ch in word:
+            node = node.children.setdefault(ch, TrieNode())
+        node.is_word = True
+
+    best = ""
+
+    def dfs(node, prefix):
+        nonlocal best
+        # Strictly-longer check: within one depth, the FIRST word reached
+        # (alphabetical child order) is the lexicographically smallest,
+        # so it must not be displaced by a later tie.
+        if len(prefix) > len(best):
+            best = prefix
+        for ch in sorted(node.children):
+            child = node.children[ch]
+            if child.is_word:        # inheritance: extend only through
+                dfs(child, prefix + ch)  # stages that are themselves words
+
+    dfs(root, "")
+    return best
+`,
+        commentary: `
+The trie turns an inductive definition into geometry. "Buildable" is defined by inheritance — a word qualifies only if its one-letter-shorter prefix qualifies — and in a trie that inheritance is literal adjacency: a word is buildable exactly when **every node on its root path carries the end-of-word marker**. The buildable words therefore form one connected marked subtree at the top of the structure, and everything outside it is unreachable no matter how long or numerous those words are ("banana" dies at the unmarked \`b\` node; its other five letters are never visited).
+
+That connectivity is what justifies the pruned DFS: descending only into marked children is not a heuristic, it is the definition restated. The search does work proportional to the qualifying region, not to the dictionary.
+
+The tie-break costs nothing extra, which is the second idea worth keeping. A preorder walk that visits children in alphabetical order enumerates stored strings in exact lexicographic order, so among words of equal maximal length the FIRST one encountered is the alphabetically smallest — updating \`best\` only on a strictly longer find bakes the tie-break into the traversal itself. The common alternative (sort the words, grow a hash set of buildable words) also runs near-linear, but it re-derives per word what the trie states once, structurally: qualification is a property of the path, not of the word in isolation.
+`,
+        complexity: 'Time O(total characters), Space O(total characters)',
+      },
+      testCases: [
+        { input: [['w', 'wo', 'wor', 'worl', 'world']], expected: 'world', label: 'one complete ladder' },
+        { input: [['a', 'banana', 'app', 'appl', 'ap', 'apply', 'apple']], expected: 'apple', label: 'length tie broken alphabetically' },
+        { input: [['t', 'talk', 'ta', 'tal']], expected: 'talk', label: 'ladder given out of order' },
+        { input: [['cat', 'cats']], expected: '', label: 'no ladder can start' },
+        { input: [[]], expected: '', hidden: true, label: 'empty practice list' },
+        { input: [['b', 'a']], expected: 'a', hidden: true, label: 'tie among single letters' },
+        { input: [['a', 'a', 'ab', 'ab']], expected: 'ab', hidden: true, label: 'duplicates are harmless' },
+        { input: [['m', 'mo', 'moo', 'mood', 'moon']], expected: 'mood', hidden: true, label: 'two ladders share every rung but the last' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 720. Longest Word in Dictionary', note: 'the classic one-letter-at-a-time build' },
+        { name: 'LeetCode 1858. Longest Word With All Prefixes', note: 'the same inheritance idea, slightly relaxed' },
+      ],
+    },
+    {
+      id: 'kiosk-typeahead',
+      title: 'Check-In Kiosk Typeahead',
+      difficulty: 'medium',
+      statement: `
+An airline's self-service kiosk asks travelers to type their destination. After **each keystroke** it shows up to three suggestions: the alphabetically smallest destination names that start with everything typed so far.
+
+You're given \`destinations\`, the route catalog (duplicates may appear — several partner carriers can sell the same route — but a name must never be suggested twice), and \`query\`, the full string the traveler will type, one character per keystroke.
+
+Return a list with one entry per keystroke: entry \`i\` is the list of up to three suggestions for the prefix \`query[:i+1]\`, **sorted in ascending alphabetical order**. Once a prefix matches no destination, that entry and every later entry is the empty list. The catalog is huge and travelers type fast, so re-scanning the catalog per keystroke is not acceptable.
+`,
+      examples: [
+        {
+          input: 'destinations = ["lima", "lisbon", "london", "lagos", "lyon"], query = "li"',
+          output: '[["lagos", "lima", "lisbon"], ["lima", "lisbon"]]',
+          explanation:
+            'After "l" all five names match and the three alphabetically smallest are shown. After "li" only lima and lisbon remain.',
+        },
+        {
+          input: 'destinations = ["oslo", "osaka"], query = "osl"',
+          output: '[["osaka", "oslo"], ["osaka", "oslo"], ["oslo"]]',
+          explanation: 'Fewer than three matches means show them all; the third keystroke narrows things to oslo.',
+        },
+        {
+          input: 'destinations = ["rome", "rio"], query = "rya"',
+          output: '[["rio", "rome"], [], []]',
+          explanation:
+            'Nothing starts with "ry", and once a prefix matches nothing, no longer prefix can match either.',
+        },
+      ],
+      constraints: [
+        '0 <= len(destinations) <= 20_000',
+        '1 <= len(name) <= 30 for every name; lowercase letters a-z only',
+        '1 <= len(query) <= 30; lowercase letters a-z only',
+        'Duplicate catalog entries may appear, but each name is suggested at most once',
+        'Each suggestion list holds at most 3 names, sorted in ascending alphabetical order',
+      ],
+      hints: [
+        'Keystroke i+1 searches inside the survivors of keystroke i — the candidate pool only ever shrinks as the prefix grows. Re-filtering and re-sorting the whole catalog on every keystroke throws that away, and it re-pays the full sort even when almost nothing changed.',
+        'Hold the catalog in a prefix tree with end-of-word markers (inserting a duplicate re-marks the same node, so deduplication is automatic). The candidates for any prefix are exactly the names stored in the subtree below that prefix\'s node.',
+        'Advance one child link per keystroke from the previous node (once it goes missing, every later answer is []). From the current node run a preorder DFS that visits children in sorted order, appends the running string at every marked node, and stops as soon as 3 names are collected — preorder in sorted child order emits names in exact alphabetical order.',
+      ],
+      functionName: 'suggest_destinations',
+      starterCode: `class TrieNode:
+    def __init__(self):
+        self.children: dict[str, "TrieNode"] = {}
+        self.is_word = False
+
+
+def suggest_destinations(destinations: list[str], query: str) -> list[list[str]]:
+    pass
+`,
+      solution: {
+        code: `class TrieNode:
+    def __init__(self):
+        self.children = {}    # char -> TrieNode
+        self.is_word = False  # a catalog name ends exactly here
+
+
+def suggest_destinations(destinations: list[str], query: str) -> list[list[str]]:
+    # Build once. Inserting a duplicate name re-walks the same path and
+    # re-marks the same node, so the catalog is deduplicated by construction.
+    root = TrieNode()
+    for name in destinations:
+        node = root
+        for ch in name:
+            node = node.children.setdefault(ch, TrieNode())
+        node.is_word = True
+
+    def collect(node, prefix, out):
+        # Preorder DFS in sorted child order emits names in exact
+        # lexicographic order; appending at a marked node BEFORE recursing
+        # puts a name ahead of its own extensions ("york" before "yorkdale").
+        if node.is_word:
+            out.append(prefix)
+        for ch in sorted(node.children):
+            if len(out) == 3:     # already have the three smallest: stop
+                return
+            collect(node.children[ch], prefix + ch, out)
+
+    results = []
+    node = root
+    for i, ch in enumerate(query):
+        # One child link per keystroke. Once we fall off the trie, no
+        # longer prefix can ever match again, so node stays None.
+        node = node.children.get(ch) if node is not None else None
+        if node is None:
+            results.append([])
+        else:
+            out = []
+            collect(node, query[: i + 1], out)
+            results.append(out)
+    return results
+`,
+        commentary: `
+Per keystroke, the brute force filters the whole catalog with \`startswith\`, dedupes, sorts, and slices three — \`O(n log n)\` per keystroke with \`n\` never shrinking. The trie exploits the two monotonicities the keystroke stream hands you for free: each prefix extends the previous one (so the walk advances ONE child link per keystroke instead of restarting), and each candidate pool nests inside the previous one (the subtree below the new node lives inside the subtree below the old).
+
+The deterministic ordering rests on a fact worth memorizing: **a preorder DFS that visits children in sorted order emits the stored strings in exact lexicographic order**. Appending at a marked node before recursing into its children is what places a name ahead of its own extensions — shorter prefix-words sort first, which matches string ordering. Because emission order is already sorted, the cap of three is a clean short-circuit: the DFS touches only the leftmost sliver of the subtree, so a keystroke sitting above a million-name subtree still does only enough work to find three names.
+
+Deduplication never appears in the code because the structure absorbs it: duplicates re-mark one node, and the DFS reads each marker once. And carrying the \`None\` forward after falling off encodes the obvious-but-easy-to-botch invariant that no longer prefix can ever match again.
+`,
+        complexity: 'Time O(total catalog chars) to build + O(len(query)) walk with a 3-capped DFS per keystroke; Space O(total catalog chars)',
+      },
+      testCases: [
+        { input: [['lima', 'lisbon', 'london', 'lagos', 'lyon'], 'li'], expected: [['lagos', 'lima', 'lisbon'], ['lima', 'lisbon']], label: 'narrowing pool' },
+        { input: [['oslo', 'osaka'], 'osl'], expected: [['osaka', 'oslo'], ['osaka', 'oslo'], ['oslo']], label: 'fewer than three matches' },
+        { input: [['rome', 'rio'], 'rya'], expected: [['rio', 'rome'], [], []], label: 'dead prefix stays dead' },
+        { input: [['nara', 'nairobi', 'nanjing', 'nantes'], 'nan'], expected: [['nairobi', 'nanjing', 'nantes'], ['nairobi', 'nanjing', 'nantes'], ['nanjing', 'nantes']], label: 'cap of three applies' },
+        { input: [['bonn', 'bonn', 'boston'], 'bo'], expected: [['bonn', 'boston'], ['bonn', 'boston']], hidden: true, label: 'duplicate routes suggested once' },
+        { input: [['pa', 'pb', 'pc', 'pd'], 'p'], expected: [['pa', 'pb', 'pc']], hidden: true, label: 'exactly the three smallest survive' },
+        { input: [[], 'ab'], expected: [[], []], hidden: true, label: 'empty catalog' },
+        { input: [['york', 'yorkdale', 'yorkton'], 'york'], expected: [['york', 'yorkdale', 'yorkton'], ['york', 'yorkdale', 'yorkton'], ['york', 'yorkdale', 'yorkton'], ['york', 'yorkdale', 'yorkton']], hidden: true, label: 'a name that equals the prefix sorts first' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 1268. Search Suggestions System', note: 'the classic three-suggestions-per-keystroke problem' },
+        { name: 'LeetCode 642. Design Search Autocomplete System', note: 'typeahead ranked by frequency instead of alphabet' },
+      ],
+    },
+    {
+      id: 'barcode-plate-pooling',
+      title: 'Sequencer Plate Pooling',
+      difficulty: 'easy',
+      statement: `
+A genomics core facility tags every incoming sample with a DNA barcode — a string over the bases \`a\`, \`c\`, \`g\`, \`t\`. Samples are pooled onto sequencing plates by **stem**: two samples share a plate exactly when their barcodes agree on the first \`k\` bases. Barcodes shorter than \`k\` bases cannot define a stem and are skipped entirely.
+
+Given \`barcodes\` and the stem length \`k\`, return one entry per non-empty plate as a two-element list \`[stem, count]\` — the shared length-\`k\` stem and how many samples landed on that plate — **sorted by stem in ascending alphabetical order**. Duplicate barcodes are distinct physical samples, and each one counts.
+
+Runs hold tens of thousands of samples and stems are deliberately designed to collide, so route each sample without re-reading work another sample already did.
+`,
+      examples: [
+        {
+          input: 'barcodes = ["acgt", "acgg", "actt", "gggg"], k = 2',
+          output: '[["ac", 3], ["gg", 1]]',
+          explanation:
+            'acgt, acgg, and actt share the stem "ac"; gggg sits alone on plate "gg". Plates are listed in ascending stem order.',
+        },
+        {
+          input: 'barcodes = ["tagc", "ta", "t", "tagg"], k = 3',
+          output: '[["tag", 2]]',
+          explanation: '"ta" and "t" are shorter than 3 bases and are skipped; the two remaining barcodes share stem "tag".',
+        },
+        {
+          input: 'barcodes = ["gattaca", "gatt", "gacc", "tact", "taga"], k = 3',
+          output: '[["gac", 1], ["gat", 2], ["tac", 1], ["tag", 1]]',
+          explanation: 'Four distinct stems, sorted ascending; only "gat" pools two samples.',
+        },
+      ],
+      constraints: [
+        '0 <= len(barcodes) <= 20_000',
+        "1 <= len(barcode) <= 30; characters are only 'a', 'c', 'g', 't'",
+        '1 <= k <= 30',
+        'Barcodes shorter than k bases are skipped',
+        'Output pairs [stem, count] sorted by stem in ascending alphabetical order',
+      ],
+      hints: [
+        'Only the first k bases of a barcode decide where its sample goes; everything after that is noise for this task. And two barcodes that agree on those k bases should not each pay separately to be routed — agreement is the whole point of pooling.',
+        'Insert just the first k bases of each long-enough barcode into a prefix tree, bumping a counter on the node where the stem ends. Stems shared by many samples collapse into one shared path with a single counter.',
+        'Skip short barcodes before inserting, so every path in the tree has length exactly k. Then DFS from the root to depth k, visiting children in sorted base order, and emit [stem, count] at each depth-k node — sorted order at every level means the plate list comes out already sorted, no extra sort step.',
+      ],
+      functionName: 'pool_by_stem',
+      starterCode: `class TrieNode:
+    def __init__(self):
+        self.children: dict[str, "TrieNode"] = {}
+        self.count = 0
+
+
+def pool_by_stem(barcodes: list[str], k: int) -> list[list]:
+    pass
+`,
+      solution: {
+        code: `class TrieNode:
+    def __init__(self):
+        self.children = {}  # base -> TrieNode
+        self.count = 0      # samples whose stem ends exactly here
+
+
+def pool_by_stem(barcodes: list[str], k: int) -> list[list]:
+    root = TrieNode()
+
+    # Routing phase: only the first k bases matter, and barcodes too short
+    # to have a length-k stem never enter the structure at all.
+    for code in barcodes:
+        if len(code) < k:
+            continue
+        node = root
+        for ch in code[:k]:
+            node = node.children.setdefault(ch, TrieNode())
+        node.count += 1     # one more sample lands on this plate
+
+    # Harvest phase: every stored path has length exactly k, so depth-k
+    # nodes are precisely the non-empty plates. Sorted child order at every
+    # level makes the stems come out in ascending order automatically.
+    plates = []
+
+    def dfs(node, stem):
+        if len(stem) == k:
+            plates.append([stem, node.count])
+            return
+        for ch in sorted(node.children):
+            dfs(node.children[ch], stem + ch)
+
+    dfs(root, "")
+    return plates
+`,
+        commentary: `
+A counter dict keyed on \`code[:k]\` also solves this — the reason to reach for the trie is what the slicing version hides. First, routing cost: the trie never reads past base \`k\` of any barcode, and barcodes that share a stem share the walk, so heavy collision (the normal case in pooled sequencing, where stems are DESIGNED to coincide) creates proportionally fewer nodes. Second, and more important for the pattern: **the sorted output requires no sort step**. A DFS that visits children in sorted base order reaches the depth-k nodes in ascending stem order by construction, so the plate list falls out of the traversal pre-ordered — the hash-map version pays an extra \`O(p log p)\` sort over the plates every time.
+
+The skip rule (barcodes shorter than \`k\`) is enforced before insertion rather than patched up during traversal, and that placement is the quiet design decision: it keeps the invariant "every path has length exactly k, every depth-k node is a real plate with count >= 1" airtight, so the harvest DFS needs no existence checks, no pruning, and no special cases. Structure built to a clean invariant makes the traversal almost embarrassingly simple — which is exactly the trade you want.
+`,
+        complexity: 'Time O(total bases read, at most k per barcode) + O(plates) for the harvest; Space O(distinct stem characters)',
+      },
+      testCases: [
+        { input: [['acgt', 'acgg', 'actt', 'gggg'], 2], expected: [['ac', 3], ['gg', 1]], label: 'basic pooling' },
+        { input: [['gattaca', 'gatt', 'gacc', 'tact', 'taga'], 3], expected: [['gac', 1], ['gat', 2], ['tac', 1], ['tag', 1]], label: 'several plates, sorted output' },
+        { input: [['tagc', 'ta', 't', 'tagg'], 3], expected: [['tag', 2]], label: 'short barcodes skipped' },
+        { input: [['a', 'c', 'g', 't'], 1], expected: [['a', 1], ['c', 1], ['g', 1], ['t', 1]], label: 'k equals barcode length' },
+        { input: [['ac', 'ag', 'ac'], 2], expected: [['ac', 2], ['ag', 1]], hidden: true, label: 'duplicate barcodes both count' },
+        { input: [['aaa'], 5], expected: [], hidden: true, label: 'every barcode too short' },
+        { input: [[], 3], expected: [], hidden: true, label: 'no samples' },
+        { input: [['ccc', 'ccc', 'cca'], 2], expected: [['cc', 3]], hidden: true, label: 'all samples on one plate' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 2416. Sum of Prefix Scores of Strings', note: 'pass-through counters interrogated per word' },
+        { name: 'LeetCode 1233. Remove Sub-Folders from the Filesystem', note: 'prefix grouping over path segments instead of characters' },
+      ],
+    },
+    {
+      id: 'dimmer-pack-pairing',
+      title: 'Dimmer Pack Pairing',
+      difficulty: 'hard',
+      statement: `
+A touring concert-lighting crew is calibrating wireless dimmer packs. Each pack carries a numeric radio ID, and the frequency-hopping scheme works best when the two packs chosen as synchronization anchors have IDs that are **as different as possible bit-for-bit**: a candidate pair is scored by the bitwise XOR of the two IDs, and the crew wants the pair with the maximum score.
+
+Given \`ids\`, the list of pack IDs (non-negative integers; two packs may carry the same ID), return the maximum value of \`ids[i] XOR ids[j]\` over all pairs with \`i != j\`.
+
+The fleet runs to tens of thousands of packs, so scoring every pair is too slow — you need a structure that can find the best partner for any given ID without trying them all.
+`,
+      examples: [
+        {
+          input: 'ids = [3, 10, 5, 25, 2, 8]',
+          output: '28',
+          explanation: '5 XOR 25 = 0b00101 XOR 0b11001 = 0b11100 = 28, the best of all fifteen pairs.',
+        },
+        {
+          input: 'ids = [8, 7]',
+          output: '15',
+          explanation: '0b1000 XOR 0b0111 = 0b1111 — the two IDs disagree at every bit position.',
+        },
+        {
+          input: 'ids = [0, 0]',
+          output: '0',
+          explanation: 'Two packs may share an ID; identical IDs score 0, and with only one pair available that is the answer.',
+        },
+      ],
+      constraints: [
+        '2 <= len(ids) <= 50_000',
+        '0 <= ids[i] < 2**31',
+        'IDs may repeat; the chosen pair must use two distinct positions i != j',
+      ],
+      hints: [
+        'Write a few XOR scores out in binary. A pair that first disagrees at bit 20 beats ANY pair whose first disagreement is lower — a high bit outweighs every bit beneath it combined. The all-pairs scan ignores this entirely and treats every pair as equally worth scoring.',
+        'Treat each ID as a fixed-width bit string, most significant bit first, and store the fleet in a binary prefix tree whose nodes have at most two children, 0 and 1. Finding the best partner for one ID becomes a single greedy root-to-leaf walk: at each level, which child do you WISH existed?',
+        'Pad every ID to the bit-length of the maximum. Insert the first ID; then for each later ID, walk down preferring the opposite-bit child (adding 1 << i to the running score) and falling back to the same-bit child, then insert it. Query-before-insert means every walk scores a pair of two distinct packs; the answer is the maximum walk score.',
+      ],
+      functionName: 'max_xor_pairing',
+      starterCode: `class BitNode:
+    def __init__(self):
+        self.children: dict[int, "BitNode"] = {}
+
+
+def max_xor_pairing(ids: list[int]) -> int:
+    pass
+`,
+      solution: {
+        code: `class BitNode:
+    def __init__(self):
+        self.children = {}  # bit (0 or 1) -> BitNode
+
+
+def max_xor_pairing(ids: list[int]) -> int:
+    # Fixed width: pad every ID to the bit-length of the largest, so depth
+    # d means the same bit position on every path (handle the all-zero
+    # fleet with a minimum width of 1).
+    bits = max(max(ids).bit_length(), 1)
+    root = BitNode()
+
+    def insert(x):
+        node = root
+        for i in range(bits - 1, -1, -1):
+            b = (x >> i) & 1
+            node = node.children.setdefault(b, BitNode())
+
+    def best_score(x):
+        # Greedy walk, most significant bit first: the opposite-bit child
+        # sets this bit of the XOR, and no combination of lower bits can
+        # make up for passing that chance by -- take it whenever it exists.
+        node = root
+        score = 0
+        for i in range(bits - 1, -1, -1):
+            b = (x >> i) & 1
+            if (1 - b) in node.children:
+                score |= 1 << i           # this bit of the XOR is winnable
+                node = node.children[1 - b]
+            else:
+                node = node.children[b]   # paths run full width: present
+        return score
+
+    # Query-before-insert covers each unordered pair exactly once and
+    # guarantees the partner is a DIFFERENT pack than the one querying.
+    insert(ids[0])
+    best = 0
+    for x in ids[1:]:
+        best = max(best, best_score(x))
+        insert(x)
+    return best
+`,
+        commentary: `
+The all-pairs scan treats every pair as equal, but XOR is radically top-heavy: a disagreement at bit \`i\` outweighs ALL lower bits combined (\`2^i > 2^(i-1) + ... + 1\`). That inequality is the entire correctness argument for the greedy walk — when hunting the best partner for \`x\`, taking the opposite-bit child at the current level is never wrong, because nothing the lower levels offer can compensate for surrendering this one. Greed needs a structure that answers "does any candidate disagree with x at this bit, GIVEN the high bits already committed to?" in O(1) — and that is precisely a binary trie's child map. The "given" clause is why it must be a trie rather than 31 independent per-bit buckets: the walk's current node encodes the full shared history of higher bits.
+
+Fixed width matters more than it looks. Inserting raw bit strings of varying lengths would misalign bit 5 of one ID with bit 9 of another; padding everything to the maximum's bit-length makes depth synonymous with bit position, and it guarantees the fallback child always exists because every stored path runs the full width.
+
+The query-before-insert loop is a small idiom with two payoffs: it enforces \`i != j\` (an ID is never offered itself as a partner — only earlier packs are in the trie), and it covers every unordered pair exactly once, because whichever element comes later does the querying. Total work \`O(n * B)\` with \`B <= 31\` versus the scan's \`O(n^2)\`: at fifty thousand packs, roughly 1.5 million steps instead of 2.5 billion.
+`,
+        complexity: 'Time O(n * B) where B = bit-length of the max ID (<= 31), Space O(n * B)',
+      },
+      testCases: [
+        { input: [[3, 10, 5, 25, 2, 8]], expected: 28, label: 'classic small fleet' },
+        { input: [[8, 7]], expected: 15, label: 'total disagreement' },
+        { input: [[1, 2, 4, 8]], expected: 12, label: 'single-bit ids' },
+        { input: [[0, 0]], expected: 0, label: 'all-zero fleet' },
+        { input: [[5, 5, 5]], expected: 0, hidden: true, label: 'every id identical' },
+        { input: [[1023, 0]], expected: 1023, hidden: true, label: 'zero against all-ones' },
+        { input: [[14, 70, 53, 83, 49, 91, 36, 80, 92, 51, 66, 70]], expected: 127, hidden: true, label: 'larger fleet with duplicate' },
+        { input: [[2147483647, 1]], expected: 2147483646, hidden: true, label: 'top of the id range' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 421. Maximum XOR of Two Numbers in an Array', note: 'the classic binary-trie greedy' },
+        { name: 'LeetCode 1707. Maximum XOR With an Element From an Array', note: 'the same trie with an extra constraint per query' },
+      ],
+    },
   ],
   quiz: [
     {

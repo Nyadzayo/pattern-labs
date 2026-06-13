@@ -473,6 +473,509 @@ The one edge case is all-zero input: glue order would emit \`"00"\` for \`[0, 0]
         { name: 'LeetCode 1029. Two City Scheduling', note: 'another sort-by-invented-key exchange argument' },
       ],
     },
+    {
+      id: 'last-boat-out',
+      title: 'Last Boat Out',
+      difficulty: 'easy',
+      statement: `
+A harbor runs two ferry piers, north and south, and each pier keeps its own departure log: the minute-stamps of every boat that left, already **sorted ascending**. The logs are never combined — until the complaints desk opens.
+
+Each complaint is a passenger arrival time \`t\`. To process it, the desk needs the **most recent departure from either pier at or before** \`t\` — the boat that passenger just watched sail away — or \`-1\` if no boat had left the harbor by then.
+
+Given the logs \`north\` and \`south\` and the list \`queries\` of arrival times, return one answer per query, in query order. Minute-stamps may repeat within and across the logs.
+`,
+      examples: [
+        {
+          input: 'north = [10, 30, 60], south = [20, 45], queries = [5, 20, 40, 100]',
+          output: '[-1, 20, 30, 60]',
+          explanation:
+            'The combined timeline is [10, 20, 30, 45, 60]. At t = 5 nothing has left yet; at t = 40 the latest departure is 30.',
+        },
+        {
+          input: 'north = [], south = [15], queries = [14, 15, 16]',
+          output: '[-1, 15, 15]',
+          explanation: 'A boat leaving exactly at the arrival minute counts as "at or before".',
+        },
+        {
+          input: 'north = [], south = [], queries = [7]',
+          output: '[-1]',
+          explanation: 'Empty logs mean every complaint answers -1.',
+        },
+      ],
+      constraints: [
+        '0 <= len(north), len(south) <= 100_000',
+        'both logs are sorted ascending and may contain repeated minute-stamps',
+        '0 <= len(queries) <= 100_000',
+        '0 <= every minute-stamp and query <= 10^9',
+        'answers must be returned in query order',
+      ],
+      hints: [
+        'Answering one complaint by scanning both logs end to end works — but the desk fields thousands of complaints against the same two logs. What could you build once so every later question stops being a full scan?',
+        'Each log is already sorted, and two sorted lists weave into one sorted timeline in a single linear pass with two pointers. On one sorted timeline, "latest departure at or before t" is a predecessor question.',
+        'Merge the logs with two pointers, then answer each query with bisect.bisect_right(merged, t): that index is the first departure strictly after t, so the entry just before it is the answer — and index 0 means no boat had left, so return -1.',
+      ],
+      functionName: 'last_departures',
+      starterCode: `def last_departures(north: list[int], south: list[int], queries: list[int]) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `import bisect
+
+
+def last_departures(north: list[int], south: list[int], queries: list[int]) -> list[int]:
+    # One-time investment: weave the two pre-sorted logs into a single
+    # sorted timeline. Two pointers, linear time -- no comparison sort
+    # needed, because each log already supplies its own order.
+    merged: list[int] = []
+    i = j = 0
+    while i < len(north) and j < len(south):
+        if north[i] <= south[j]:
+            merged.append(north[i])
+            i += 1
+        else:
+            merged.append(south[j])
+            j += 1
+    # One log is exhausted; the other's tail is already sorted.
+    merged.extend(north[i:])
+    merged.extend(south[j:])
+
+    answers: list[int] = []
+    for t in queries:
+        # bisect_right finds the first departure STRICTLY after t,
+        # so the slot just before it holds the predecessor.
+        idx = bisect.bisect_right(merged, t)
+        answers.append(merged[idx - 1] if idx > 0 else -1)
+    return answers
+`,
+        commentary: `
+The two logs are each sorted, so running a comparison sort over their concatenation would pay \`O(n log n)\` for order the data **already has**. A two-pointer merge harvests that existing structure in \`O(n + m)\` — the same move merge sort makes internally, used here as preprocessing rather than as a sorting subroutine.
+
+The payoff is monotonicity: on one sorted timeline, "latest departure at or before \`t\`" is a predecessor query, and \`bisect_right\` answers it in \`O(log(n + m))\` by discarding half the remaining timeline per comparison. Note what a hash set could **not** do here: it answers "did a boat leave exactly at \`t\`?" but is blind to *nearest-below* — predecessor and successor queries are precisely where sorted order beats hashing.
+
+Concretely, \`bisect_right(merged, t)\` is the count of departures \`<= t\` (ties land to its left), so \`merged[idx - 1]\` is the latest qualifying boat and \`idx == 0\` means the harbor was still quiet.
+`,
+        complexity: 'Time O(n + m) to merge + O(log(n + m)) per query; Space O(n + m) for the timeline',
+      },
+      testCases: [
+        { input: [[10, 30, 60], [20, 45], [5, 20, 40, 100]], expected: [-1, 20, 30, 60], label: 'basic complaints' },
+        { input: [[], [15], [14, 15, 16]], expected: [-1, 15, 15], label: 'departure exactly at arrival' },
+        { input: [[], [], [7]], expected: [-1], label: 'both logs empty' },
+        { input: [[5, 5, 9], [5, 7], [5, 6, 8, 9]], expected: [5, 5, 7, 9], hidden: true, label: 'duplicate stamps across piers' },
+        { input: [[100], [200], [99, 100, 150, 250]], expected: [-1, 100, 100, 200], hidden: true, label: 'before, at, between, after' },
+        { input: [[1, 4, 7], [2, 5, 8], [3, 6, 9, 0]], expected: [2, 5, 8, -1], hidden: true, label: 'fully interleaved logs' },
+        { input: [[1, 2], [3], []], expected: [], hidden: true, label: 'no complaints filed' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 88. Merge Sorted Array', note: 'the merge half of this problem' },
+        { name: 'LeetCode 744. Find Smallest Letter Greater Than Target', note: 'the successor twin of this predecessor query' },
+      ],
+    },
+    {
+      id: 'latte-ballots',
+      title: 'Latte-Art Standings',
+      difficulty: 'medium',
+      statement: `
+A latte-art championship ends with every judge submitting a complete ballot: a ranking of **all** competitors from best pour to worst. The trophy committee turns the stack of ballots into final standings with a strict positional rule:
+
+1. The competitor with the most **1st-place votes** ranks highest.
+2. Ties break by most **2nd-place votes**, then 3rd-place, and so on through every position.
+3. Competitors tied at **every single position** are ordered by plain string comparison of their names, smaller first.
+
+Given \`ballots\`, where each ballot is a list of competitor names (best first) and every ballot ranks the same competitors, return the final standings as a list of names, best first.
+`,
+      examples: [
+        {
+          input: 'ballots = [["ana", "bo", "cy"], ["ana", "cy", "bo"], ["bo", "ana", "cy"]]',
+          output: '["ana", "bo", "cy"]',
+          explanation:
+            'ana earns 2 first-place votes against 1 for bo and 0 for cy, so first-place counts settle the whole ranking.',
+        },
+        {
+          input: 'ballots = [["kit", "lee"], ["lee", "kit"]]',
+          output: '["kit", "lee"]',
+          explanation:
+            'Each name collects one 1st and one 2nd — tied at every position — so the standings fall back to name order.',
+        },
+        {
+          input: 'ballots = [["a", "b", "c"], ["b", "a", "c"], ["c", "a", "b"]]',
+          output: '["a", "b", "c"]',
+          explanation: 'All three tie on firsts with one each; second-place counts (a: 2, b: 1, c: 0) break the tie.',
+        },
+      ],
+      constraints: [
+        '1 <= len(ballots) <= 1_000',
+        '1 <= number of competitors <= 26',
+        'every ballot is a permutation of the same set of names',
+        'names are non-empty lowercase strings, all distinct',
+      ],
+      hints: [
+        'Collapsing each ballot into points (3 for 1st, 2 for 2nd, ...) feels natural — but a competitor with one first and nothing else must outrank one with zero firsts and a mountain of seconds. What information does a single summed score destroy?',
+        'Give every competitor a full tally: how many 1sts, how many 2nds, and so on. Comparing two competitors is then a left-to-right walk down their tallies — which is exactly how Python compares two lists.',
+        'Sort the names with key = ([-count for each position], name): negating turns "more votes is better" into ascending order, and appending the name itself makes the alphabetical fallback part of the same key. One sorted() call implements the whole rule.',
+      ],
+      functionName: 'rank_baristas',
+      starterCode: `def rank_baristas(ballots: list[list[str]]) -> list[str]:
+    pass
+`,
+      solution: {
+        code: `def rank_baristas(ballots: list[list[str]]) -> list[str]:
+    # Every ballot ranks the same names; the first ballot lists them all.
+    names = ballots[0]
+    positions = len(names)
+    # tally[name][p] = how many ballots put this name at position p.
+    tally = {name: [0] * positions for name in names}
+    for ballot in ballots:
+        for pos, name in enumerate(ballot):
+            tally[name][pos] += 1
+
+    def standing_key(name: str):
+        # Negate each count: "more votes at this position" becomes
+        # "smaller key element", so an ascending sort ranks winners
+        # first. The name rides along as the all-positions-tied
+        # fallback, making the order total and deterministic.
+        return ([-c for c in tally[name]], name)
+
+    # Python compares the keys left to right: the count lists element
+    # by element (position by position), then -- only on a complete
+    # tie -- the name.
+    return sorted(names, key=standing_key)
+`,
+        commentary: `
+The tempting move — weighting positions into one number — is **lossy**: any fixed point scheme either lets enough 2nd places outweigh a 1st (violating rule 1) or has to space weights so far apart that it is really a positional comparison in disguise. The rule is *lexicographic by position*, so the faithful representation is the full tally vector per competitor, not a scalar.
+
+Sorting by a composite key works because Python compares sequences lexicographically: it walks the negated tallies position by position and only consults later entries on exact ties — which is precisely the committee's procedure, mechanized. The trailing \`name\` term is not decoration: it upgrades the comparison to a **total order**, so even competitors tied at every position resolve deterministically and the sort can never emit one of several "valid" outputs.
+
+This is the chained-criteria idea from the concept page compressed into a single key — primary, secondary, and final fallback packed in priority order, with no need for repeated stable sorts.
+`,
+        complexity: 'Time O(b·n) tallying + O(n log n) comparisons of O(n)-long keys = O(b·n + n^2 log n); Space O(n^2) for the tallies',
+      },
+      testCases: [
+        {
+          input: [[['ana', 'bo', 'cy'], ['ana', 'cy', 'bo'], ['bo', 'ana', 'cy']]],
+          expected: ['ana', 'bo', 'cy'],
+          label: 'firsts decide everything',
+        },
+        {
+          input: [[['kit', 'lee'], ['lee', 'kit']]],
+          expected: ['kit', 'lee'],
+          label: 'all-position tie falls to name order',
+        },
+        { input: [[['zed', 'amy', 'raj']]], expected: ['zed', 'amy', 'raj'], label: 'single ballot is its own standings' },
+        {
+          input: [[['a', 'b', 'c'], ['b', 'a', 'c'], ['c', 'a', 'b']]],
+          expected: ['a', 'b', 'c'],
+          hidden: true,
+          label: 'seconds break a three-way tie',
+        },
+        {
+          input: [[['mia', 'noa'], ['noa', 'mia'], ['mia', 'noa'], ['noa', 'mia']]],
+          expected: ['mia', 'noa'],
+          hidden: true,
+          label: 'even split, alphabetical fallback',
+        },
+        { input: [[['solo']]], expected: ['solo'], hidden: true, label: 'one competitor' },
+        {
+          input: [[['d', 'c', 'b', 'a'], ['d', 'b', 'c', 'a'], ['c', 'd', 'b', 'a']]],
+          expected: ['d', 'c', 'b', 'a'],
+          hidden: true,
+          label: 'tie-break chain reaches third position',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 1366. Rank Teams by Votes', note: 'the canonical positional-vote ranking' },
+        { name: 'LeetCode 937. Reorder Data in Log Files', note: 'another multi-criterion key with explicit tie-breaks' },
+      ],
+    },
+    {
+      id: 'meteor-leaderboard',
+      title: 'Fireball Leaderboard',
+      difficulty: 'medium',
+      statement: `
+An all-sky meteor camera streams detections through the night, each tagged with an apparent **magnitude** — the astronomical brightness scale where **lower numbers mean brighter** (a dazzling fireball can go negative). The camera's processing board is tiny: it may hold at most \`k\` magnitudes at any moment, plus a fixed handful of loop variables. Buffering the whole night and sorting it at dawn is physically impossible.
+
+At dawn the observatory wants the night's **k brightest detections** — the \`k\` smallest magnitudes, counting duplicates — reported in **ascending order** (brightest first). If the night produced fewer than \`k\` detections, report them all, ascending.
+
+Given the stream as a list \`readings\` and the budget \`k\`, return that report.
+`,
+      examples: [
+        {
+          input: 'readings = [2.5, -1.4, 0.3, 5.0, -0.2], k = 3',
+          output: '[-1.4, -0.2, 0.3]',
+          explanation: 'The three smallest magnitudes, ascending — the fireball at -1.4 leads the report.',
+        },
+        {
+          input: 'readings = [4.0, 4.0, 4.0, 1.0], k = 2',
+          output: '[1.0, 4.0]',
+          explanation: 'Duplicates count separately; only one of the three 4.0 readings makes the cut.',
+        },
+        {
+          input: 'readings = [3.2, 1.1], k = 5',
+          output: '[1.1, 3.2]',
+          explanation: 'A short night: fewer detections than k, so everything is reported.',
+        },
+      ],
+      constraints: [
+        '0 <= len(readings) <= 1_000_000',
+        '1 <= k <= 10_000',
+        '-30.0 <= readings[i] <= 30.0 (floating point)',
+        'memory: at most k stored readings plus O(1) extra — no full-night buffer',
+        'output is ascending and keeps duplicates',
+      ],
+      hints: [
+        'Imagine the night just ended and the report is due. Of everything that streamed past, how little did you actually need to remember — and at the instant each reading arrived, what single question decided whether it could ever matter?',
+        'A reading belongs in the final report only if it is among the k smallest seen so far. Keep a leaderboard of at most k magnitudes: a newcomer either fails to beat the worst member (drop it instantly) or joins and evicts that worst member.',
+        'Keep the leaderboard as a sorted list. While it holds fewer than k values, bisect.insort every reading. Once full, compare each newcomer with the last element: if smaller, insort it and pop() the end. When the stream ends, the buffer is the answer — already ascending.',
+      ],
+      functionName: 'brightest_meteors',
+      starterCode: `def brightest_meteors(readings: list[float], k: int) -> list[float]:
+    pass
+`,
+      solution: {
+        code: `import bisect
+
+
+def brightest_meteors(readings: list[float], k: int) -> list[float]:
+    # Sorted leaderboard of the k smallest magnitudes seen so far,
+    # ascending -- so board[-1] is always the current WORST member.
+    board: list[float] = []
+    for mag in readings:
+        if len(board) < k:
+            # Leaderboard not yet full: every reading qualifies for now.
+            bisect.insort(board, mag)
+        elif mag < board[-1]:
+            # Beats the worst member: binary-search the slot, insert,
+            # then evict the displaced worst to respect the k-budget.
+            bisect.insort(board, mag)
+            board.pop()
+        # else: too dim to ever appear in the answer -- rejected after
+        # one comparison, which is the common case in a long stream.
+    # The invariant kept the board sorted ascending all night,
+    # so it IS the report.
+    return board
+`,
+        commentary: `
+The full-sort answer — \`sorted(readings)[:k]\` — computes a total order over a million readings just to keep \`k\` of them, and violates the memory budget outright. The fix is a **selection invariant**: after any prefix of the stream, the board holds exactly that prefix's \`k\` smallest values. A newcomer only ever interacts with one number, the board's current maximum, because beating *any* member implies beating the worst one.
+
+Keeping the board sorted makes both halves of the update easy to reason about: \`bisect\` locates the insertion slot in \`O(log k)\` comparisons and eviction is a \`pop()\` from the end. (Honest accounting: a Python list shifts elements on insert, so an accepted reading costs \`O(k)\` moves worst-case; a max-heap makes every update a strict \`O(log k)\` at the price of losing the always-sorted property. With \`k\` small and most readings rejected in \`O(1)\`, the sorted list is the simpler tool and the rejections dominate.)
+
+Contrast with quickselect: that finds **one rank** inside a buffer you fully hold; here the memory wall forces a *streaming* selection that never holds the data at all. And the answer needs no final sort — the invariant kept it ascending the whole night.
+`,
+        complexity: 'Time O(n log k) comparisons (rejections cost O(1); each accepted insert shifts O(k)); Space O(k)',
+      },
+      testCases: [
+        { input: [[2.5, -1.4, 0.3, 5.0, -0.2], 3], expected: [-1.4, -0.2, 0.3], label: 'basic night' },
+        { input: [[4.0, 4.0, 4.0, 1.0], 2], expected: [1.0, 4.0], label: 'duplicates at the cut' },
+        { input: [[3.2, 1.1], 5], expected: [1.1, 3.2], label: 'fewer detections than k' },
+        { input: [[-8.2, 12.0, -8.2, 0.5], 3], expected: [-8.2, -8.2, 0.5], label: 'duplicate fireballs both kept' },
+        { input: [[], 3], expected: [], hidden: true, label: 'cloudy night, empty stream' },
+        { input: [[2.0, 2.0, 2.0, 1.0, 3.0], 3], expected: [1.0, 2.0, 2.0], hidden: true, label: 'ties straddling the boundary' },
+        { input: [[7.5, -3.0, 0.0], 1], expected: [-3.0], hidden: true, label: 'k = 1 keeps only the brightest' },
+        { input: [[5.0, 4.0, 3.0, 2.0, 1.0], 2], expected: [1.0, 2.0], hidden: true, label: 'every reading improves the board' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 703. Kth Largest Element in a Stream', note: 'the streaming-selection classic, mirrored to largest' },
+        { name: 'LeetCode 658. Find K Closest Elements', note: 'selection by a derived distance key' },
+      ],
+    },
+    {
+      id: 'firmware-order',
+      title: 'Firmware Rollout Order',
+      difficulty: 'medium',
+      statement: `
+A robotics fleet's update server stores release tags like \`"2.4.10"\`: one to four numeric components joined by dots. Components can have any digit count and may carry leading zeros (\`"1.02"\` means component value 2). The rollout planner needs the tags in a strict, reproducible order, defined by three levels:
+
+1. Compare **numerically, component by component, left to right**; a missing component counts as \`0\` (so \`"1.4"\` and \`"1.4.0"\` are numerically equal).
+2. If two tags are numerically equal, the tag with **fewer components** comes first.
+3. If still tied, the **lexicographically smaller raw string** comes first (so \`"1.02"\` precedes \`"1.2"\`).
+
+Given the list \`tags\`, return it sorted ascending under this order. Plain string sorting is wrong: it would place \`"1.10"\` before \`"1.9"\`.
+`,
+      examples: [
+        {
+          input: 'tags = ["1.10", "1.9", "1.9.1"]',
+          output: '["1.9", "1.9.1", "1.10"]',
+          explanation: 'Numerically 9 < 10, so both 1.9-series releases precede 1.10 — the opposite of string order.',
+        },
+        {
+          input: 'tags = ["2.0", "2", "2.0.0"]',
+          output: '["2", "2.0", "2.0.0"]',
+          explanation: 'All three are numerically equal; the tag with fewer components sorts first.',
+        },
+        {
+          input: 'tags = ["1.02", "1.2"]',
+          output: '["1.02", "1.2"]',
+          explanation: 'Equal numbers and equal component counts — the raw-string rule decides ("0" < "2").',
+        },
+      ],
+      constraints: [
+        '1 <= len(tags) <= 10_000',
+        'each tag has 1–4 dot-separated components',
+        'each component is 1–6 decimal digits; leading zeros allowed',
+        'duplicate tags may appear',
+        'output ascending under the three-level rule in the statement',
+      ],
+      hints: [
+        "Character-by-character comparison thinks '1.10' comes before '1.9' because the character '1' loses to '9' — yet release 1.10 is newer. What unit does the ordering rule actually compare, and what must each tag become before any comparison can be trusted?",
+        'Split each tag on dots and convert the pieces to integers. Padding every list with zeros to a common length turns rule 1 into a plain element-wise list comparison — something Python performs natively.',
+        'Build one composite key per tag: (numeric components padded to length 4, component count, raw string). Tuples compare left to right, so this single key encodes all three levels — then sorted(tags, key=...) is the entire algorithm.',
+      ],
+      functionName: 'order_firmware',
+      starterCode: `def order_firmware(tags: list[str]) -> list[str]:
+    pass
+`,
+      solution: {
+        code: `def order_firmware(tags: list[str]) -> list[str]:
+    def release_key(tag: str):
+        parts = tag.split('.')
+        # Rule 1 raw material: the numeric value of each component.
+        # int() also erases leading zeros ("02" -> 2) for free.
+        nums = [int(p) for p in parts]
+        # Pad to the maximum width (4) so a missing component counts
+        # as 0 and list comparison never ends early on length alone.
+        padded = nums + [0] * (4 - len(nums))
+        # Rules 2 and 3 ride along as later tuple slots: component
+        # count, then the raw string. Tuples compare left to right,
+        # so each level is consulted only on a tie at the level above.
+        return (padded, len(parts), tag)
+
+    # One sort over a key that IS the total order.
+    return sorted(tags, key=release_key)
+`,
+        commentary: `
+This is comparator design with a different tool than the pairwise trick: when an ordering can be phrased as **"translate each item, then compare the translations"**, a *key function* beats a \`cmp_to_key\` comparator. Keys are computed once per element (\`O(n)\` translations) instead of once per comparison, and the total-order proof comes free — tuples of lists, ints, and strings inherit transitivity and antisymmetry from their parts, so the sort cannot misbehave.
+
+The three-level rule maps onto tuple slots in priority order. The padding is what makes rule 1 sound: without it, Python would rank \`[1, 4]\` before \`[1, 4, 0]\` purely by length, silently smuggling rule 2's job into rule 1 territory and breaking numeric equality. The explicit fallback levels matter for **determinism** — a rule that stopped at "numerically equal" would leave \`"2"\` versus \`"2.0"\` to accidents of input order, and any consumer diffing two rollout plans would see phantom changes.
+
+The pitfall this problem rehearses: an under-specified order does not crash, it just quietly returns *one of several valid* arrangements. Forcing every tie to resolve makes the sort a pure function of the tag multiset.
+`,
+        complexity: 'Time O(n log n) comparisons on small fixed-size keys, plus O(n) key construction; Space O(n) for the keys',
+      },
+      testCases: [
+        { input: [['1.10', '1.9', '1.9.1']], expected: ['1.9', '1.9.1', '1.10'], label: 'numeric beats lexicographic' },
+        { input: [['2.0', '2', '2.0.0']], expected: ['2', '2.0', '2.0.0'], label: 'fewer components first' },
+        { input: [['1.02', '1.2']], expected: ['1.02', '1.2'], label: 'raw-string final tie-break' },
+        { input: [['1.007', '1.6']], expected: ['1.6', '1.007'], label: 'leading zeros are still numbers' },
+        { input: [['0.9', '0.10', '0.9.9', '1.0']], expected: ['0.9', '0.9.9', '0.10', '1.0'], hidden: true, label: 'mixed depths and double digits' },
+        { input: [['7']], expected: ['7'], hidden: true, label: 'single tag' },
+        { input: [['3.1', '3.1', '3.01']], expected: ['3.01', '3.1', '3.1'], hidden: true, label: 'duplicates plus zero-padded twin' },
+        { input: [['10.0.0.1', '9.99.99.99', '10.0.0']], expected: ['9.99.99.99', '10.0.0', '10.0.0.1'], hidden: true, label: 'four components, large values' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 165. Compare Version Numbers', note: 'the two-tag comparison this order generalizes' },
+        { name: 'LeetCode 1356. Sort Integers by The Number of 1 Bits', note: 'another composite-key sort with an explicit tie-break' },
+      ],
+    },
+    {
+      id: 'seed-upsets',
+      title: 'Bracket Chaos Score',
+      difficulty: 'hard',
+      statement: `
+A speedrunning championship seeds every finalist with a qualifier number — seed 1 ran the fastest qualifier, seed 2 the next, and so on. After the grand final, the broadcast wants a single "chaos score" for the headline: the number of **upset pairs** in the result.
+
+You are given \`finish\`, the finalists' seed numbers listed in finishing order (champion first). A pair of finalists is an upset pair when the one who finished **earlier** carries the **numerically larger** (worse) seed — formally, indices \`i < j\` with \`finish[i] > finish[j]\`. Co-seeded finalists (equal numbers are possible after qualifier ties) never form an upset pair.
+
+Fields can be large, so the score must be computed faster than checking every pair.
+`,
+      examples: [
+        {
+          input: 'finish = [2, 1, 3]',
+          output: '1',
+          explanation: 'Seed 2 finishing ahead of seed 1 is the only upset pair.',
+        },
+        {
+          input: 'finish = [1, 2, 3, 4]',
+          output: '0',
+          explanation: 'Pure chalk: every finalist finished exactly where qualifying predicted.',
+        },
+        {
+          input: 'finish = [3, 2, 1]',
+          output: '3',
+          explanation: 'All three pairs are inverted: (3,2), (3,1), and (2,1).',
+        },
+        {
+          input: 'finish = [2, 2, 1]',
+          output: '2',
+          explanation: 'Each co-seeded 2 beat seed 1 (two upsets), but the equal 2s do not upset each other.',
+        },
+      ],
+      constraints: [
+        '0 <= len(finish) <= 200_000',
+        '1 <= finish[i] <= 10^9',
+        'equal seeds are possible and never count as upsets',
+        'the answer can reach n·(n-1)/2 ≈ 2·10^10 — return it exactly',
+        'aim for better than O(n^2)',
+      ],
+      hints: [
+        'The definition reads like "check every pair", which is quadratic. But the output is a single count — no pair ever has to be named individually. Could some larger computation you already know account for many pairs with one arithmetic step as a side effect?',
+        'Suppose the left half and the right half of the list were each already sorted. The moment a merge takes an element from the right half, that element is smaller than EVERY element still waiting in the left half — and each of those left/right pairs is an upset, all countable at once.',
+        'Write a merge sort where each call returns (sorted run, upset count). In the merge loop, when right[j] < left[i], add len(left) - i to the count before consuming right[j]; on ties consume from the LEFT so equal seeds add nothing. The total is left count + right count + merge count.',
+      ],
+      functionName: 'count_upsets',
+      starterCode: `def count_upsets(finish: list[int]) -> int:
+    pass
+`,
+      solution: {
+        code: `def count_upsets(finish: list[int]) -> int:
+    # Merge sort, instrumented: each merge counts cross-half upsets
+    # in bulk while producing the sorted run it would build anyway.
+    def sort_count(arr):
+        # Returns (sorted copy of arr, upset pairs entirely inside arr).
+        n = len(arr)
+        if n <= 1:
+            return arr, 0
+        mid = n // 2
+        left, upsets_left = sort_count(arr[:mid])
+        right, upsets_right = sort_count(arr[mid:])
+
+        merged = []
+        upsets = upsets_left + upsets_right
+        i = j = 0
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                # In order, or a tie: take from the LEFT so equal
+                # seeds never register as upsets.
+                merged.append(left[i])
+                i += 1
+            else:
+                # right[j] beats every element still waiting in left
+                # (left is sorted), and each of those stood EARLIER
+                # in the original order: len(left) - i upsets at once.
+                upsets += len(left) - i
+                merged.append(right[j])
+                j += 1
+        # Whichever run remains is already sorted and adds no upsets.
+        merged.extend(left[i:])
+        merged.extend(right[j:])
+        return merged, upsets
+
+    _, total = sort_count(list(finish))
+    return total
+`,
+        commentary: `
+The insight is that **sorting and counting disorder are the same computation**. An upset pair is exactly an *inversion* — a pair the eventual sort must logically repair — and merge sort encounters every inversion in a countable way without ever enumerating pairs one at a time.
+
+Why does the merge count them in bulk? Split the list: pairs living entirely inside one half are handled by recursion. A cross-half pair is an upset precisely when the left member exceeds the right member, and the merge discovers all of these at once — the moment \`right[j]\` is chosen over \`left[i]\`, sortedness of the left run guarantees that all \`len(left) - i\` of its survivors exceed \`right[j]\`, and every one of them stood earlier in the original order. One subtraction books the whole batch. No pair is double-counted: each is counted at the unique recursion level where its two members first land in different halves.
+
+The tie rule is load-bearing. Taking from the left on \`left[i] <= right[j]\` keeps equal seeds out of the count (and, incidentally, keeps the sort stable); flip the comparison to strict \`<\` and \`[2, 2, 1]\` silently over-counts. The recursion does \`O(n)\` merge work on each of \`O(log n)\` levels — the familiar merge-sort bill, now buying a statistic instead of just order.
+`,
+        complexity: 'Time O(n log n); Space O(n) for merge scratch plus O(log n) recursion depth',
+      },
+      testCases: [
+        { input: [[2, 1, 3]], expected: 1, label: 'single upset' },
+        { input: [[1, 2, 3, 4]], expected: 0, label: 'pure chalk' },
+        { input: [[3, 2, 1]], expected: 3, label: 'fully reversed podium' },
+        { input: [[2, 2, 1]], expected: 2, hidden: true, label: 'co-seeds never upset each other' },
+        { input: [[]], expected: 0, hidden: true, label: 'cancelled final' },
+        { input: [[7]], expected: 0, hidden: true, label: 'single finalist' },
+        { input: [[5, 1, 4, 2, 3]], expected: 6, hidden: true, label: 'mixed shuffle' },
+        { input: [[1, 3, 2, 3, 1]], expected: 4, hidden: true, label: 'duplicates scattered through the field' },
+        { input: [[6, 5, 4, 3, 2, 1]], expected: 15, hidden: true, label: 'maximum chaos for n = 6' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 493. Reverse Pairs', note: 'merge-and-count with a shifted comparison' },
+        { name: 'LeetCode 315. Count of Smaller Numbers After Self', note: 'per-element inversion counts' },
+      ],
+    },
   ],
   quiz: [
     {

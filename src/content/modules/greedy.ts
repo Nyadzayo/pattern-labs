@@ -448,6 +448,445 @@ The loop structure guarantees progress: each iteration either banks new stations
         { name: 'LeetCode 502. IPO', note: 'bank affordable projects, repeatedly take the most profitable' },
       ],
     },
+    {
+      id: 'vaccine-airlift',
+      title: 'Cold-Chain Airlift',
+      difficulty: 'easy',
+      statement: `
+A humanitarian airlift is loading the cold-storage hold of tonight's relief flight. The hold has \`capacity\` chilled slots, and every crate — whatever is inside — occupies exactly one slot. The warehouse manifest groups identical crates together: \`manifest[k] = [count_k, doses_k]\` means the warehouse holds \`count_k\` interchangeable crates, each packed with \`doses_k\` vaccine doses. You may load any number of crates from each group, up to that group's count and the hold's remaining slots.
+
+Return the **maximum total number of doses** the flight can carry.
+
+The manifest can list up to 100,000 groups, so enumerating subsets of crates will not finish before wheels-up.
+`,
+      examples: [
+        {
+          input: 'manifest = [[3, 50], [2, 80], [4, 20]], capacity = 5',
+          output: '310',
+          explanation:
+            'Load both 80-dose crates (160 doses) and three 50-dose crates (150 doses). The hold is now full; the 20-dose crates stay in the warehouse.',
+        },
+        {
+          input: 'manifest = [[5, 9]], capacity = 10',
+          output: '45',
+          explanation: 'Supply runs out before slots do: all five crates fly, five slots ride empty.',
+        },
+        {
+          input: 'manifest = [[1, 10]], capacity = 0',
+          output: '0',
+          explanation: 'A hold with no chilled slots carries nothing.',
+        },
+      ],
+      constraints: [
+        '0 <= len(manifest) <= 100_000',
+        '1 <= count_k <= 10^6 and 1 <= doses_k <= 10^6 for every group',
+        '0 <= capacity <= 10^9',
+        'Every crate fills exactly one slot regardless of its contents',
+      ],
+      hints: [
+        'Every crate claims one slot no matter what it holds, so slots are a flat currency. If exactly one slot remained and two different crates sat on the tarmac, what single comparison would settle which one flies?',
+        'Sort the groups by doses per crate, descending, and fill slots from the richest group downward, taking min(group count, slots left) from each. An exchange swap — trade any loaded crate for a richer unloaded one — shows no other loading does better.',
+        'total = 0; slots = capacity; for count, doses in manifest sorted by doses descending: take = min(count, slots); total += take * doses; slots -= take; break early when slots reaches 0. Return total.',
+      ],
+      functionName: 'max_doses',
+      starterCode: `def max_doses(manifest: list[list[int]], capacity: int) -> int:
+    pass
+`,
+      solution: {
+        code: `def max_doses(manifest: list[list[int]], capacity: int) -> int:
+    total = 0
+    slots = capacity
+    # Richest crates first. Every crate costs the same single slot,
+    # so doses-per-crate is the only thing distinguishing them.
+    for count, doses in sorted(manifest, key=lambda g: -g[1]):
+        if slots == 0:
+            break  # the hold is full; nothing further can help
+        take = min(count, slots)  # load as many of this group as fit
+        total += take * doses
+        slots -= take
+    return total
+`,
+        commentary: `
+This is the knapsack family in its one degenerate corner where greedy is *provably* right: every item has the **same size** (one slot). The general 0/1 knapsack defeats greedy because a dense item can waste capacity that two medium items would have used perfectly — choices interact through leftover space. Here there is no leftover space to fight over: any \`capacity\` crates fill the hold equally well, so the only question is *which* crates, and that is settled crate-by-crate.
+
+The exchange argument is one swap long. Suppose some optimal loading flies a crate with \`d\` doses while a crate with \`D > d\` doses sits in the warehouse. Swap them: the slot count is unchanged and the dose total rises by \`D - d > 0\` — contradicting optimality. So an optimal loading takes crates in non-increasing dose order, which is exactly what the sort-and-fill loop does. The grouping is purely a compression: taking \`min(count, slots)\` from a group is the same as deciding each identical crate individually.
+
+The early \`break\` is more than politeness — with up to 10^6 crates per group, looping per crate instead of per group would blow the time budget; arithmetic on whole groups keeps the sweep linear in the number of groups.
+`,
+        complexity: 'Time O(n log n) for the sort plus an O(n) sweep over groups, Space O(n) for the sorted copy',
+      },
+      testCases: [
+        { input: [[[3, 50], [2, 80], [4, 20]], 5], expected: 310, label: 'mixed manifest, slots run out' },
+        { input: [[[5, 9]], 10], expected: 45, label: 'supply shorter than capacity' },
+        { input: [[[1, 10]], 0], expected: 0, label: 'zero slots' },
+        { input: [[], 12], expected: 0, hidden: true, label: 'empty manifest' },
+        { input: [[[2, 30], [2, 30], [1, 100]], 3], expected: 160, hidden: true, label: 'tied groups behind a jackpot' },
+        { input: [[[4, 7], [1, 7], [2, 7]], 5], expected: 35, hidden: true, label: 'all groups equally dense' },
+        { input: [[[1000, 1], [1, 1000]], 2], expected: 1001, hidden: true, label: 'one rich crate plus filler' },
+        { input: [[[3, 5], [2, 6], [1, 4]], 4], expected: 22, hidden: true, label: 'partial take from a group' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 1710. Maximum Units on a Truck', note: 'the same density sort' },
+        { name: 'LeetCode 2279. Maximum Bags With Full Capacity of Rocks', note: 'cheapest-first is the mirror image' },
+        { name: 'LeetCode 1005. Maximize Sum Of Array After K Negations', note: 'greedy on sorted value, with a twist at zero' },
+      ],
+    },
+    {
+      id: 'greenhouse-nozzles',
+      title: 'Misting the Propagation Bench',
+      difficulty: 'medium',
+      statement: `
+A long propagation bench runs down one wall of a commercial greenhouse. Each seedling tray on the bench needs mist across a span of the bench: \`trays[k] = [left_k, right_k]\` in centimetres, **ends inclusive**. The irrigation crew mounts fixed misting nozzles above the bench; a nozzle mounted at position \`x\` waters every tray whose span contains \`x\`, including trays whose span starts or ends exactly at \`x\`.
+
+Given \`trays\`, return the **minimum number of nozzles** needed to water every tray. Spans may overlap arbitrarily, may be nested inside one another, and may be single points (\`left == right\`).
+
+Up to 100,000 trays can sit on the bench, so trying candidate nozzle layouts by brute force is hopeless.
+`,
+      examples: [
+        {
+          input: 'trays = [[1, 6], [2, 8], [7, 12], [10, 16]]',
+          output: '2',
+          explanation:
+            'A nozzle at 6 waters [1, 6] and [2, 8]; a nozzle at 12 waters [7, 12] and [10, 16]. No single position lies inside all four spans, so one nozzle cannot suffice.',
+        },
+        {
+          input: 'trays = [[1, 2], [3, 4], [5, 6], [7, 8]]',
+          output: '4',
+          explanation: 'The spans are pairwise disjoint — every tray needs its own nozzle.',
+        },
+        {
+          input: 'trays = [[1, 4], [4, 7]]',
+          output: '1',
+          explanation: 'Ends are inclusive, so a nozzle at exactly 4 catches both trays.',
+        },
+      ],
+      constraints: [
+        '0 <= len(trays) <= 100_000',
+        '0 <= left_k <= right_k <= 10^9',
+        'A nozzle at x waters tray [l, r] exactly when l <= x <= r',
+      ],
+      hints: [
+        'One nozzle can water a whole cluster of trays, but only from a position inside every one of their spans. Within a single tray\'s span, are all mounting positions equally useful, or does one direction dominate?',
+        'Sort trays by RIGHT end. Sweep in that order; whenever a tray is still dry, mount a nozzle exactly at its right end — pushed as far right as that tray allows, it catches the most later-ending trays. Then skip every tray containing that position.',
+        'count = 0; nozzle = -infinity; for [l, r] in trays sorted by r: if l > nozzle, then count += 1 and nozzle = r. Return count. Because ends are inclusive, a tray with l == nozzle is already watered.',
+      ],
+      functionName: 'min_misting_nozzles',
+      starterCode: `def min_misting_nozzles(trays: list[list[int]]) -> int:
+    pass
+`,
+      solution: {
+        code: `def min_misting_nozzles(trays: list[list[int]]) -> int:
+    count = 0
+    nozzle = float("-inf")  # position of the most recently mounted nozzle
+    # Earliest right end first: the tray that ends soonest constrains
+    # placement the most, so it dictates where the next nozzle goes.
+    for left, right in sorted(trays, key=lambda t: t[1]):
+        if left > nozzle:
+            # This tray is dry. Mount a nozzle at its RIGHT end — the
+            # farthest-right point it permits — so the new nozzle also
+            # reaches as many later-ending trays as possible.
+            count += 1
+            nozzle = right
+        # Otherwise left <= nozzle, and since we sweep by right end,
+        # nozzle <= right too — the existing nozzle already waters it.
+    return count
+`,
+        commentary: `
+This is the *stabbing* problem — pick the fewest points so every interval contains one — and it is the mirror image of interval scheduling. A nozzle can serve any cluster of trays whose spans share a common point, so minimizing nozzles means hitting every span with as few points as possible.
+
+The greedy claim: the first nozzle may as well sit at the right end of the **earliest-ending** tray, call it \`r1\`. Exchange argument: any valid layout must water that tray, so it owns a nozzle at some \`x <= r1\`. Slide that nozzle right to \`r1\`: every tray it watered has \`left <= x <= r1\` and, because no tray ends before \`r1\`, also \`right >= r1\` — so each one still contains \`r1\`. The slide loses nothing and possibly gains coverage. After committing to \`r1\`, the trays it misses all have \`left > r1\`, forming a strictly smaller instance, and induction finishes the proof.
+
+Correctness of the sweep hinges on a quiet invariant: when a tray is examined, \`nozzle\` is the right end of some earlier-ending tray, so \`nozzle <= right\` always holds. That is why a single comparison \`left > nozzle\` decides coverage — no need to check the other side. The inclusive boundary is encoded in the strict \`>\`; flipping it to \`>=\` would wrongly buy a second nozzle for trays that merely touch, exactly the kind of off-by-one the hidden tests probe.
+`,
+        complexity: 'Time O(n log n) for the sort plus an O(n) sweep, Space O(n) for the sorted copy',
+      },
+      testCases: [
+        { input: [[[1, 6], [2, 8], [7, 12], [10, 16]]], expected: 2, label: 'two clusters' },
+        { input: [[[1, 2], [3, 4], [5, 6], [7, 8]]], expected: 4, label: 'pairwise disjoint spans' },
+        { input: [[[1, 4], [4, 7], [7, 10]]], expected: 2, label: 'chained boundary touches' },
+        { input: [[[3, 9]]], expected: 1, label: 'single tray' },
+        { input: [[]], expected: 0, hidden: true, label: 'empty bench' },
+        { input: [[[5, 5], [5, 5], [5, 5]]], expected: 1, hidden: true, label: 'identical point spans' },
+        { input: [[[1, 10], [2, 3], [4, 5]]], expected: 2, hidden: true, label: 'nested spans' },
+        { input: [[[0, 2], [1, 3], [2, 4], [3, 5]]], expected: 2, hidden: true, label: 'sliding staircase' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 452. Minimum Number of Arrows to Burst Balloons', note: 'the canonical stabbing greedy' },
+        { name: 'LeetCode 757. Set Intersection Size At Least Two', note: 'stabbing where every interval needs TWO points' },
+        { name: 'LeetCode 435. Non-overlapping Intervals', note: 'the dual problem — same sort, opposite question' },
+      ],
+    },
+    {
+      id: 'dye-lot-cuts',
+      title: 'Cutting the Dye-Lot Bolt',
+      difficulty: 'medium',
+      statement: `
+A textile mill prints a continuous bolt of fabric one metre at a time; metre \`i\` is stamped with a dye-lot code, a lowercase letter \`lots[i]\`. Different metres can share a code, and metres with the same code must cure together: when the bolt is cut into contiguous pieces, every metre carrying a given code has to land in the **same piece**.
+
+Cut the bolt into **as many pieces as possible** under that rule, and return the piece lengths **in order from the left end of the bolt to the right**. The maximal cutting is unique, so the answer is fully determined.
+
+The bolt can run to 100,000 metres, so weighing alternative cuttings against each other is not viable.
+`,
+      examples: [
+        {
+          input: 'lots = "srsrtt"',
+          output: '[4, 2]',
+          explanation:
+            'Codes s and r interleave across metres 0–3, so those four metres must share a piece; the two t metres stand alone as a second piece. No legal cutting produces three pieces.',
+        },
+        {
+          input: 'lots = "abc"',
+          output: '[1, 1, 1]',
+          explanation: 'No code repeats, so every metre can be its own piece.',
+        },
+        {
+          input: 'lots = "aba"',
+          output: '[3]',
+          explanation: 'The two a metres pin both ends of the bolt, dragging the b in with them.',
+        },
+      ],
+      constraints: [
+        '1 <= len(lots) <= 100_000',
+        'lots contains only lowercase English letters',
+        'Pieces must be contiguous and their lengths must sum to len(lots)',
+      ],
+      hints: [
+        'Pick any single metre and ask: how far to the right must the piece containing it stretch, at a minimum? Whose positions in the bolt decide that?',
+        'Precompute each letter\'s LAST index in one pass. Then sweep left to right growing a candidate piece while maintaining the farthest last-index among the letters seen so far in this piece. At some index a legal cut becomes possible — which one?',
+        'When the sweep index i equals the maintained farthest last-index, no letter in the current piece appears again to the right — cut after metre i, record i - piece_start + 1, and start the next piece at i + 1.',
+      ],
+      functionName: 'dye_lot_cuts',
+      starterCode: `def dye_lot_cuts(lots: str) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `def dye_lot_cuts(lots: str) -> list[int]:
+    # Where each dye-lot code appears for the LAST time. A piece that
+    # contains any metre of a code must extend at least this far.
+    last = {c: i for i, c in enumerate(lots)}
+    pieces = []
+    piece_start = 0  # leftmost metre of the piece being grown
+    reach = 0        # farthest metre the current piece is obliged to include
+    for i, c in enumerate(lots):
+        # Every code seen inside this piece drags the cut at least out
+        # to that code's final occurrence.
+        reach = max(reach, last[c])
+        if i == reach:
+            # No code in the current piece occurs again to the right:
+            # cutting after metre i is legal — and cutting earlier
+            # was not, because some obligation reached past there.
+            pieces.append(i - piece_start + 1)
+            piece_start = i + 1
+    return pieces
+`,
+        commentary: `
+The rule "all metres of a code share a piece" turns each letter into an *obligation interval* from its first occurrence to its last. A cut is legal exactly where no obligation interval crosses it. So the question becomes: how many legal cut points are there — and the greedy answer is to **cut at the very first legal point, every time**.
+
+Why is the earliest cut safe rather than short-sighted? Two observations. First, it is a *lower bound*: any valid cutting's first piece must contain metre 0, hence must extend to the last occurrence of every code it absorbs along the way — the running \`reach\` is precisely that forced extent, so no valid first piece can end before the index where \`i == reach\`. Second, it is *harmless*: cutting exactly there leaves a suffix whose obligations are entirely disjoint from the prefix (nothing in the suffix refers back), so the remaining problem is a fresh, independent instance. Earliest-cut therefore dominates every alternative — any other valid cutting's pieces are unions of consecutive greedy pieces, which also explains why the maximal cutting is unique.
+
+The mechanism is the same frontier number as a reach scan, but pointed at a different job: \`reach\` tracks not "how far *can* I go" but "how far *must* I go" — an obligation horizon. When the sweep index catches the horizon, the piece has discharged every promise it made, and committing the cut is final. One subtlety worth internalizing: \`reach\` never resets between pieces, but it never needs to — at a cut point \`i == reach\`, every later letter's first occurrence is past \`i\`, so the next piece's first metre immediately pushes \`reach\` beyond it.
+`,
+        complexity: 'Time O(n) — one pass to map last occurrences, one pass to cut, Space O(1) beyond the output (at most 26 map entries)',
+      },
+      testCases: [
+        { input: ['srsrtt'], expected: [4, 2], label: 'interleaved codes then a clean pair' },
+        { input: ['abc'], expected: [1, 1, 1], label: 'all distinct codes' },
+        { input: ['zzzz'], expected: [4], label: 'one code, one piece' },
+        { input: ['a'], expected: [1], hidden: true, label: 'single metre' },
+        { input: ['xyxxyzzt'], expected: [5, 2, 1], hidden: true, label: 'three pieces of shrinking size' },
+        { input: ['aba'], expected: [3], hidden: true, label: 'ends pinned by one code' },
+        { input: ['noonmoon'], expected: [8], hidden: true, label: 'obligations chain across the whole bolt' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 763. Partition Labels', note: 'the same obligation-horizon cut' },
+        { name: 'LeetCode 56. Merge Intervals', note: 'the obligation intervals, merged explicitly' },
+        { name: 'LeetCode 1024. Video Stitching', note: 'frontier sweeps with a different objective' },
+      ],
+    },
+    {
+      id: 'festival-generators',
+      title: 'Powering the Night Market',
+      difficulty: 'medium',
+      statement: `
+A night-market organizer rents diesel generators for food stalls. Stall bookings arrive as \`bookings[k] = [plug_in_k, unplug_k]\` in minutes after the gates open: the stall draws power from minute \`plug_in_k\` up to **but not including** minute \`unplug_k\`. Generators are interchangeable, each powers one stall at a time, and handoffs are instant — a stall unplugging at minute \`t\` frees its generator for another stall plugging in at minute \`t\`.
+
+Return the **minimum number of generators** the organizer must rent so that every stall has power for its entire booking.
+
+Up to 100,000 bookings can arrive, so comparing every pair of bookings for overlap is too slow.
+`,
+      examples: [
+        {
+          input: 'bookings = [[0, 30], [5, 10], [15, 20]]',
+          output: '2',
+          explanation:
+            'The long booking overlaps each short one, but the short ones never overlap each other — two machines cover the night.',
+        },
+        {
+          input: 'bookings = [[1, 5], [5, 9], [9, 12]]',
+          output: '1',
+          explanation: 'Perfect handoffs at minutes 5 and 9: one generator serves all three stalls.',
+        },
+        {
+          input: 'bookings = [[0, 10], [0, 10], [0, 10]]',
+          output: '3',
+          explanation: 'Three simultaneous draws need three machines, no matter how they are assigned.',
+        },
+      ],
+      constraints: [
+        '0 <= len(bookings) <= 100_000',
+        '0 <= plug_in < unplug <= 10^9 for every booking',
+        'Bookings are half-open: unplugging at minute t and plugging in at minute t can share a generator',
+      ],
+      hints: [
+        'Freeze the whole market at one particular minute and count how many stalls are drawing power right then. What does that single snapshot tell you about any rental plan, however clever its handoffs?',
+        'The answer is exactly the peak number of simultaneously live bookings. Turn each booking into two events — plug-in (+1) and unplug (−1) — and sort all events by time, resolving ties so unplugs land before plug-ins.',
+        'Sweep the sorted events with a running count of live bookings and track its maximum. Sorting (time, delta) tuples puts −1 before +1 at equal times, which encodes the instant handoff. Return the maximum.',
+      ],
+      functionName: 'min_generators',
+      starterCode: `def min_generators(bookings: list[list[int]]) -> int:
+    pass
+`,
+      solution: {
+        code: `def min_generators(bookings: list[list[int]]) -> int:
+    events = []
+    for plug_in, unplug in bookings:
+        events.append((plug_in, 1))   # a stall starts drawing power
+        events.append((unplug, -1))   # a stall releases its generator
+    # Sort by time; at the same minute the tuple order puts unplugs
+    # (-1) before plug-ins (+1), so an instant handoff is never
+    # double-counted as an overlap.
+    events.sort()
+    live = 0  # bookings drawing power right now
+    peak = 0  # the most that were ever live at once
+    for _time, delta in events:
+        live += delta
+        peak = max(peak, live)
+    return peak
+`,
+        commentary: `
+The pull toward simulating generator assignments is strong — track machines, hand them out, recycle them. The greedy reframe: the fleet size is forced by a single number, the **peak concurrency**, and no assignment cleverness can beat it or fail to achieve it.
+
+*Lower bound.* At the minute where \`live\` peaks, that many stalls draw power simultaneously; each needs its own machine at that instant, so every valid plan rents at least \`peak\` generators.
+
+*Achievability.* With exactly \`peak\` machines, process events in time order and hand each plugging-in stall **any** free generator. A free one always exists: just before the handout, the number of busy machines equals the current live count minus one, which is strictly below \`peak\` by definition of the maximum. The lower bound meets the construction, so \`peak\` is the answer — a *bound-meets-greedy* proof, the pattern's other major proof style alongside the exchange argument.
+
+The half-open semantics live entirely in the tie-break. Python's tuple sort puts \`(t, -1)\` before \`(t, 1)\`, so a stall unplugging at minute \`t\` decrements \`live\` before the minute-\`t\` plug-in increments it — back-to-back bookings cost one machine, not two. Flip that order and every clean handoff phantom-rents an extra generator; this single comparison is where most wrong submissions die. The sweep is \`O(n log n)\` against \`O(n^2)\` for pairwise overlap counting, and unlike the pairwise approach it directly produces the *simultaneous* maximum rather than a tangle of overlap pairs.
+`,
+        complexity: 'Time O(n log n) for sorting 2n events plus a linear sweep, Space O(n) for the event list',
+      },
+      testCases: [
+        { input: [[[0, 30], [5, 10], [15, 20]]], expected: 2, label: 'one long booking under two short ones' },
+        { input: [[[1, 5], [5, 9], [9, 12]]], expected: 1, label: 'instant handoffs' },
+        { input: [[[0, 10], [0, 10], [0, 10]]], expected: 3, label: 'identical simultaneous bookings' },
+        { input: [[]], expected: 0, hidden: true, label: 'no bookings' },
+        { input: [[[5, 6]]], expected: 1, hidden: true, label: 'single one-minute booking' },
+        { input: [[[1, 4], [2, 6], [3, 8], [5, 9]]], expected: 3, hidden: true, label: 'staggered triple overlap' },
+        { input: [[[10, 20], [19, 30], [30, 40], [15, 17]]], expected: 2, hidden: true, label: 'mixed touches and overlaps' },
+        { input: [[[0, 1000000000], [1, 2], [3, 4], [5, 6]]], expected: 2, hidden: true, label: 'all-night booking plus brief visitors' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 253. Meeting Rooms II', note: 'the canonical peak-concurrency sweep' },
+        { name: 'LeetCode 1094. Car Pooling', note: 'events with weights against a fixed capacity' },
+        { name: 'LeetCode 731. My Calendar II', note: 'concurrency capped at two, queried online' },
+      ],
+    },
+    {
+      id: 'chess-row-booklets',
+      title: 'Booklets Along the Boards',
+      difficulty: 'hard',
+      statement: `
+After a weekend tournament, a chess academy seats its students in one long row in fixed board order, and the coach walks the row handing out puzzle booklets. House rules:
+
+- every student receives **at least one** booklet, and
+- any student whose tournament rating is **strictly higher** than an immediate neighbour's must receive **strictly more** booklets than that neighbour.
+
+Students with equal ratings may receive any counts relative to each other — equality imposes nothing. Given \`ratings\` in seating order, return the **minimum total number of booklets** the coach must hand out.
+
+The row can seat up to 100,000 students, so searching over assignments is out of the question.
+`,
+      examples: [
+        {
+          input: 'ratings = [3, 6, 4]',
+          output: '4',
+          explanation:
+            'Hand out 1, 2, 1. The middle student out-rates both neighbours and out-receives them; no smaller total satisfies both comparisons.',
+        },
+        {
+          input: 'ratings = [5, 5, 5, 5]',
+          output: '4',
+          explanation: 'Equal ratings impose nothing, so everyone gets the single mandatory booklet.',
+        },
+        {
+          input: 'ratings = [5, 4, 3, 4, 5]',
+          output: '11',
+          explanation:
+            'The valley forces 3, 2, 1, 2, 3: each step away from the bottom of the valley stacks one more strict requirement.',
+        },
+      ],
+      constraints: [
+        '0 <= len(ratings) <= 100_000',
+        '0 <= ratings[i] <= 10^9',
+        'Only immediate neighbours are compared; equal ratings carry no requirement',
+      ],
+      hints: [
+        'Work the row [5, 4, 3, 4, 5] by hand. The student at the bottom of the valley clearly gets one booklet — then watch the requirement climb as you walk away from the valley in either direction. What feature of the row measures how high it climbs?',
+        'Each student\'s count is forced by two independent quantities: the strictly-increasing run arriving from the left, and the strictly-decreasing run continuing to the right. One directional scan computes each. How must the two combine at a student who tops both?',
+        'give = [1] * n. Left-to-right: if ratings[i] > ratings[i-1], set give[i] = give[i-1] + 1. Then right-to-left: if ratings[i] > ratings[i+1], set give[i] = max(give[i], give[i+1] + 1) — the max keeps peaks satisfying BOTH sides. Return sum(give).',
+      ],
+      functionName: 'min_booklets',
+      starterCode: `def min_booklets(ratings: list[int]) -> int:
+    pass
+`,
+      solution: {
+        code: `def min_booklets(ratings: list[int]) -> int:
+    n = len(ratings)
+    if n == 0:
+        return 0
+    give = [1] * n  # everyone starts at the mandatory single booklet
+    # Pass 1 — settle every LEFT-neighbour requirement. Walking
+    # rightwards, a strict rise must hand out one more than the
+    # previous student; anything else resets to the floor of 1.
+    for i in range(1, n):
+        if ratings[i] > ratings[i - 1]:
+            give[i] = give[i - 1] + 1
+    # Pass 2 — settle every RIGHT-neighbour requirement without
+    # breaking pass 1. Walking leftwards, a strict rise (relative to
+    # the right neighbour) must beat that neighbour's count. Taking
+    # the max keeps whichever requirement is taller, so a peak ends
+    # up satisfying both of its downhill sides at once.
+    for i in range(n - 2, -1, -1):
+        if ratings[i] > ratings[i + 1]:
+            give[i] = max(give[i], give[i + 1] + 1)
+    return sum(give)
+`,
+        commentary: `
+A single left-to-right pass cannot work, and seeing *why* is most of the problem. When the scan stands at the top of a descent — say ratings \`[9, 8, 7, 6]\` — the first student's count depends on how long the descent runs, information that lives entirely to the right. Any one-directional rule either overpays everywhere or violates a constraint at the bottom of long downhills.
+
+The fix is to notice the constraints **decompose by direction**. "Strictly more than my left neighbour when I out-rate them" chains only along ascents read left-to-right; "strictly more than my right neighbour" chains only along ascents read right-to-left. Each chain is solved greedily by the tightest assignment: climb by exactly one booklet per strict rise, reset to the floor of 1 otherwise. Pass 1 produces, at every seat, exactly the length of the strictly-increasing run arriving from the left; pass 2 produces the run continuing from the right.
+
+Why \`max\` rather than sum or anything cleverer: a student who tops an ascent of length \`a\` on the left needs at least \`a\` booklets (each step of the chain forces +1 from a floor of 1), and symmetrically at least \`b\` from the right — so \`max(a, b)\` is a **lower bound** at every seat independently. The two passes construct an assignment that hits that bound pointwise and violates nothing: at each comparison the taller requirement subsumes the shorter, and equal ratings break every chain by design. An assignment meeting a pointwise lower bound everywhere is minimal in total — bound-meets-construction, no exchange needed.
+
+The greedy fingerprint here is unusual: not one sort-and-sweep but two opposing sweeps, each carrying one number of state, combined by \`max\`. Forgetting the \`max\` (overwriting pass 1 at peaks) is the classic bug — it satisfies the right side while silently un-satisfying the left.
+`,
+        complexity: 'Time O(n) — two linear passes plus a sum, Space O(n) for the per-student counts',
+      },
+      testCases: [
+        { input: [[3, 6, 4]], expected: 4, label: 'single peak' },
+        { input: [[5, 5, 5, 5]], expected: 4, label: 'all ratings equal' },
+        { input: [[5, 4, 3, 4, 5]], expected: 11, label: 'symmetric valley' },
+        { input: [[1, 2, 3, 4]], expected: 10, hidden: true, label: 'pure ascent' },
+        { input: [[4, 3, 2, 1]], expected: 10, hidden: true, label: 'pure descent' },
+        { input: [[1, 3, 2, 2, 1]], expected: 7, hidden: true, label: 'plateau breaks the chain' },
+        { input: [[]], expected: 0, hidden: true, label: 'empty row' },
+        { input: [[8]], expected: 1, hidden: true, label: 'single student' },
+        { input: [[2, 9, 9, 2]], expected: 6, hidden: true, label: 'twin peaks with equal tops' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 135. Candy', note: 'the canonical two-pass neighbour greedy' },
+        { name: 'LeetCode 42. Trapping Rain Water', note: 'the same opposing-sweeps-plus-combine shape' },
+        { name: 'LeetCode 738. Monotone Increasing Digits', note: 'neighbour constraints resolved by a backward fix-up' },
+      ],
+    },
   ],
   quiz: [
     {

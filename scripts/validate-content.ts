@@ -47,8 +47,8 @@ function validateSchema(mod: ModuleContent, expectedId: string) {
   if (mod.realWorldUses.length < 2 || mod.realWorldUses.length > 3)
     err(id, `realWorldUses has ${mod.realWorldUses.length} entries; expected 2–3`)
 
-  if (mod.problems.length < 3 || mod.problems.length > 5)
-    err(id, `has ${mod.problems.length} problems; expected 3–5`)
+  if (mod.problems.length < 3 || mod.problems.length > 10)
+    err(id, `has ${mod.problems.length} problems; expected 3–10`)
 
   const problemIds = new Set<string>()
   for (const p of mod.problems) {

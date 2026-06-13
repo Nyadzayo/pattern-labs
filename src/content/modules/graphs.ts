@@ -568,6 +568,659 @@ The DFS alternative — three-color marking, where finding an edge into a "gray"
         { name: 'LeetCode 802. Find Eventual Safe States', note: 'cycle detection from the other side' },
       ],
     },
+    {
+      id: 'zipline-course-audit',
+      title: 'Zip-Line Course Audit',
+      difficulty: 'easy',
+      statement: `
+An adventure park is commissioning a new zip-line course. The course has \`n\` tree platforms labeled \`0\` to \`n - 1\`, and \`lines\` is a list of pairs \`[a, b]\`, each a steel cable riders can traverse in either direction between platforms \`a\` and \`b\`.
+
+The safety auditor certifies a layout only when **both** conditions hold: every platform can be reached from every other platform, and between any two platforms there is **exactly one** sequence of cables. Loops are forbidden — a loop lets riders circle endlessly and makes the evacuation plan ambiguous — and two parallel cables between the same pair of platforms count as a loop.
+
+Return \`True\` if the proposed layout passes the audit, and \`False\` otherwise.
+`,
+      examples: [
+        {
+          input: 'n = 5, lines = [[0, 1], [0, 2], [0, 3], [1, 4]]',
+          output: 'True',
+          explanation:
+            'Platform 0 fans out to 1, 2, and 3, and platform 4 hangs off platform 1. Everything is reachable and there is exactly one route between any pair.',
+        },
+        {
+          input: 'n = 5, lines = [[0, 1], [1, 2], [2, 3], [1, 3], [1, 4]]',
+          output: 'False',
+          explanation:
+            'Cables 1–2, 2–3, and 1–3 form a loop, so there are two distinct routes from platform 1 to platform 3.',
+        },
+        {
+          input: 'n = 4, lines = [[0, 1], [2, 3]]',
+          output: 'False',
+          explanation:
+            'The course splits into two clusters; a rider on platform 0 can never reach platform 2.',
+        },
+      ],
+      constraints: [
+        '1 <= n <= 10_000',
+        '0 <= len(lines) <= 20_000',
+        'lines[i] = [a, b] with 0 <= a, b < n and a != b',
+        'Cables are bidirectional; the same pair may erroneously appear twice',
+      ],
+      hints: [
+        'Try drawing a few small layouts that would pass the audit and a few that would fail. There are two distinct ways a layout can fail — what are they, and can a single drawing fail both ways at once?',
+        'Connected with no loops is a very constrained shape: count the cables in any certified layout and you will find exactly n - 1, every time. Better still, once the count IS n - 1, the two failure modes collapse into one — a loop would waste a cable that connectivity needed elsewhere, stranding some platform — so checking reachability alone finishes the audit.',
+        'Reject immediately unless len(lines) == n - 1. Then build an adjacency list and BFS (or DFS) from platform 0, counting reached platforms; return True exactly when the count equals n. Union-Find works equally well: union each cable and fail the moment both endpoints already share a root.',
+      ],
+      functionName: 'is_safe_course_layout',
+      starterCode: `def is_safe_course_layout(n: int, lines: list[list[int]]) -> bool:
+    pass
+`,
+      solution: {
+        code: `from collections import deque
+
+
+def is_safe_course_layout(n: int, lines: list[list[int]]) -> bool:
+    # "Every platform reachable" plus "exactly one route between any
+    # pair" is the definition of a tree. A tree on n nodes has
+    # exactly n - 1 edges, so any other count fails immediately --
+    # this also catches duplicated (parallel) cables.
+    if len(lines) != n - 1:
+        return False
+
+    # With exactly n - 1 edges, connectivity and acyclicity imply
+    # each other: a cycle would waste an edge and strand a platform.
+    # So one reachability sweep settles the entire audit.
+    adj = [[] for _ in range(n)]
+    for a, b in lines:
+        adj[a].append(b)
+        adj[b].append(a)
+
+    seen = {0}
+    queue = deque([0])
+    while queue:
+        cur = queue.popleft()
+        for nxt in adj[cur]:
+            if nxt not in seen:
+                seen.add(nxt)  # mark at enqueue time
+                queue.append(nxt)
+
+    # Certified only if the sweep from platform 0 reached everyone.
+    return len(seen) == n
+`,
+        commentary: `
+The audit conditions — all reachable, exactly one route between any pair — are precisely the definition of a **tree**. Trees obey a rigid accounting identity: a connected graph on \`n\` nodes needs at least \`n - 1\` edges, and an acyclic one can afford at most \`n - 1\`. So a certified layout has *exactly* \`n - 1\` cables, and that single O(1) count check eliminates most rejects up front — including the sneaky parallel-cable case, which pushes the count past \`n - 1\` without adding any new adjacency.
+
+Once the count is right, only one question remains: connected or not? With exactly \`n - 1\` edges the two failure modes become mutually dependent — a cycle "spends" an edge that connectivity needed elsewhere — so a graph with \`n - 1\` edges is connected **iff** it is acyclic. That is why the BFS only verifies reach: if all \`n\` platforms are reached, no loop can possibly exist, and the layout is a tree. Checking the count *first* also keeps the traversal honest: it never runs on inputs where extra edges could hide.
+
+Union-Find is an equally clean implementation — perform the unions and fail fast if any cable joins two platforms that already share a root (that cable would close a loop). Both versions are linear; BFS is shown because the sweep-from-one-start shape is the module's bread and butter.
+`,
+        complexity: 'Time O(n + m), Space O(n + m) for the adjacency list and seen set',
+      },
+      testCases: [
+        {
+          input: [5, [[0, 1], [0, 2], [0, 3], [1, 4]]],
+          expected: true,
+          label: 'fan-out tree',
+        },
+        {
+          input: [5, [[0, 1], [1, 2], [2, 3], [1, 3], [1, 4]]],
+          expected: false,
+          label: 'loop among three platforms',
+        },
+        { input: [1, []], expected: true, label: 'single platform, no cables' },
+        { input: [4, [[0, 1], [2, 3]]], expected: false, label: 'two disconnected clusters' },
+        {
+          input: [4, [[0, 1], [1, 2], [2, 0]]],
+          expected: false,
+          hidden: true,
+          label: 'right cable count, but a cycle strands platform 3',
+        },
+        {
+          input: [2, [[0, 1], [0, 1]]],
+          expected: false,
+          hidden: true,
+          label: 'parallel cables count as a loop',
+        },
+        { input: [2, [[0, 1]]], expected: true, hidden: true, label: 'two platforms, one cable' },
+        {
+          input: [6, [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]]],
+          expected: true,
+          hidden: true,
+          label: 'single long chain',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 261. Graph Valid Tree', note: 'the classic phrasing of this exact check' },
+        { name: 'LeetCode 1971. Find if Path Exists in Graph', note: 'the connectivity half alone' },
+        {
+          name: 'LeetCode 1319. Number of Operations to Make Network Connected',
+          note: 'the same edge-accounting argument, pushed further',
+        },
+      ],
+    },
+    {
+      id: 'container-yard-corrosion',
+      title: 'Corrosion in the Container Yard',
+      difficulty: 'medium',
+      statement: `
+A port authority tracks corrosion across a yard of steel shipping containers arranged in a grid \`yard\`, where \`yard[r][c]\` is \`0\` for an empty slot, \`1\` for a sound container, and \`2\` for a container already showing corrosion.
+
+Salt air spreads the damage on a strict schedule: every day, each corroded container passes corrosion to **all** sound containers in orthogonally adjacent slots (up, down, left, right). Empty slots transmit nothing — corrosion never jumps a gap — and all corroded containers spread simultaneously each day.
+
+Return the number of days until no sound container remains. If at least one sound container can never be reached by the spread, return \`-1\`. If the yard contains no sound containers to begin with, return \`0\`.
+`,
+      examples: [
+        {
+          input: 'yard = [[2, 1, 1], [1, 1, 0], [0, 1, 1]]',
+          output: '4',
+          explanation:
+            'Corrosion starts in the top-left corner and must wrap around the empty slots; the bottom-right container is the last to turn, on day 4.',
+        },
+        {
+          input: 'yard = [[2, 1, 1], [0, 1, 1], [1, 0, 1]]',
+          output: '-1',
+          explanation:
+            'The container in the bottom-left corner is walled off by empty slots on both sides, so it never corrodes.',
+        },
+        {
+          input: 'yard = [[0, 2]]',
+          output: '0',
+          explanation: 'There is no sound container to wait for, so the answer is 0 days.',
+        },
+      ],
+      constraints: [
+        '1 <= rows, cols <= 200',
+        'yard[r][c] is 0 (empty slot), 1 (sound), or 2 (corroded)',
+        'Spread is 4-directional, once per day, from every corroded container simultaneously',
+      ],
+      hints: [
+        'Watch one particular sound container in the middle of the yard. What single quantity about that container determines the exact day it corrodes? Then ask: which container in the whole yard determines the final answer?',
+        'A sound container corrodes on the day equal to its shortest grid distance — walking only through container slots — to the NEAREST initially corroded container. So the answer is the maximum of those nearest-source distances, or -1 if some container has no path to any source.',
+        'Run one BFS with every corroded container enqueued up front at day 0 (multi-source BFS). Count the sound containers first; each time the frontier converts one, decrement the count and record day + 1. When the queue drains, return the last recorded day if the count reached zero, else -1.',
+      ],
+      functionName: 'days_until_all_corroded',
+      starterCode: `def days_until_all_corroded(yard: list[list[int]]) -> int:
+    pass
+`,
+      solution: {
+        code: `from collections import deque
+
+
+def days_until_all_corroded(yard: list[list[int]]) -> int:
+    rows, cols = len(yard), len(yard[0])
+
+    # Seed the queue with EVERY corroded container at day 0 --
+    # multi-source BFS -- and count the sound containers that must
+    # eventually convert.
+    queue = deque()
+    sound = 0
+    reached = set()
+    for r in range(rows):
+        for c in range(cols):
+            if yard[r][c] == 2:
+                queue.append((r, c, 0))
+                reached.add((r, c))
+            elif yard[r][c] == 1:
+                sound += 1
+
+    # Nothing sound means nothing to wait for -- even with no sources.
+    if sound == 0:
+        return 0
+
+    last_day = 0
+    while queue:
+        r, c, day = queue.popleft()
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nr, nc = r + dr, c + dc
+            # Spread only onto in-bounds, sound, not-yet-reached
+            # containers; empty slots (0) block the spread.
+            if (
+                0 <= nr < rows
+                and 0 <= nc < cols
+                and yard[nr][nc] == 1
+                and (nr, nc) not in reached
+            ):
+                reached.add((nr, nc))  # mark at enqueue time
+                sound -= 1
+                last_day = day + 1  # this container turns on day + 1
+                queue.append((nr, nc, day + 1))
+
+    # If any sound container was never reached, the spread stalled.
+    return last_day if sound == 0 else -1
+`,
+        commentary: `
+Single-source BFS computes distances from one start. Here every already-corroded container is a start, and a sound container turns on the day equal to its distance to the **nearest** source. The standard trick: enqueue *all* sources at day 0 before the loop begins. This is exactly equivalent to adding an imaginary super-source connected to every corroded container and running ordinary BFS from it, so all the usual guarantees — first arrival is minimal, rings advance one step at a time — carry over untouched.
+
+That equivalence is also why the simulation reading and the shortest-path reading coincide: on day \`d\`, the BFS frontier holds precisely the containers at distance \`d\` from their nearest source, which is precisely the set the physical process corrodes that day. One traversal therefore replaces a day-by-day grid re-scan (the tempting but quadratic "loop until nothing changed" simulation).
+
+Bookkeeping does the rest. Counting sound containers up front and decrementing on each conversion answers "did everything corrode?" without a final sweep, and recording \`day + 1\` at enqueue time means the last recorded value is the day the final container turned. Two ordering traps carry the hidden tests: the no-sound-containers case must return 0 — not -1 — even when there are no sources at all, and \`last_day\` must only advance when a *sound* container converts; popping the seeds themselves proves nothing.
+`,
+        complexity: 'Time O(R·C), Space O(R·C) for the reached set and queue',
+      },
+      testCases: [
+        {
+          input: [[[2, 1, 1], [1, 1, 0], [0, 1, 1]]],
+          expected: 4,
+          label: 'spread wraps around empty slots',
+        },
+        {
+          input: [[[2, 1, 1], [0, 1, 1], [1, 0, 1]]],
+          expected: -1,
+          label: 'one container sealed off',
+        },
+        { input: [[[0, 2]]], expected: 0, label: 'no sound containers' },
+        { input: [[[2, 1, 1, 1, 1]]], expected: 4, label: 'single-row pier' },
+        { input: [[[1]]], expected: -1, hidden: true, label: 'sound container, no source' },
+        { input: [[[0, 0], [0, 0]]], expected: 0, hidden: true, label: 'yard of empty slots' },
+        {
+          input: [[[2, 1, 1], [1, 1, 1], [1, 1, 2]]],
+          expected: 2,
+          hidden: true,
+          label: 'two sources meet in the middle',
+        },
+        {
+          input: [[[2, 1, 0, 1]]],
+          expected: -1,
+          hidden: true,
+          label: 'gap blocks the spread',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 994. Rotting Oranges', note: 'the classic phrasing of this exact spread' },
+        { name: 'LeetCode 286. Walls and Gates', note: 'multi-source distances written into the grid' },
+        {
+          name: 'LeetCode 1162. As Far from Land as Possible',
+          note: 'the same maximum-of-nearest-source-distances idea',
+        },
+      ],
+    },
+    {
+      id: 'aquarium-tank-split',
+      title: 'Two-Tank Aquarium Split',
+      difficulty: 'medium',
+      statement: `
+A public aquarium has received \`n\` fish species, labeled \`0\` to \`n - 1\`, for a new exhibit that has exactly **two** display tanks. The husbandry team's notes contain a list \`conflicts\`, where each entry \`[a, b]\` records that species \`a\` and species \`b\` are aggressive toward each other and must never share a tank.
+
+Return \`True\` if the species can be divided between the two tanks so that no conflicting pair ends up together, and \`False\` otherwise. A species mentioned in no conflict may be placed in either tank, a tank is allowed to end up empty, and the notes may repeat a conflict pair — repeats carry no extra meaning.
+`,
+      examples: [
+        {
+          input: 'n = 4, conflicts = [[0, 1], [1, 2], [2, 3], [3, 0]]',
+          output: 'True',
+          explanation:
+            'Tank A gets species {0, 2} and tank B gets {1, 3}; every conflicting pair is separated.',
+        },
+        {
+          input: 'n = 3, conflicts = [[0, 1], [1, 2], [2, 0]]',
+          output: 'False',
+          explanation:
+            'Three species, every pair hostile: whichever way you split three into two tanks, some hostile pair shares one.',
+        },
+        {
+          input: 'n = 5, conflicts = []',
+          output: 'True',
+          explanation: 'With no conflicts at all, everyone can swim in the same tank.',
+        },
+      ],
+      constraints: [
+        '1 <= n <= 50_000',
+        '0 <= len(conflicts) <= 100_000',
+        'conflicts[i] = [a, b] with 0 <= a, b < n and a != b',
+        'Conflict pairs may repeat',
+      ],
+      hints: [
+        'Place one species in tank A and see what that single decision forces. Keep following the forced moves on a small example, and watch for the exact moment you would be forced into a contradiction.',
+        'Every conflict forces its two species into opposite tanks, so one placement cascades through its whole conflict cluster — there is no real choice beyond the first species in each cluster. The split fails exactly when a chain of conflicts loops back and demands a species sit in both tanks at once, which happens precisely when some conflict cycle has odd length.',
+        'Graph 2-coloring. Build an adjacency list; keep tank[i] in {-1, 0, 1}. For each still-unassigned species, BFS: assign the start 0, give every newly discovered neighbor the opposite color of its discoverer, and return False the moment an edge connects two same-colored species. Do not forget a fresh BFS per untouched cluster.',
+      ],
+      functionName: 'can_split_tanks',
+      starterCode: `def can_split_tanks(n: int, conflicts: list[list[int]]) -> bool:
+    pass
+`,
+      solution: {
+        code: `from collections import deque
+
+
+def can_split_tanks(n: int, conflicts: list[list[int]]) -> bool:
+    # Conflicts are symmetric: if a fights b, then b fights a.
+    adj = [[] for _ in range(n)]
+    for a, b in conflicts:
+        adj[a].append(b)
+        adj[b].append(a)
+
+    # tank[i] is -1 (unassigned) or 0 / 1 (which display tank).
+    tank = [-1] * n
+
+    for start in range(n):
+        # Conflict clusters are independent; every untouched cluster
+        # needs its own coloring sweep.
+        if tank[start] != -1:
+            continue
+        tank[start] = 0  # the first placement in a cluster is free
+        queue = deque([start])
+        while queue:
+            cur = queue.popleft()
+            for nxt in adj[cur]:
+                if tank[nxt] == -1:
+                    # Forced move: opposite tank of its discoverer.
+                    tank[nxt] = 1 - tank[cur]
+                    queue.append(nxt)
+                elif tank[nxt] == tank[cur]:
+                    # A hostile pair landed in the same tank: an odd
+                    # cycle of conflicts makes the split impossible.
+                    return False
+
+    return True
+`,
+        commentary: `
+Each conflict is a hard constraint: its endpoints take **opposite** tanks. Pick any species in a conflict cluster and place it in tank 0; every neighbor is then forced into tank 1, their neighbors back into tank 0, and so on — assignments propagate with zero freedom beyond the first choice. BFS implements the propagation directly: color a node the moment it is discovered, with the opposite color of its discoverer.
+
+The propagation fails only when some edge joins two same-colored species. Tracing the forcing chain shows what that means structurally: an **odd-length cycle** of conflicts, where going around the loop flips the tank an odd number of times and demands a species disagree with itself. Conversely, if no odd cycle exists, the layered coloring never collides. So "splittable into two tanks" is exactly "the conflict graph is bipartite", and BFS decides it in linear time. The arbitrary first choice is safe by symmetry — swapping the two tanks within any one cluster yields another valid split — so no backtracking is ever needed.
+
+Two implementation points carry the hidden tests. Clusters are independent, so the outer loop must restart the coloring from every still-unassigned species; a single BFS from species 0 would silently pass a graph whose *other* component hides the odd cycle. And duplicate conflict entries are harmless: the second copy just re-checks an edge whose endpoints already disagree.
+`,
+        complexity: 'Time O(n + m), Space O(n + m) for the adjacency list and tank array',
+      },
+      testCases: [
+        {
+          input: [4, [[0, 1], [1, 2], [2, 3], [3, 0]]],
+          expected: true,
+          label: 'even conflict cycle splits cleanly',
+        },
+        {
+          input: [3, [[0, 1], [1, 2], [2, 0]]],
+          expected: false,
+          label: 'mutually hostile trio',
+        },
+        { input: [5, []], expected: true, label: 'no conflicts at all' },
+        {
+          input: [7, [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6]]],
+          expected: true,
+          label: 'one aggressive species vs everyone',
+        },
+        {
+          input: [6, [[0, 1], [2, 3], [4, 5]]],
+          expected: true,
+          hidden: true,
+          label: 'three separate feuds',
+        },
+        {
+          input: [5, [[0, 1], [1, 2], [2, 0], [3, 4]]],
+          expected: false,
+          hidden: true,
+          label: 'odd cycle hidden in one cluster',
+        },
+        { input: [1, []], expected: true, hidden: true, label: 'single species' },
+        {
+          input: [4, [[0, 1], [0, 1], [1, 2]]],
+          expected: true,
+          hidden: true,
+          label: 'duplicate conflict entries',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 785. Is Graph Bipartite?', note: 'the adjacency-list phrasing' },
+        { name: 'LeetCode 886. Possible Bipartition', note: 'the classic phrasing of this exact split' },
+        {
+          name: 'LeetCode 1042. Flower Planting With No Adjacent',
+          note: 'same constraint flavor with four groups instead of two',
+        },
+      ],
+    },
+    {
+      id: 'archive-vault-sweep',
+      title: 'Night Audit of the Rare-Book Vaults',
+      difficulty: 'medium',
+      statement: `
+A university library stores its rare-book collection in \`n\` vaults labeled \`0\` to \`n - 1\`. Policy keeps vault \`0\` unlocked; every other vault locks automatically at closing time. Inside each vault sits a tray of keycards: \`vaults[i]\` lists the labels of the vaults that the keycards found inside vault \`i\` can open.
+
+Tonight's auditor starts at the open vault \`0\` carrying no keycards. Keycards are not consumed when used, the auditor may carry any number of them, and vaults can be revisited freely. A tray may contain duplicate keycards, or even a keycard to the very vault it sits in; neither helps nor hurts.
+
+Return \`True\` if the auditor can get **every** vault open during the audit, and \`False\` otherwise.
+`,
+      examples: [
+        {
+          input: 'vaults = [[1], [2], [3], []]',
+          output: 'True',
+          explanation:
+            'Vault 0 yields the keycard to vault 1, vault 1 yields the keycard to vault 2, and so on down the chain — all four open.',
+        },
+        {
+          input: 'vaults = [[1, 3], [3, 0, 1], [2], [0]]',
+          output: 'False',
+          explanation:
+            'The only keycard that opens vault 2 is locked inside vault 2 itself, so it can never be opened.',
+        },
+        {
+          input: 'vaults = [[]]',
+          output: 'True',
+          explanation: 'Vault 0 is the entire archive and it starts open.',
+        },
+      ],
+      constraints: [
+        '1 <= n <= 5_000',
+        'The total number of keycards across all trays is at most 20_000',
+        '0 <= vaults[i][j] < n',
+        'Trays may hold duplicate keycards or a keycard to their own vault',
+      ],
+      hints: [
+        'Forget the keycards for a moment and just track which vaults stand open as the night progresses. After the auditor has emptied the trays of every vault currently open, what determines whether the audit is finished or permanently stuck?',
+        'Opening a vault permanently adds its tray to the keyring, which may open more vaults, whose trays add more keycards — a one-way cascade that never undoes progress. Model vaults as nodes and "a keycard in tray i opens vault j" as a directed arrow i -> j: the audit succeeds exactly when every node is reachable from node 0.',
+        'DFS or BFS from vault 0 over the directed adjacency lists that vaults itself already provides. Seed an opened set with {0}; pop a vault, push each keycard label not yet in the set. Return len(opened) == n. Duplicates and self-keycards are filtered out by the set automatically.',
+      ],
+      functionName: 'can_open_all_vaults',
+      starterCode: `def can_open_all_vaults(vaults: list[list[int]]) -> bool:
+    pass
+`,
+      solution: {
+        code: `def can_open_all_vaults(vaults: list[list[int]]) -> bool:
+    n = len(vaults)
+
+    # Vault 0 starts open; everything else must be reached through
+    # keycards. This is directed reachability from a single source.
+    opened = {0}
+    stack = [0]
+
+    while stack:
+        cur = stack.pop()
+        # Collect the tray: each keycard is a directed edge
+        # cur -> key. Duplicates and self-keycards are filtered by
+        # the opened-set test.
+        for key in vaults[cur]:
+            if key not in opened:
+                opened.add(key)
+                stack.append(key)
+
+    # Success means the cascade opened every vault.
+    return len(opened) == n
+`,
+        commentary: `
+The audit looks stateful — keycards accumulate over time — but the state collapses. Opening a vault is irreversible and only ever *adds* capability, so the set of openable vaults is exactly the set of nodes reachable from vault 0 in the directed graph where "tray \`i\` holds a keycard to vault \`j\`" is an arrow \`i -> j\`. Visit order is irrelevant: any vault openable by *some* sequence of trips is reached by the traversal, because the traversal eventually empties every tray it can legally get to. That monotone-progress argument is what licenses replacing a simulation with a plain graph walk.
+
+Directedness is the detail separating this from the module's component-counting problems. A keycard *inside* vault 1 that opens vault 0 does nothing to get the auditor *into* vault 1, so edges must not be treated as symmetric — and "how many components?" is the wrong question anyway. Exactly one source matters (vault 0), and the answer is whether its reachable set covers everything; that is why the code is a single traversal with no outer sweep over starts.
+
+The \`opened\` set quietly absorbs the messy input cases: a duplicate keycard fails the \`not in opened\` test on its second appearance, and a self-keycard is rejected immediately because every vault enters \`opened\` before (or as) its tray is processed. An explicit stack gives DFS order here; a deque would give BFS order and open the same set — only shortest distances would care about the difference, and this problem never asks for them.
+`,
+        complexity: 'Time O(n + k) where k is the total keycard count, Space O(n)',
+      },
+      testCases: [
+        { input: [[[1], [2], [3], []]], expected: true, label: 'chain of keycards' },
+        {
+          input: [[[1, 3], [3, 0, 1], [2], [0]]],
+          expected: false,
+          label: 'keycard locked inside its own vault',
+        },
+        { input: [[[]]], expected: true, label: 'single-vault archive' },
+        { input: [[[1, 2, 3], [], [], []]], expected: true, label: 'all keycards in vault 0' },
+        {
+          input: [[[2, 2, 2], [], [1]]],
+          expected: true,
+          hidden: true,
+          label: 'duplicate keycards in one tray',
+        },
+        { input: [[[1], [0], []]], expected: false, hidden: true, label: 'vault 2 unreachable' },
+        {
+          input: [[[0, 1], [1, 2], [0]]],
+          expected: true,
+          hidden: true,
+          label: 'self-keycards are harmless',
+        },
+        {
+          input: [[[2], [], [1, 3], [], [5], []]],
+          expected: false,
+          hidden: true,
+          label: 'two vaults stranded',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 841. Keys and Rooms', note: 'the classic phrasing of this exact sweep' },
+        { name: 'LeetCode 1306. Jump Game III', note: 'implicit directed reachability on an array' },
+      ],
+    },
+    {
+      id: 'marquee-letter-swaps',
+      title: 'Marquee Word Morph',
+      difficulty: 'hard',
+      statement: `
+The letterboard marquee outside a vintage cinema currently spells the word \`current\`, and tonight it must spell \`target\`. The sign technician works from a ladder and can swap exactly **one letter per trip** — replacing the letter at a single position with a different letter.
+
+House rules forbid the marquee from ever displaying gibberish between trips: after every single swap, the word on the board must appear in the cinema's \`approved\` word list. The starting word does not need to be in the list (it is already up there), but the target and every intermediate word do.
+
+All words are lowercase and share the same length. Return the minimum number of swaps needed, \`0\` if the board already spells the target, or \`-1\` if no sequence of approved words gets there.
+`,
+      examples: [
+        {
+          input: 'current = "hit", target = "cog", approved = ["hot", "dot", "dog", "lot", "log", "cog"]',
+          output: '4',
+          explanation:
+            'hit -> hot -> dot -> dog -> cog: four trips up the ladder, every intermediate word approved, and no shorter sequence exists.',
+        },
+        {
+          input: 'current = "cold", target = "warm", approved = ["cord", "card", "ward", "warm", "worm"]',
+          output: '4',
+          explanation: 'cold -> cord -> card -> ward -> warm; the worm detour is a dead end.',
+        },
+        {
+          input: 'current = "hit", target = "cog", approved = ["hot", "dot", "dog", "lot", "log"]',
+          output: '-1',
+          explanation:
+            'The target itself is missing from the approved list, so the final swap would put gibberish on the board.',
+        },
+      ],
+      constraints: [
+        '1 <= len(current) == len(target) <= 10, and every approved word has the same length',
+        '0 <= len(approved) <= 2_000',
+        'All words consist of lowercase letters a-z',
+        'A swap replaces exactly one letter at one position',
+      ],
+      hints: [
+        'Pin the approved words to a corkboard and run a string between every pair of words that differ in exactly one letter. What familiar question is the technician really asking about that corkboard?',
+        'Each swap moves the board to an approved word one letter away — an unweighted edge — so minimum swaps is a shortest-path length, and BFS ring order delivers it. Comparing every pair of words to discover the edges costs O(W^2 * L); a wildcard trick does better.',
+        'Bucket every approved word under each pattern made by blanking one position ("dog" -> "_og", "d_g", "do_"). Words sharing a bucket differ in at most that one position, so the buckets ARE the adjacency structure. BFS from current with a seen set, returning the swap count on first reaching target; settle current == target (0) and target-not-approved (-1) before searching.',
+      ],
+      functionName: 'min_letter_swaps',
+      starterCode: `def min_letter_swaps(current: str, target: str, approved: list[str]) -> int:
+    pass
+`,
+      solution: {
+        code: `from collections import defaultdict, deque
+
+
+def min_letter_swaps(current: str, target: str, approved: list[str]) -> int:
+    # The board already spells the target: zero trips, and the
+    # approved list never comes into play.
+    if current == target:
+        return 0
+
+    words = set(approved)
+    # The final board state must itself be an approved word.
+    if target not in words:
+        return -1
+
+    length = len(current)
+
+    # File every approved word under each one-blank pattern it
+    # matches: "dog" -> "_og", "d_g", "do_". Two words share a
+    # bucket exactly when they agree everywhere except (at most)
+    # one position, so the buckets ARE the adjacency structure.
+    buckets = defaultdict(list)
+    for w in words:
+        for i in range(length):
+            buckets[w[:i] + "_" + w[i + 1:]].append(w)
+
+    seen = {current}
+    queue = deque([(current, 0)])  # (word on the board, swaps so far)
+
+    while queue:
+        word, swaps = queue.popleft()
+        for i in range(length):
+            pattern = word[:i] + "_" + word[i + 1:]
+            for nxt in buckets[pattern]:
+                if nxt == target:
+                    # BFS rings: the first arrival is the minimum.
+                    return swaps + 1
+                if nxt not in seen:
+                    seen.add(nxt)  # mark at enqueue time
+                    queue.append((nxt, swaps + 1))
+            # Everyone left in this bucket is now seen, so empty it:
+            # later words matching the same pattern skip a re-scan.
+            buckets[pattern] = []
+
+    # No chain of approved words reaches the target.
+    return -1
+`,
+        commentary: `
+No edges appear anywhere in the input — the graph is **implicit**. Nodes are the approved words (plus the starting word), an edge joins two words that differ in exactly one position, and each ladder trip walks one edge. Every swap costs the same single trip, so "minimum swaps" is an unweighted shortest-path length, and BFS ring order answers it: the first time the frontier touches \`target\`, no shorter sequence can exist.
+
+The engineering is in neighbor discovery. Testing all pairs of words costs O(W² · L); instead, every word is filed under each of the \`L\` patterns made by blanking one position (\`"dog"\` under \`"_og"\`, \`"d_g"\`, \`"do_"\`). Two words differ in at most one position **iff** they share a bucket, so the buckets form a precomputed adjacency structure, built in O(W · L²). Emptying a bucket after its first scan is the touch that keeps the whole traversal near-linear: by then every member is either seen or has been returned, so any later visit through the same pattern would only re-scan dead entries.
+
+Three boundary rules come straight from the story and dominate the hidden tests: \`current == target\` is 0 swaps even with an empty approved list, because the board never changes and the rules never trigger; a \`target\` missing from the approved list is hopeless no matter what chains exist, since the *final* board state must itself be approved; and the starting word joins the graph for free — it is already on the marquee, so it is never validated against the list. One last unit check if this shape looks familiar: this problem counts *swaps* (edges), which is one less than the number of words in the chain.
+`,
+        complexity:
+          'Time O(W·L²) to build and consume the buckets (W words, length L), Space O(W·L) for the buckets, seen set, and queue',
+      },
+      testCases: [
+        {
+          input: ['hit', 'cog', ['hot', 'dot', 'dog', 'lot', 'log', 'cog']],
+          expected: 4,
+          label: 'four-swap ladder',
+        },
+        {
+          input: ['cold', 'warm', ['cord', 'card', 'ward', 'warm', 'worm']],
+          expected: 4,
+          label: 'forced single route',
+        },
+        {
+          input: ['hit', 'cog', ['hot', 'dot', 'dog', 'lot', 'log']],
+          expected: -1,
+          label: 'target not approved',
+        },
+        { input: ['noon', 'noon', []], expected: 0, hidden: true, label: 'already spelled' },
+        { input: ['bake', 'cake', ['cake']], expected: 1, hidden: true, label: 'single swap' },
+        {
+          input: ['aa', 'cc', ['ab', 'bb', 'cb', 'cc', 'ac']],
+          expected: 2,
+          hidden: true,
+          label: 'shortcut beats the long way around',
+        },
+        {
+          input: ['red', 'tan', ['ted', 'tad', 'tan', 'rex']],
+          expected: 3,
+          hidden: true,
+          label: 'dead-end branch ignored',
+        },
+        {
+          input: ['cat', 'dog', ['cot', 'cog', 'dog', 'cag']],
+          expected: 3,
+          hidden: true,
+          label: 'two equally short routes',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 127. Word Ladder', note: 'the classic phrasing — careful, it counts words, not swaps' },
+        { name: 'LeetCode 433. Minimum Genetic Mutation', note: 'same implicit graph over gene strings' },
+        { name: 'LeetCode 752. Open the Lock', note: 'implicit graph over dial states, with forbidden nodes' },
+      ],
+    },
   ],
   quiz: [
     {

@@ -522,6 +522,466 @@ The padding (an extra zero row and column) is the 2D version of the leading zero
         { name: 'LeetCode 1292. Maximum Side Length of a Square with Sum ≤ Threshold', note: '2D prefix + binary search' },
       ],
     },
+    {
+      id: 'lighting-cues',
+      title: 'Plotting the Light Rig',
+      difficulty: 'easy',
+      statement: `
+You program the lighting console for a black-box theater. The rig is a single row of \`n\` LED fixtures, numbered \`0\` to \`n - 1\`, and every fixture's trim level starts the session at \`0\`. During plotting, the designer calls out cues; each cue is a triple \`[left, right, delta]\` meaning every fixture from \`left\` to \`right\` (**both inclusive**) has its trim adjusted by \`delta\` — positive to brighten, negative to pull back. A negative final trim is fine: trims are offsets from the board's house default, not absolute outputs.
+
+Cues are only *recorded* during plotting; nothing is rendered until the session ends. Given \`n\` and the list \`cues\`, return a list of length \`n\` with each fixture's final trim level, **in fixture order**.
+
+A long session can log a hundred thousand cues, each sweeping nearly the whole rig — walking every fixture per cue will not keep up.
+`,
+      examples: [
+        {
+          input: 'n = 5, cues = [[1, 3, 4], [2, 4, -1]]',
+          output: '[0, 4, 3, 3, -1]',
+          explanation: 'The first cue raises fixtures 1–3 to 4. The second pulls fixtures 2–4 down by 1.',
+        },
+        {
+          input: 'n = 3, cues = []',
+          output: '[0, 0, 0]',
+          explanation: 'No cues recorded; every fixture stays at its starting trim of 0.',
+        },
+        {
+          input: 'n = 4, cues = [[0, 3, 2], [0, 0, 5]]',
+          output: '[7, 2, 2, 2]',
+          explanation: 'A whole-rig wash of +2, then +5 on fixture 0 alone: 2 + 5 = 7 for fixture 0.',
+        },
+      ],
+      constraints: [
+        '1 <= n <= 100_000',
+        '0 <= len(cues) <= 100_000',
+        'Every cue [left, right, delta] satisfies 0 <= left <= right < n',
+        '-10^6 <= delta <= 10^6',
+        'All fixtures start at trim level 0',
+      ],
+      hints: [
+        'Replaying each cue across its whole range is up to 10^10 writes. Notice that nobody reads a single trim level until plotting ends — so you are free to reorganize the work. What is the smallest piece of information one cue actually adds?',
+        'A cue [left, right, delta] changes the fixture-to-fixture profile in exactly two places: the level steps UP by delta entering fixture left and steps DOWN by delta just past fixture right. Record only those two boundary marks per cue.',
+        'Keep diff of length n + 1. For each cue: diff[left] += delta and diff[right + 1] -= delta. After all cues, one prefix-sum pass over the first n entries of diff reconstructs every final trim — O(n + cues) total.',
+      ],
+      functionName: 'final_brightness',
+      starterCode: `def final_brightness(n: int, cues: list[list[int]]) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `def final_brightness(n: int, cues: list[list[int]]) -> list[int]:
+    # diff[i] holds the CHANGE in trim stepping from fixture i-1 to i.
+    # The extra slot means the "step back down" write at right + 1 is
+    # always in range, even for a cue ending at the last fixture.
+    diff = [0] * (n + 1)
+    for left, right, delta in cues:
+        diff[left] += delta       # level steps up by delta entering 'left'...
+        diff[right + 1] -= delta  # ...and back down just past 'right'.
+
+    # The trims are the running totals of the recorded steps: a single
+    # prefix-sum pass re-integrates the difference array.
+    levels = []
+    running = 0
+    for i in range(n):
+        running += diff[i]
+        levels.append(running)
+    return levels
+`,
+        commentary: `
+This is prefix sums run **in reverse**. The range-query problems in this module read many ranges from static data, so they precompute cumulative totals. Here the workload is flipped — many range *writes*, then one read of the final state — so we store the rig in *derivative* form instead: \`diff[i]\` records only how the trim changes stepping from fixture \`i - 1\` to fixture \`i\`. In that representation, a cue sweeping thousands of fixtures is two O(1) boundary writes: step up by \`delta\` at \`left\`, step back down just past \`right\`.
+
+The closing prefix-sum pass is what makes the shortcut legal: summing the steps left to right re-integrates the derivative, and because addition commutes, recording cues as boundary marks in any order yields exactly what replaying them faithfully would. Deferring that single O(n) integration until all cues are in is the whole win — O(n + c) instead of O(n × c).
+
+The \`n + 1\` length on \`diff\` mirrors the leading zero of a prefix table: a cue ending at the last fixture writes to \`diff[n]\`, which exists precisely so no cue needs a bounds check. And the pattern's usual limitation holds in mirror image too — if reads and writes *interleave*, the deferred integration breaks down, and you are back in Fenwick/segment-tree territory.
+`,
+        complexity: 'Time O(n + c) for c cues, Space O(n)',
+      },
+      testCases: [
+        { input: [5, [[1, 3, 4], [2, 4, -1]]], expected: [0, 4, 3, 3, -1], label: 'two overlapping cues' },
+        { input: [3, []], expected: [0, 0, 0], label: 'no cues' },
+        { input: [4, [[0, 3, 2], [0, 0, 5]]], expected: [7, 2, 2, 2], label: 'whole-rig wash plus a special' },
+        { input: [1, [[0, 0, 10], [0, 0, -4]]], expected: [6], hidden: true, label: 'single fixture' },
+        {
+          input: [6, [[0, 5, 1], [0, 5, 1], [0, 5, 1]]],
+          expected: [3, 3, 3, 3, 3, 3],
+          hidden: true,
+          label: 'repeated full-range cues',
+        },
+        { input: [5, [[4, 4, 9]]], expected: [0, 0, 0, 0, 9], hidden: true, label: 'cue ending at the last fixture' },
+        {
+          input: [5, [[0, 2, 3], [2, 4, 3], [1, 3, -6]]],
+          expected: [3, -3, 0, -3, 3],
+          hidden: true,
+          label: 'negative trims after a pullback cue',
+        },
+        {
+          input: [2, [[0, 1, 1000000], [0, 1, 1000000]]],
+          expected: [2000000, 2000000],
+          hidden: true,
+          label: 'large deltas',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 1109. Corporate Flight Bookings', note: 'the same recording trick over seat ranges' },
+        { name: 'LeetCode 370. Range Addition', note: 'the pattern in its purest form' },
+      ],
+    },
+    {
+      id: 'pedal-bypass',
+      title: 'Pedalboard Bypass Test',
+      difficulty: 'medium',
+      statement: `
+A session guitarist's pedalboard chains \`n\` effects pedals in series. On the shop's test rig, each pedal \`i\` multiplies the signal by an integer gain \`gains[i]\` — negative gains flip the signal's phase, and a dead pedal mutes everything with a gain of \`0\`.
+
+To chase down a muddy tone, the tech runs a bypass test: for every pedal, measure what the whole chain's gain *would be* with that one pedal lifted out and all the others left in place. Return a list \`result\` where \`result[i]\` is the product of every gain except \`gains[i]\`, **in pedal order**.
+
+One rule from the bench: the obvious shortcut — total product divided by \`gains[i]\` — dies the moment a dead pedal shows up, so your routine must not use division.
+`,
+      examples: [
+        {
+          input: 'gains = [2, 3, 4, 5]',
+          output: '[60, 40, 30, 24]',
+          explanation: 'Bypassing pedal 0 leaves 3*4*5 = 60; bypassing pedal 3 leaves 2*3*4 = 24.',
+        },
+        {
+          input: 'gains = [4, 0, 2]',
+          output: '[0, 8, 0]',
+          explanation:
+            'The dead pedal zeroes every measurement that still includes it; only bypassing the dead pedal itself (4*2 = 8) restores signal.',
+        },
+        {
+          input: 'gains = [-1, 2, -3]',
+          output: '[-6, 3, -2]',
+          explanation: 'Phase-flipping pedals multiply like any sign: bypassing pedal 1 leaves -1 * -3 = 3.',
+        },
+      ],
+      constraints: [
+        '2 <= len(gains) <= 100_000',
+        '-30 <= gains[i] <= 30 (zero means a dead pedal)',
+        'Division must not be used — gains can be 0',
+        'Return the measurements in pedal order',
+      ],
+      hints: [
+        'Dividing the grand product by each gain collapses when any pedal is dead (gain 0) — yet every bypass measurement is still perfectly well-defined. Forget the grand product: which pedals actually contribute to result[i]?',
+        'result[i] = (product of all gains left of i) × (product of all gains right of i). Each of those families — every left-product, every right-product — has a running structure you can generate incrementally in one directional sweep.',
+        'Pass 1 (left to right): write into result[i] the running product of everything before i, starting from 1. Pass 2 (right to left): multiply result[i] by a running product of everything after i. Two passes, no division, zeros fall out naturally.',
+      ],
+      functionName: 'bypass_gains',
+      starterCode: `def bypass_gains(gains: list[int]) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `def bypass_gains(gains: list[int]) -> list[int]:
+    n = len(gains)
+    result = [1] * n
+
+    # Left-to-right sweep: result[i] = product of all gains BEFORE pedal i.
+    # 'before' starts at 1 — the empty product, prefix-sums' leading zero
+    # translated into multiplication.
+    before = 1
+    for i in range(n):
+        result[i] = before
+        before *= gains[i]
+
+    # Right-to-left sweep: fold in the product of all gains AFTER pedal i.
+    after = 1
+    for i in range(n - 1, -1, -1):
+        result[i] *= after
+        after *= gains[i]
+
+    return result
+`,
+        commentary: `
+\`result[i]\` factors cleanly into two independent pieces: everything to the pedal's left and everything to its right. Both families have prefix structure — the left-product at \`i + 1\` is the left-product at \`i\` times \`gains[i]\` — so one forward sweep generates every "product before me" and one backward sweep every "product after me". Writing the first sweep straight into the output and multiplying the second sweep into it keeps extra space at O(1) beyond the answer itself.
+
+Why not divide the grand product by each gain? Zeros. A dead pedal makes the grand product 0 and the division meaningless, yet the bypass measurements remain well-defined — bypassing the dead pedal itself may bring the whole signal back. The two-sweep method never needs the inverse of anything, so zeros simply propagate correctly: one zero in the chain zeroes every slot except its own, and two zeros zero everything.
+
+Structurally this is the hinge-day idea — left context plus right context determines the answer at each index — but under multiplication the right side is *not* recoverable from a single grand total (you cannot "subtract" a factor), so the suffix genuinely must be swept separately. That is the tell for prefix/suffix problems: whenever the combine operation lacks a safe inverse, precompute both directions.
+`,
+        complexity: 'Time O(n), Space O(1) beyond the output list',
+      },
+      testCases: [
+        { input: [[2, 3, 4, 5]], expected: [60, 40, 30, 24], label: 'all positive gains' },
+        { input: [[4, 0, 2]], expected: [0, 8, 0], label: 'one dead pedal' },
+        { input: [[-1, 2, -3]], expected: [-6, 3, -2], label: 'phase-flipping gains' },
+        { input: [[0, 0, 5]], expected: [0, 0, 0], hidden: true, label: 'two dead pedals zero everything' },
+        { input: [[7, 1]], expected: [1, 7], hidden: true, label: 'minimum chain length' },
+        { input: [[1, 1, 1, 1, 1]], expected: [1, 1, 1, 1, 1], hidden: true, label: 'unity gains' },
+        { input: [[3, -2, 0, 4]], expected: [0, 0, -24, 0], hidden: true, label: 'dead pedal among mixed signs' },
+        { input: [[10, 10, 10]], expected: [100, 100, 100], hidden: true, label: 'equal gains' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 238. Product of Array Except Self', note: 'the canonical statement of this exact trick' },
+        { name: 'LeetCode 2256. Minimum Average Difference', note: 'prefix/suffix split with sums instead of products' },
+      ],
+    },
+    {
+      id: 'pantry-level-stretch',
+      title: 'Back Where We Started',
+      difficulty: 'medium',
+      statement: `
+A food bank logs one integer per day for its canned-goods shelf: the net change in cans that day (donations arriving minus parcels going out; a closed day logs \`0\`). For the annual impact report, the coordinator wants the longest stretch the shelf "held its level" — the maximum length of a contiguous run of days whose net changes sum to exactly zero, meaning the shelf ended that run at precisely the count it started with.
+
+Given the list \`changes\`, return the length of the longest such run, or \`0\` if no non-empty run nets to zero.
+
+A year of daily logs is small, but the food bank federates logs across hundreds of branches — your routine will be called on inputs up to 100,000 days, so checking every run individually is out.
+`,
+      examples: [
+        {
+          input: 'changes = [3, -1, -2, 5]',
+          output: '3',
+          explanation: 'Days 0–2 net 3 - 1 - 2 = 0, a run of length 3. Day 3 breaks the balance; no longer run nets zero.',
+        },
+        {
+          input: 'changes = [4, 5]',
+          output: '0',
+          explanation: 'Every run has a positive total; nothing nets to zero, so the answer is 0.',
+        },
+        {
+          input: 'changes = [5, -5, 5, -5]',
+          output: '4',
+          explanation: 'The whole log nets zero: the shelf ends exactly where it began, a run of length 4.',
+        },
+      ],
+      constraints: [
+        '0 <= len(changes) <= 100_000',
+        '-10^4 <= changes[i] <= 10^4',
+        'A qualifying run must be contiguous and non-empty; return 0 if none exists',
+      ],
+      hints: [
+        'A sliding window fails here — outgoing parcels make changes negative, so growing a run can move its total in either direction. Step back from the runs themselves and watch the shelf count evolve day by day. What does a zero-net run look like in terms of that evolving count?',
+        'The cumulative count after day j equals the cumulative count after day i exactly when the run covering days i+1..j nets zero. So the answer is the farthest-apart PAIR of equal running totals.',
+        'One pass with a dict mapping each running total to the FIRST index it appeared, seeded {0: -1} for the empty prefix. On a repeat at index i, a zero-net run of length i - first_seen[running] ends here. Never overwrite an earlier index — the earliest start gives the longest run.',
+      ],
+      functionName: 'longest_level_stretch',
+      starterCode: `def longest_level_stretch(changes: list[int]) -> int:
+    pass
+`,
+      solution: {
+        code: `def longest_level_stretch(changes: list[int]) -> int:
+    # first_seen[t] = earliest prefix index whose running total is t.
+    # Index -1 stands for the empty prefix (before day 0), total 0.
+    first_seen = {0: -1}
+    running = 0
+    best = 0
+    for i, delta in enumerate(changes):
+        running += delta
+        if running in first_seen:
+            # The shelf is back at a level it has held before: everything
+            # since that earlier moment cancels to exactly zero.
+            best = max(best, i - first_seen[running])
+        else:
+            # Record only the FIRST occurrence — a later duplicate could
+            # only start a shorter run, so the earliest index is optimal.
+            first_seen[running] = i
+    return best
+`,
+        commentary: `
+Re-summing all O(n^2) runs is hopeless at 10^5 days. The pivot is to stop looking at runs and start looking at the **running total** — the shelf's cumulative drift after each day. A run nets zero exactly when the drift at its right end equals the drift just before its left end: whatever happened in between canceled out. The problem therefore reduces to: *over all pairs of equal running totals, which pair is farthest apart?*
+
+A dict answers that in one pass. For each running total we store only the **first** index where it appeared; when the same total resurfaces at index \`i\`, the run between the two sightings nets zero and has length \`i - first_seen[running]\`. Never overwriting is the subtle correctness point — replacing the stored index with a later one could only shorten future runs. Contrast this with the count-spans problem earlier in the module: there the map stores *counts* because every earlier occurrence contributes a span; here only the extreme pair matters, so the map stores *first positions*. Same skeleton, different payload — that swap is the most reusable idea in the prefix-map family.
+
+The seed \`{0: -1}\` is the empty prefix in 1D clothing: the shelf's drift was 0 before day 0, so a run covering days 0 through \`i\` scores \`i - (-1)\`. Drop the seed and the single-day log \`[0]\` answers 0 instead of 1.
+`,
+        complexity: 'Time O(n), Space O(n)',
+      },
+      testCases: [
+        { input: [[3, -1, -2, 5]], expected: 3, label: 'balanced run at the start' },
+        { input: [[4, 5]], expected: 0, label: 'no zero-net run' },
+        { input: [[5, -5, 5, -5]], expected: 4, label: 'whole log balances' },
+        { input: [[]], expected: 0, hidden: true, label: 'empty log' },
+        { input: [[0]], expected: 1, hidden: true, label: 'single closed day is a run of length 1' },
+        { input: [[2, -2, 3, 1, -4, 6]], expected: 5, hidden: true, label: 'longest run hides mid-log' },
+        { input: [[1, 2, 3]], expected: 0, hidden: true, label: 'strictly growing shelf' },
+        { input: [[-3, 1, 1, 1]], expected: 4, hidden: true, label: 'deficit repaid by the last day' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 325. Maximum Size Subarray Sum Equals k', note: 'same first-index map with a nonzero target' },
+        { name: 'LeetCode 525. Contiguous Array', note: 'map 0s to -1 and it becomes this exact problem' },
+      ],
+    },
+    {
+      id: 'trivia-band',
+      title: 'Streaks in the Scoring Band',
+      difficulty: 'medium',
+      statement: `
+A pub-trivia league reviews each match from its score sheet: round \`i\` changed the team's score by \`points[i]\` (bonuses positive, penalties negative). The league's stats columnist defines a *streak* as any non-empty run of consecutive rounds, and wants to know how many streaks landed inside the night's "respectable band": a total between \`lo\` and \`hi\`, **both inclusive**.
+
+Given \`points\`, \`lo\`, and \`hi\`, return the number of streaks whose totals fall within \`[lo, hi]\`. Two streaks are distinct if they begin or end at different rounds, even when they contain identical values.
+
+Score sheets are short — at most a couple thousand rounds — so examining every (start, end) pair is acceptable, **provided each pair is checked in constant time**. Re-adding every streak from scratch is not.
+`,
+      examples: [
+        {
+          input: 'points = [2, -1, 3], lo = 1, hi = 3',
+          output: '4',
+          explanation:
+            'Qualifying streaks: [2] (total 2), [2,-1] (1), [-1,3] (2), [3] (3). The full match nets 4 — just above the band — and [-1] sits below it.',
+        },
+        {
+          input: 'points = [1, 1, 1], lo = 2, hi = 2',
+          output: '2',
+          explanation: 'Only rounds 0–1 and rounds 1–2 total exactly 2.',
+        },
+        {
+          input: 'points = [-2, -3], lo = -5, hi = -1',
+          output: '3',
+          explanation: 'A fully negative band: [-2], [-3], and [-2,-3] (total -5) all land inside it.',
+        },
+      ],
+      constraints: [
+        '0 <= len(points) <= 2000',
+        '-10^4 <= points[i] <= 10^4',
+        '-10^8 <= lo <= hi <= 10^8',
+        'Streaks must be contiguous and non-empty',
+      ],
+      hints: [
+        'Three nested loops — start, end, re-sum — is O(n^3): around 8 billion steps at n = 2000. The innermost loop is the disposable one: streaks (s, e) and (s, e+1) differ by a single round. What one-time precomputation removes the re-summing entirely?',
+        'Every streak total is a difference of two running totals: total(s..e) = prefix[e+1] - prefix[s]. With the table built once, each candidate streak costs one subtraction and one comparison.',
+        'Build prefix in O(n), then loop over all (start, end) pairs testing lo <= prefix[end+1] - prefix[start] <= hi. That is about 2 million constant-time checks at n = 2000 — comfortably fast. (At n = 10^5 you would need order statistics over prefixes instead; different fight.)',
+      ],
+      functionName: 'count_band_streaks',
+      starterCode: `def count_band_streaks(points: list[int], lo: int, hi: int) -> int:
+    pass
+`,
+      solution: {
+        code: `def count_band_streaks(points: list[int], lo: int, hi: int) -> int:
+    n = len(points)
+    # prefix[i] = total of the first i rounds; prefix[0] = 0 is the empty
+    # prefix, so streaks starting at round 0 need no special case.
+    prefix = [0] * (n + 1)
+    for i, p in enumerate(points):
+        prefix[i + 1] = prefix[i] + p
+
+    count = 0
+    # Enumerate every streak; the prefix table makes each one O(1).
+    for start in range(n):
+        for end in range(start, n):
+            total = prefix[end + 1] - prefix[start]
+            if lo <= total <= hi:
+                count += 1
+    return count
+`,
+        commentary: `
+This problem has three natural cost tiers: O(n^3) by re-summing every streak, O(n^2) with precomputed running totals, and O(n log n) with order statistics over prefixes. The constraint \`n <= 2000\` is an explicit invitation to take the middle tier — reading limits to decide *which* tool they permit is the actual skill being exercised here.
+
+The prefix table collapses the innermost loop: \`total(s..e) = prefix[e+1] - prefix[s]\`, so every (start, end) pair becomes one subtraction and two comparisons — roughly 2 million constant-time checks at the limit versus billions of additions for brute force. Note what *doesn't* work: penalties make totals non-monotone in the endpoints, ruling out two-pointer tricks, and the hash-map counting trick from the exact-sum problem cannot serve a *range* of targets \`[lo, hi]\` without iterating over every integer inside it.
+
+For honesty's sake: at n = 10^5 the quadratic pair loop dies, and the real fix counts, for each end, how many earlier prefixes fall in \`[prefix[end+1] - hi, prefix[end+1] - lo]\` using a sorted structure — merge-sort counting or a Fenwick tree. Same prefix insight, heavier machinery. Naming that escalation path in an interview, even while implementing the quadratic version, is exactly the kind of judgment the small constraint is probing for.
+`,
+        complexity: 'Time O(n^2) after an O(n) build, Space O(n)',
+      },
+      testCases: [
+        { input: [[2, -1, 3], 1, 3], expected: 4, label: 'mixed signs, tight band' },
+        { input: [[1, 1, 1], 2, 2], expected: 2, label: 'band collapsed to one value' },
+        { input: [[-2, -3], -5, -1], expected: 3, label: 'fully negative band' },
+        { input: [[], 0, 10], expected: 0, hidden: true, label: 'empty score sheet' },
+        { input: [[0, 0, 0], 0, 0], expected: 6, hidden: true, label: 'all-zero rounds: every streak qualifies' },
+        { input: [[5], 6, 10], expected: 0, hidden: true, label: 'band entirely above the only streak' },
+        { input: [[3, -3, 4, -4], -1, 1], expected: 4, hidden: true, label: 'cancellations land inside a narrow band' },
+        { input: [[10, -10, 10], -100, 100], expected: 6, hidden: true, label: 'wide band captures all streaks' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 327. Count of Range Sums', note: 'the large-n version; needs order statistics over prefixes' },
+        { name: 'LeetCode 560. Subarray Sum Equals K', note: 'the band collapsed to a point — and suddenly O(n) works' },
+      ],
+    },
+    {
+      id: 'sustained-heat',
+      title: 'Sustained Heat',
+      difficulty: 'hard',
+      statement: `
+A climate desk flags *sustained* heat events, not one-day spikes. For a weather station you receive \`anomalies\`, where \`anomalies[i]\` is day \`i\`'s temperature departure from the seasonal norm in tenths of a degree (negative on cool days), plus an editorial rule: an event must span **at least** \`min_days\` consecutive days — a single scorching afternoon is weather, not an event.
+
+Return the maximum possible total anomaly over all stretches of at least \`min_days\` consecutive days. The log always has at least \`min_days\` entries, so some stretch qualifies; in a cold season the answer may be negative — report the best qualifying stretch regardless.
+
+Station logs run to 100,000 days, so comparing all stretches pairwise is too slow.
+`,
+      examples: [
+        {
+          input: 'anomalies = [3, -5, 4, 2], min_days = 2',
+          output: '6',
+          explanation:
+            'Days 2–3 total 4 + 2 = 6. Day 2 alone scores 4 but is too short to qualify; the full log only nets 4.',
+        },
+        {
+          input: 'anomalies = [-4, -2, -7], min_days = 2',
+          output: '-6',
+          explanation: 'Every qualifying stretch is negative; days 0–1 (total -6) is the least bad.',
+        },
+        {
+          input: 'anomalies = [1, 2, 3], min_days = 3',
+          output: '6',
+          explanation: 'Only the full stretch is long enough, so its total of 6 is the answer.',
+        },
+      ],
+      constraints: [
+        '1 <= len(anomalies) <= 100_000',
+        '1 <= min_days <= len(anomalies)',
+        '-10^4 <= anomalies[i] <= 10^4',
+      ],
+      hints: [
+        'The classic "abandon the running sum once it goes negative" instinct breaks here: the minimum-length rule can force the best stretch to carry a cold snap it would rather drop. For a FIXED final day, what would make one allowed starting day better than another?',
+        'Express any stretch as prefix[end] - prefix[start]. Fixing end, the total is maximized by the SMALLEST prefix[start] among the allowed starts — exactly those with end - start >= min_days.',
+        'Sweep end from min_days to n, maintaining min_prefix = min(prefix[0..end - min_days]); each step admits exactly one new prefix entry into the pool, so the minimum updates in O(1). The answer is the max of prefix[end] - min_prefix over the sweep.',
+      ],
+      functionName: 'max_sustained_anomaly',
+      starterCode: `def max_sustained_anomaly(anomalies: list[int], min_days: int) -> int:
+    pass
+`,
+      solution: {
+        code: `def max_sustained_anomaly(anomalies: list[int], min_days: int) -> int:
+    n = len(anomalies)
+    # prefix[i] = total anomaly of the first i days; prefix[0] = 0 is the
+    # empty prefix, which lets stretches anchored at day 0 compete.
+    prefix = [0] * (n + 1)
+    for i, a in enumerate(anomalies):
+        prefix[i + 1] = prefix[i] + a
+
+    best = None             # max total over all qualifying stretches
+    min_prefix = prefix[0]  # smallest prefix among currently allowed starts
+    for end in range(min_days, n + 1):
+        # A stretch ending at day end-1 with length >= min_days may start
+        # at any prefix index 0..end - min_days. Stepping end forward
+        # admits exactly ONE new start into that pool — fold it in.
+        min_prefix = min(min_prefix, prefix[end - min_days])
+        candidate = prefix[end] - min_prefix
+        if best is None or candidate > best:
+            best = candidate
+    return best
+`,
+        commentary: `
+Without the length rule this is the classic maximum-subarray problem. With it, the Kadane-style greedy fails: the rule can force the best stretch to *carry* losing days it would otherwise drop, because shrinking below \`min_days\` disqualifies it (the hidden \`[-1, 8, -2, 8, -1]\` case must keep the \`-2\` to join the two 8s).
+
+Prefix sums make the constraint mechanical. Any stretch total is \`prefix[end] - prefix[start]\`, and the length rule is just an index inequality: \`start <= end - min_days\`. Fix \`end\` and the best partner is whichever allowed prefix is **smallest** — so the whole problem becomes a sweep that maintains the minimum of a growing pool of prefixes. The crucial observation is that the pool only ever *grows*: stepping \`end\` forward admits exactly one new start (\`prefix[end - min_days]\`) and evicts none. A growing pool means a single running minimum suffices, updated in O(1) — no heap, no deque. (Add a *maximum*-length rule and the pool would slide, evicting old prefixes; that is when a monotonic deque becomes necessary. Knowing which constraint triggers which machinery is the senior-level discriminator here.)
+
+Initialization carries the edge cases. The empty prefix \`prefix[0] = 0\` is in the pool from the first valid \`end\`, which is how stretches anchored at day 0 compete; and since \`min_days <= n\` is guaranteed, the sweep always produces a candidate, so an all-negative season correctly returns the least-bad qualifying total instead of a fabricated 0. With \`min_days = 1\` the algorithm quietly degenerates into the prefix-min view of maximum subarray — a useful sanity check.
+`,
+        complexity: 'Time O(n), Space O(n)',
+      },
+      testCases: [
+        { input: [[3, -5, 4, 2], 2], expected: 6, label: 'short hot tail beats the full log' },
+        { input: [[-4, -2, -7], 2], expected: -6, label: 'cold season: best answer is negative' },
+        { input: [[1, 2, 3], 3], expected: 6, label: 'only the full stretch qualifies' },
+        { input: [[2, -1, 2, -1, 5], 1], expected: 7, hidden: true, label: 'min_days = 1 degenerates to max subarray' },
+        { input: [[5], 1], expected: 5, hidden: true, label: 'single-day log' },
+        {
+          input: [[10, -100, 10, 10, 10], 3],
+          expected: 30,
+          hidden: true,
+          label: 'best stretch sits entirely after the crash',
+        },
+        { input: [[0, 0, 0, 0], 2], expected: 0, hidden: true, label: 'flat season' },
+        {
+          input: [[-1, 8, -2, 8, -1], 2],
+          expected: 14,
+          hidden: true,
+          label: 'optimal stretch must carry a losing middle day',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 53. Maximum Subarray', note: 'min_days = 1; compare the prefix-min view against Kadane' },
+        { name: 'LeetCode 643. Maximum Average Subarray I', note: 'the fixed-length cousin of this sweep' },
+      ],
+    },
   ],
   quiz: [
     {

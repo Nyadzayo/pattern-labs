@@ -590,6 +590,648 @@ Each character of \`shelf\` is absorbed once and released at most once, so the s
         { name: 'LeetCode 209. Minimum Size Subarray Sum', note: 'numeric covering window' },
       ],
     },
+    {
+      id: 'packed-classes',
+      title: 'Packed Class Stretches',
+      difficulty: 'easy',
+      statement: `A gym tracks how many members showed up to its sunrise spin class each day, as a list of integers \`attendance\` in calendar order. Management renews an instructor's prime-time slot based on sustained demand, not one-off spikes, so they judge whole scheduling blocks at a time.
+
+Write \`count_packed_stretches(attendance, k, threshold)\` that returns the number of stretches of **exactly \`k\` consecutive days** whose **average attendance is at least \`threshold\`**.
+
+Count every qualifying window position; different stretches may overlap.`,
+      examples: [
+        {
+          input: 'attendance = [12, 8, 10, 11, 4, 9], k = 3, threshold = 10',
+          output: '1',
+          explanation:
+            'Only the first stretch [12, 8, 10] averages 10 (sum 30, needing 30). The later windows sum to 29, 25, and 24 — all short.',
+        },
+        {
+          input: 'attendance = [5, 5, 5], k = 1, threshold = 5',
+          output: '3',
+          explanation: 'With k = 1 every single day is its own stretch, and each one hits the average exactly.',
+        },
+        {
+          input: 'attendance = [2, 3], k = 2, threshold = 4',
+          output: '0',
+          explanation: 'The only window sums to 5, but an average of 4 over 2 days needs a sum of at least 8.',
+        },
+      ],
+      constraints: [
+        '1 <= k <= len(attendance) <= 100_000',
+        '0 <= attendance[i] <= 10_000',
+        '0 <= threshold <= 10_000',
+        'Return a single integer (the number of qualifying windows).',
+      ],
+      hints: [
+        'Every stretch being judged has exactly the same width. What does that mean for comparing their averages with each other — and with the threshold?',
+        'Average >= threshold over k days is exactly the same test as sum >= threshold * k — an all-integer comparison with no division and no float rounding to worry about.',
+        'Sum the first k days once, then slide: add the day entering on the right, subtract the day leaving on the left, and count every position where the running sum reaches threshold * k.',
+      ],
+      functionName: 'count_packed_stretches',
+      starterCode: `def count_packed_stretches(attendance: list[int], k: int, threshold: int) -> int:
+    pass`,
+      solution: {
+        code: `def count_packed_stretches(attendance: list[int], k: int, threshold: int) -> int:
+    # Same-width windows mean "average >= threshold" is just
+    # "sum >= threshold * k": one integer target, no division, no floats.
+    target = threshold * k
+
+    # Pay full price for the first window exactly once.
+    window = sum(attendance[:k])
+    count = 1 if window >= target else 0
+
+    # Slide: one day enters on the right, the stale day leaves on the left.
+    for right in range(k, len(attendance)):
+        window += attendance[right] - attendance[right - k]
+        if window >= target:
+            count += 1
+
+    return count`,
+        commentary: `The average is a decoy. Because every window has the same width \`k\`, comparing averages against \`threshold\` is identical to comparing sums against \`threshold * k\` — and the sum is what a sliding window maintains for free. Doing the algebra up front sidesteps division entirely, which matters in Python less for speed than for correctness habits: integer comparisons can never suffer float rounding at the boundary (a window summing to exactly \`threshold * k\` must count).
+
+From there it is the plain fixed-size machinery: sum the first \`k\` days once (\`O(k)\`), then each slide is the *add-one, drop-one* update — \`attendance[right]\` enters, \`attendance[right - k]\` leaves — followed by a single comparison. The only difference from a "best window" problem is the bookkeeping: instead of tracking a maximum we increment a counter every time the test passes, which is why overlapping stretches are all counted naturally.
+
+A zero threshold needs no special case: the target becomes 0 and every window (sums are non-negative here) qualifies, which is the correct reading of "average at least 0".`,
+        complexity: 'Time O(n), Space O(1)',
+      },
+      testCases: [
+        {
+          input: [[12, 8, 10, 11, 4, 9], 3, 10],
+          expected: 1,
+          label: 'one packed block',
+        },
+        {
+          input: [[5, 5, 5], 1, 5],
+          expected: 3,
+          label: 'every day qualifies',
+        },
+        {
+          input: [[2, 3], 2, 4],
+          expected: 0,
+          label: 'just under the bar',
+        },
+        {
+          input: [[10, 10, 10, 10], 2, 10],
+          expected: 3,
+          label: 'borderline averages count',
+        },
+        {
+          input: [[4, 4, 4, 4, 4], 5, 4],
+          expected: 1,
+          label: 'k equals length',
+        },
+        {
+          input: [[0, 0, 0], 2, 0],
+          expected: 2,
+          hidden: true,
+        },
+        {
+          input: [[1, 2, 3, 4, 5, 6], 2, 4],
+          expected: 2,
+          hidden: true,
+        },
+        {
+          input: [[7], 1, 8],
+          expected: 0,
+          hidden: true,
+        },
+      ],
+      furtherPractice: [
+        {
+          name: 'LeetCode 1343. Number of Sub-arrays of Size K and Average Greater than or Equal to Threshold',
+          note: 'classic version',
+        },
+        { name: 'LeetCode 2090. K Radius Subarray Averages', note: 'centered fixed windows' },
+      ],
+    },
+    {
+      id: 'pledge-surge',
+      title: 'Shortest Pledge Surge',
+      difficulty: 'medium',
+      statement: `A charity telethon logs every pledge as it arrives: \`donations\` is the list of amounts, in order, and every amount is **strictly positive**. After the broadcast, the producers want to spotlight the night's most electric moment — the burst of generosity that cleared a milestone fastest.
+
+Write \`shortest_pledge_run(donations, goal)\` that returns the length of the **shortest run of consecutive pledges whose total is at least \`goal\`**. If no run of pledges — not even the entire night — reaches the goal, return \`0\`.`,
+      examples: [
+        {
+          input: 'donations = [2, 3, 1, 2, 4, 3], goal = 7',
+          output: '2',
+          explanation:
+            'The back-to-back pledges [4, 3] total 7. No single pledge reaches the goal, so 2 is the minimum.',
+        },
+        {
+          input: 'donations = [15], goal = 8',
+          output: '1',
+          explanation: 'One generous pledge clears the goal on its own.',
+        },
+        {
+          input: 'donations = [1, 1, 1, 1], goal = 10',
+          output: '0',
+          explanation: 'All four pledges together total only 4, so no run can ever reach 10.',
+        },
+      ],
+      constraints: [
+        '0 <= len(donations) <= 100_000',
+        '1 <= donations[i] <= 10**6 (every pledge is strictly positive)',
+        '1 <= goal <= 10**9',
+        'Return a single integer (the shortest qualifying run length, or 0 if none exists).',
+      ],
+      hints: [
+        "Every pledge is strictly positive. What is guaranteed to happen to a run's total when you extend it by one pledge — and when you trim its oldest pledge?",
+        'Grow a window to the right while accumulating its sum. The first time the sum reaches the goal you have a candidate — but a shorter run might end at the same pledge.',
+        'While the window total is still >= goal, record right - left + 1 and subtract donations[left] as you advance left. Positivity guarantees the total only falls as you trim, so the loop always stops just below the goal.',
+      ],
+      functionName: 'shortest_pledge_run',
+      starterCode: `def shortest_pledge_run(donations: list[int], goal: int) -> int:
+    pass`,
+      solution: {
+        code: `def shortest_pledge_run(donations: list[int], goal: int) -> int:
+    left = 0
+    total = 0                      # sum of the current window of pledges
+    best = len(donations) + 1      # sentinel: longer than any real run
+
+    for right, amount in enumerate(donations):
+        # Absorb the newest pledge into the window.
+        total += amount
+
+        # While the window still meets the goal it is a candidate:
+        # record it, then trim from the left hunting for something shorter.
+        while total >= goal:
+            length = right - left + 1
+            if length < best:
+                best = length
+            total -= donations[left]
+            left += 1
+
+    # If the sentinel survived, no run ever reached the goal.
+    return best if best <= len(donations) else 0`,
+        commentary: `This is the *shortest covering window*, the mirror image of "longest valid" problems — and mixing up the two shrink rules is the classic way to get it wrong. For longest-valid you shrink while the window is **broken**; here the window becomes interesting precisely when it is **valid** (total >= goal), so you record and shrink *while it stays valid*, squeezing out every shorter candidate that ends at the same right edge.
+
+Strict positivity is the load-bearing assumption. Extending the window can only raise the total and trimming can only lower it, so "total >= goal" is monotone in the window: once the shrink loop drops below the goal there is no point trying further left starts for this right edge, and the abandoned prefixes never need revisiting. Allow zero or negative pledges and that one-way guarantee evaporates — trimming might *raise* the total — which is why the harder variant of this problem needs prefix sums and a monotonic deque instead.
+
+The sentinel \`len(donations) + 1\` doubles as the "not found" flag: no real run can be that long, so if it survives the scan the function returns 0 without a separate found-flag. As always, \`left\` only moves forward, so despite the nested loop every pledge is absorbed once and released at most once — amortized \`O(n)\`.`,
+        complexity: 'Time O(n), Space O(1)',
+      },
+      testCases: [
+        {
+          input: [[2, 3, 1, 2, 4, 3], 7],
+          expected: 2,
+          label: 'pair beats the goal',
+        },
+        {
+          input: [[15], 8],
+          expected: 1,
+          label: 'single pledge suffices',
+        },
+        {
+          input: [[1, 1, 1, 1], 10],
+          expected: 0,
+          label: 'goal unreachable',
+        },
+        {
+          input: [[5, 1, 3, 5, 10, 7, 4, 9, 2, 8], 15],
+          expected: 2,
+          label: 'surge buried mid-stream',
+        },
+        {
+          input: [[], 5],
+          expected: 0,
+          label: 'no pledges at all',
+        },
+        {
+          input: [[1, 2, 3, 4, 5], 15],
+          expected: 5,
+          hidden: true,
+        },
+        {
+          input: [[1, 2, 3, 4, 5], 16],
+          expected: 0,
+          hidden: true,
+        },
+        {
+          input: [[3, 3, 3, 3], 3],
+          expected: 1,
+          hidden: true,
+        },
+        {
+          input: [[1, 4, 4], 8],
+          expected: 2,
+          hidden: true,
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 209. Minimum Size Subarray Sum', note: 'classic version' },
+        {
+          name: 'LeetCode 862. Shortest Subarray with Sum at Least K',
+          note: 'negatives allowed — the plain window breaks; a deque fixes it',
+        },
+      ],
+    },
+    {
+      id: 'riff-shuffle',
+      title: 'Shuffled Riff Detector',
+      difficulty: 'medium',
+      statement: `A music-transcription plugin renders a long studio take as the string \`melody\`, one lowercase letter per note, in playing order. The bandleader suspects the session guitarist kept sneaking the band's signature lick into the take — disguised by reshuffling its notes.
+
+A stretch of the take **quotes** the lick when it has the same length as the string \`riff\` and uses **exactly the same notes with the same multiplicities**, in any order.
+
+Write \`count_shuffled_riffs(melody, riff)\` that returns the number of starting positions in \`melody\` where a quoting stretch begins. Overlapping stretches all count.`,
+      examples: [
+        {
+          input: 'melody = "abab", riff = "ab"',
+          output: '3',
+          explanation: 'The windows "ab", "ba", and "ab" (starting at 0, 1, and 2) each use one a and one b.',
+        },
+        {
+          input: 'melody = "cbaebabacd", riff = "abc"',
+          output: '2',
+          explanation: 'The stretches starting at index 0 ("cba") and index 6 ("bac") both reshuffle a, b, c.',
+        },
+        {
+          input: 'melody = "aaa", riff = "aa"',
+          output: '2',
+          explanation:
+            'Both length-2 windows are "aa". A note repeated in the riff must appear the same number of times in the window.',
+        },
+        {
+          input: 'melody = "abc", riff = "abcd"',
+          output: '0',
+          explanation: 'The riff is longer than the entire take, so nothing can quote it.',
+        },
+      ],
+      constraints: [
+        '0 <= len(melody) <= 100_000',
+        '1 <= len(riff) <= 10_000',
+        'melody and riff consist of lowercase letters a-z',
+        'Return a single integer (the number of quoting start positions).',
+      ],
+      hints: [
+        'Two stretches of the same length starting one note apart share almost all of their notes. How much actually changes between them?',
+        "Keep note counts for a fixed window of len(riff) characters and compare them against the riff's counts. Sliding the window updates exactly two letters: the one entering and the one leaving.",
+        'Comparing whole count maps every step wastes work. Track off = how many letters currently mismatch their required count, adjusting it just before and just after each single-letter update; the window quotes the riff exactly when off == 0.',
+      ],
+      functionName: 'count_shuffled_riffs',
+      starterCode: `def count_shuffled_riffs(melody: str, riff: str) -> int:
+    pass`,
+      solution: {
+        code: `from collections import Counter
+
+def count_shuffled_riffs(melody: str, riff: str) -> int:
+    k = len(riff)
+    if k == 0 or k > len(melody):
+        return 0
+
+    need = Counter(riff)            # note -> count the riff requires
+    window = Counter(melody[:k])    # note -> count inside the first window
+
+    # off = number of distinct letters whose window count != required count.
+    off = sum(1 for c in set(need) | set(window) if window[c] != need[c])
+
+    count = 1 if off == 0 else 0
+
+    for right in range(k, len(melody)):
+        # One note enters on the right ...
+        enter = melody[right]
+        if window[enter] == need[enter]:
+            off += 1                # this letter was matched; it drifts now
+        window[enter] += 1
+        if window[enter] == need[enter]:
+            off -= 1                # it drifted INTO a match instead
+
+        # ... and the stale note drops off the left.
+        leave = melody[right - k]
+        if window[leave] == need[leave]:
+            off += 1
+        window[leave] -= 1
+        if window[leave] == need[leave]:
+            off -= 1
+
+        # The window quotes the riff exactly when no letter mismatches.
+        if off == 0:
+            count += 1
+
+    return count`,
+        commentary: `Two stretches "use the same notes with the same multiplicities" exactly when their count maps are equal — so the problem is really *count the fixed-size windows whose Counter equals the riff's Counter*. The window has a fixed width (\`len(riff)\`), so both edges march together and each slide touches precisely two letters.
+
+The naive check — rebuild or fully compare the maps each step — costs \`O(26)\` per slide. Correct, but the elegant trick is the \`off\` tally: the number of letters whose window count currently disagrees with the required count. A single-letter update can only change *that letter's* agreement, so we adjust \`off\` with the bracketing pattern: if the letter was matched before the update it is about to drift (\`off += 1\`); if it lands matched after the update it just got fixed (\`off -= 1\`). All other letters are untouched. The whole-window test collapses to \`off == 0\`, a genuine \`O(1)\` per slide.
+
+One subtlety makes \`Counter\` the right container: missing keys read as 0 without being inserted, so "the window holds zero of this letter" and "the riff requires zero of this letter" compare equal automatically — surplus letters that drain back to zero never need deleting for the comparison to stay honest (contrast with distinct-count problems, where stale zero keys are a bug).`,
+        complexity: 'Time O(n + m), Space O(1) — counts bounded by the 26-letter alphabet',
+      },
+      testCases: [
+        {
+          input: ['abab', 'ab'],
+          expected: 3,
+          label: 'overlapping quotes',
+        },
+        {
+          input: ['cbaebabacd', 'abc'],
+          expected: 2,
+          label: 'two scattered quotes',
+        },
+        {
+          input: ['aaa', 'aa'],
+          expected: 2,
+          label: 'repeated note in riff',
+        },
+        {
+          input: ['abc', 'abcd'],
+          expected: 0,
+          label: 'riff longer than take',
+        },
+        {
+          input: ['xyz', 'zyx'],
+          expected: 1,
+          label: 'whole take is the quote',
+        },
+        {
+          input: ['', 'a'],
+          expected: 0,
+          hidden: true,
+        },
+        {
+          input: ['abcabcabc', 'abc'],
+          expected: 7,
+          hidden: true,
+        },
+        {
+          input: ['aabbcc', 'abc'],
+          expected: 0,
+          hidden: true,
+        },
+        {
+          input: ['bbaca', 'ab'],
+          expected: 1,
+          hidden: true,
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 438. Find All Anagrams in a String', note: 'classic version (returns indices)' },
+        { name: 'LeetCode 567. Permutation in String', note: 'existence instead of counting' },
+      ],
+    },
+    {
+      id: 'feeder-watch',
+      title: 'Feeder Watch Variety Report',
+      difficulty: 'medium',
+      statement: `A birdwatcher's smart feeder camera identifies each visiting bird and appends its **species ID** (an integer) to the list \`sightings\`, in the order the visits happened. For a community-science dashboard, the watcher wants a rolling diversity report: for **every** window of \`k\` consecutive sightings, how many **distinct species** appeared in it?
+
+Write \`daily_variety_series(sightings, k)\` that returns a list with one integer per window — its distinct-species count — **ordered from the earliest window to the latest** (the window starting at index 0 comes first). If \`k\` exceeds the number of sightings, return an empty list.`,
+      examples: [
+        {
+          input: 'sightings = [1, 2, 1, 3, 2], k = 3',
+          output: '[2, 3, 3]',
+          explanation: 'Window [1, 2, 1] holds 2 distinct species; [2, 1, 3] and [1, 3, 2] each hold 3.',
+        },
+        {
+          input: 'sightings = [4, 4, 4], k = 2',
+          output: '[1, 1]',
+          explanation: 'The same bird kept returning; both windows contain a single species.',
+        },
+        {
+          input: 'sightings = [7, 8], k = 5',
+          output: '[]',
+          explanation: 'No window of 5 sightings exists in a log of 2.',
+        },
+      ],
+      constraints: [
+        '1 <= k <= 100_000',
+        '0 <= len(sightings) <= 100_000',
+        '0 <= sightings[i] <= 10**9',
+        'Return a list of len(sightings) - k + 1 integers ordered by window start (empty if k > len(sightings)).',
+      ],
+      hints: [
+        'Two consecutive windows disagree about only two sightings. Is a fresh scan of all k entries really necessary for every line of the report?',
+        'Maintain a dict mapping species -> how many times it appears in the current window; each report value is simply the size of that dict after the window moves.',
+        "When a departing species' count reaches zero, delete its key — a lingering zero-count entry makes len(counts) over-report diversity. Append len(counts) once per slide.",
+      ],
+      functionName: 'daily_variety_series',
+      starterCode: `def daily_variety_series(sightings: list[int], k: int) -> list[int]:
+    pass`,
+      solution: {
+        code: `def daily_variety_series(sightings: list[int], k: int) -> list[int]:
+    n = len(sightings)
+    if k > n:
+        return []
+
+    counts = {}      # species ID -> occurrences inside the current window
+    series = []
+
+    # Pay full price for the first window exactly once.
+    for i in range(k):
+        counts[sightings[i]] = counts.get(sightings[i], 0) + 1
+    series.append(len(counts))
+
+    # Slide: one sighting enters on the right, one leaves on the left.
+    for right in range(k, n):
+        enter = sightings[right]
+        counts[enter] = counts.get(enter, 0) + 1
+
+        leave = sightings[right - k]
+        counts[leave] -= 1
+        if counts[leave] == 0:
+            del counts[leave]    # critical: len(counts) must mean "distinct"
+
+        series.append(len(counts))
+
+    return series`,
+        commentary: `Most window problems distill the scan into a single best value; this one asks for the **entire series** — one answer per window position. That changes nothing about the engine and everything about the framing: the fixed-size window is a machine that, after each one-step slide, can emit *any* O(1)-readable property of its state. Here that property is \`len(counts)\`.
+
+Recomputing distinct counts per window costs \`O(n * k)\`. The incremental version exploits that adjacent windows differ by exactly two sightings: the entering ID's count rises (possibly creating a key — diversity up), the leaving ID's count falls (possibly hitting zero — diversity down). Every other species is untouched, so the dict's size stays truthful without a scan.
+
+The one trap is the zero-count key. \`counts[leave] -= 1\` leaving a 0 behind keeps the key in the dict, and \`len(counts)\` silently over-reports from then on — the bug compounds with every eviction and no test on small inputs with all-distinct species will ever catch it. Deleting on zero is what makes "size of the map" and "distinct species in window" the same number.
+
+Output order is fully determined: one value per window, earliest start first, so the result is reproducible without any tie-breaking rules. Time is \`O(n)\` (each sighting enters and leaves the dict once); the dict never holds more than \`k\` keys.`,
+        complexity: 'Time O(n), Space O(k)',
+      },
+      testCases: [
+        {
+          input: [[1, 2, 1, 3, 2], 3],
+          expected: [2, 3, 3],
+          label: 'mixed flock',
+        },
+        {
+          input: [[4, 4, 4], 2],
+          expected: [1, 1],
+          label: 'one regular visitor',
+        },
+        {
+          input: [[7, 8], 5],
+          expected: [],
+          label: 'window wider than log',
+        },
+        {
+          input: [[1, 2, 3, 4], 1],
+          expected: [1, 1, 1, 1],
+          label: 'k = 1',
+        },
+        {
+          input: [[5, 5, 1, 5, 5], 4],
+          expected: [2, 2],
+          label: 'rare visitor mid-log',
+        },
+        {
+          input: [[9], 1],
+          expected: [1],
+          hidden: true,
+        },
+        {
+          input: [[2, 2, 3, 3, 2, 2], 3],
+          expected: [2, 2, 2, 2],
+          hidden: true,
+        },
+        {
+          input: [[1, 2, 3, 1, 2, 3, 4], 7],
+          expected: [4],
+          hidden: true,
+        },
+        {
+          input: [[], 1],
+          expected: [],
+          hidden: true,
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 1852. Distinct Numbers in Each Subarray', note: 'classic version' },
+        {
+          name: 'LeetCode 992. Subarrays with K Different Integers',
+          note: 'distinct counts meet the exactly-K trick',
+        },
+      ],
+    },
+    {
+      id: 'loom-band',
+      title: 'Longest Loom Band',
+      difficulty: 'hard',
+      statement: `A weaving studio finishes each scarf with a decorative top row described by the string \`row\`: one uppercase letter per yarn segment, naming its color. A client wants the longest possible **solid-color band** — a contiguous run of segments all showing one color.
+
+The finisher can over-dye at most \`k\` segments in total (an over-dyed segment can become any color), and only segments inside the chosen band are worth dyeing.
+
+Write \`longest_solid_band(row, k)\` that returns the length of the longest contiguous stretch of \`row\` that can be made single-colored using at most \`k\` over-dyes.`,
+      examples: [
+        {
+          input: 'row = "ABAB", k = 2',
+          output: '4',
+          explanation: 'Over-dye both B segments (or both A segments) and the whole row becomes one color.',
+        },
+        {
+          input: 'row = "AABABBA", k = 1',
+          output: '4',
+          explanation:
+            'Within "AABA" (segments 0–3) only the lone B needs dyeing. No 5-segment stretch can be fixed with a single dye.',
+        },
+        {
+          input: 'row = "ABCDE", k = 1',
+          output: '2',
+          explanation:
+            'Any two adjacent segments work: dye one to match the other. Three segments of three different colors would need two dyes.',
+        },
+        {
+          input: 'row = "AAAA", k = 0',
+          output: '4',
+          explanation: 'The row is already solid; no dye is needed.',
+        },
+      ],
+      constraints: [
+        '0 <= len(row) <= 100_000',
+        'row consists of uppercase letters A-Z',
+        '0 <= k <= 100_000',
+        'Return a single integer (the maximum achievable band length).',
+      ],
+      hints: [
+        'Pick any candidate band. If you had to make it solid with the fewest possible dyes, which of its segments would you obviously leave untouched?',
+        'A band is fixable exactly when (band length - count of its most common color) <= k. Keep per-color counts in a window and slide the left edge forward whenever the window stops being fixable.',
+        'You never need to recompute the dominant count when the window shrinks: a stale (historical) maximum only makes the check conservative, never permissive, and the answer can only improve when a genuinely higher dominant count appears. Track max_freq monotonically and record right - left + 1 each step.',
+      ],
+      functionName: 'longest_solid_band',
+      starterCode: `def longest_solid_band(row: str, k: int) -> int:
+    pass`,
+      solution: {
+        code: `def longest_solid_band(row: str, k: int) -> int:
+    counts = {}     # color -> occurrences inside the current window
+    left = 0
+    best = 0
+    max_freq = 0    # highest single-color count seen in ANY window so far
+
+    for right, color in enumerate(row):
+        # Absorb the new segment.
+        counts[color] = counts.get(color, 0) + 1
+        if counts[color] > max_freq:
+            max_freq = counts[color]
+
+        # Dyes needed = segments NOT of the dominant color. If even the
+        # (possibly stale) dominant count cannot justify this width, slide.
+        while (right - left + 1) - max_freq > k:
+            counts[row[left]] -= 1
+            left += 1
+            # max_freq is deliberately NOT recomputed here — see commentary.
+
+        # The window width here never exceeds a width some real window earned.
+        best = max(best, right - left + 1)
+
+    return best`,
+        commentary: `The greedy core: to make a band solid you keep its most common color and dye everything else, so a band of width \`w\` whose dominant color appears \`f\` times needs \`w - f\` dyes. The window invariant is therefore \`(right - left + 1) - max_freq <= k\`.
+
+Maintaining \`max_freq\` *exactly* is the expensive part — when the dominant color's count drops on a shrink, finding the new maximum means scanning all 26 counts. The hard-won insight of this problem is that you may simply **not bother**. Let \`max_freq\` be the highest single-color count ever observed in any window (it only ratchets up). Two facts make this safe:
+
+1. **No false positives that matter.** A stale, too-large \`max_freq\` makes \`w - max_freq\` an *underestimate* of dyes needed, so the window may linger one segment wider than strictly legal. But \`best\` recorded that width back when some window genuinely earned it with a real dominant count — the answer never exceeds the true optimum.
+2. **No missed improvements.** The answer can only grow past the current \`best\` when a window with a strictly larger dominant count appears, and at that moment \`max_freq\` is fresh by construction (it was just raised by the entering color).
+
+In effect the window's width never shrinks — it slides at the largest size validated so far and waits to be stretched by a better dominant count. That is also why the \`while\` runs at most one iteration per step. Each segment enters once and leaves at most once: \`O(n)\` time, and the counts dict holds at most 26 keys.`,
+        complexity: 'Time O(n), Space O(1) — at most 26 color counts',
+      },
+      testCases: [
+        {
+          input: ['ABAB', 2],
+          expected: 4,
+          label: 'dye half the row',
+        },
+        {
+          input: ['AABABBA', 1],
+          expected: 4,
+          label: 'classic budget squeeze',
+        },
+        {
+          input: ['ABCDE', 1],
+          expected: 2,
+          label: 'all colors different',
+        },
+        {
+          input: ['AAAA', 0],
+          expected: 4,
+          label: 'already solid',
+        },
+        {
+          input: ['', 3],
+          expected: 0,
+          label: 'empty row',
+        },
+        {
+          input: ['ABBB', 2],
+          expected: 4,
+          hidden: true,
+        },
+        {
+          input: ['ABABBA', 0],
+          expected: 2,
+          hidden: true,
+        },
+        {
+          input: ['XYXYXYXY', 3],
+          expected: 7,
+          hidden: true,
+        },
+        {
+          input: ['Q', 0],
+          expected: 1,
+          hidden: true,
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 424. Longest Repeating Character Replacement', note: 'classic version' },
+        { name: 'LeetCode 2024. Maximize the Confusion of an Exam', note: 'two-symbol variant' },
+      ],
+    },
   ],
   quiz: [
     {

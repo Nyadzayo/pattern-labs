@@ -467,6 +467,508 @@ One detail worth internalizing: pushing the arrival into a half and *then* rebal
         { name: 'IPO', note: 'two heaps used as a hand-off pipeline instead of halves' },
       ],
     },
+    {
+      id: 'chain-welding',
+      title: 'Cheapest Chain Assembly',
+      difficulty: 'easy',
+      statement: `
+A metal workshop has a pile of chain segments that must be welded into one continuous chain. Welding two pieces together takes minutes equal to the **combined length of the two pieces** (the whole joined piece has to be heated through), and the result is a single new piece of that combined length, which goes back in the pile.
+
+Given \`segments\`, a list of segment lengths, return the **minimum total minutes** of welding needed to end up with a single chain. With one segment — or none — no welding is needed and the answer is \`0\`.
+
+The order of welds is entirely up to you, and it matters: a careless order can reheat the longest pieces over and over.
+`,
+      examples: [
+        {
+          input: 'segments = [4, 3, 2, 6]',
+          output: '29',
+          explanation:
+            'Weld 2 + 3 = 5 (5 minutes), then 4 + 5 = 9 (9 minutes), then 6 + 9 = 15 (15 minutes). Total 5 + 9 + 15 = 29. Any order that joins the 6 early costs more.',
+        },
+        {
+          input: 'segments = [1, 2]',
+          output: '3',
+          explanation: 'One weld, costing the combined length 1 + 2 = 3.',
+        },
+        {
+          input: 'segments = [10]',
+          output: '0',
+          explanation: 'A single segment is already a complete chain — nothing to weld.',
+        },
+      ],
+      constraints: [
+        '0 <= len(segments) <= 100_000',
+        '1 <= segments[i] <= 10^6',
+        'Each weld joins exactly two pieces and costs their combined length',
+      ],
+      hints: [
+        'Every link in a piece gets reheated each time that piece participates in a weld. Which segments should end up being welded into many times, and which as few times as possible?',
+        'The total cost equals each original segment length multiplied by the number of welds its piece passes through. To minimize that, the longest segments must join as late as possible — so at every step, fuse the two currently shortest pieces.',
+        'heapify the lengths in O(n). While more than one piece remains: heappop twice, add the sum to a running total, heappush the sum back. Return the total when one piece is left.',
+      ],
+      functionName: 'min_weld_minutes',
+      starterCode: `def min_weld_minutes(segments: list[int]) -> int:
+    pass
+`,
+      solution: {
+        code: `import heapq
+
+def min_weld_minutes(segments: list[int]) -> int:
+    # Fewer than two pieces: nothing to weld.
+    if len(segments) < 2:
+        return 0
+    heap = list(segments)
+    heapq.heapify(heap)  # O(n) — cheaper than n individual pushes
+    total = 0
+    while len(heap) > 1:
+        # Greedy choice: always fuse the two shortest pieces. Whatever we
+        # fuse now will be re-paid inside every later weld it joins, so the
+        # smallest possible sums should be the ones repeated the most.
+        a = heapq.heappop(heap)
+        b = heapq.heappop(heap)
+        total += a + b
+        # The merged piece re-enters the pile as a single candidate.
+        heapq.heappush(heap, a + b)
+    return total
+`,
+        commentary: `
+The cost structure is the whole problem. Each weld charges the combined length of both pieces, so a segment's length is billed once for *every* weld its piece passes through on the way to the final chain. Welding the longest segment early means its length is re-billed in every subsequent join; deferring it means it is billed once or twice at the end. The optimal schedule therefore pushes big lengths toward the *last* welds — which is exactly what "always fuse the two smallest" achieves. (This is the same exchange argument that makes Huffman coding optimal: any schedule that joins a non-minimal pair early can be improved by swapping in the two smallest.)
+
+The heap is what makes the greedy *executable*. After every weld, the pile changes: two pieces vanish, a new one appears, and we again need the two smallest of the mutated collection. That is the heap's exact contract — \`O(log n)\` pop, pop, push, repeated \`n - 1\` times. A sorted list gets the first pair right and then pays \`O(n)\` per re-insertion; re-sorting every round is \`O(n^2 log n)\` of wasted work.
+
+Note the shape of this facet: unlike top-k problems where the heap is a *filter* that stays small, here the heap holds everything and acts as a *scheduler* — the pattern to recognize is "repeatedly combine the two extremes and feed the result back in."
+`,
+        complexity: 'Time O(n log n), Space O(n)',
+      },
+      testCases: [
+        { input: [[4, 3, 2, 6]], expected: 29, label: 'worked example' },
+        { input: [[1, 2]], expected: 3, label: 'single weld' },
+        { input: [[10]], expected: 0, label: 'already one chain' },
+        { input: [[]], expected: 0, hidden: true, label: 'empty pile' },
+        { input: [[1, 1, 1, 1]], expected: 8, hidden: true, label: 'all-equal segments' },
+        { input: [[5, 5, 5]], expected: 25, hidden: true, label: 'three equal pieces' },
+        { input: [[1, 100]], expected: 101, hidden: true, label: 'lopsided pair' },
+        { input: [[8, 4, 6, 12, 16, 2]], expected: 114, hidden: true, label: 'larger pile' },
+      ],
+      furtherPractice: [
+        { name: 'Minimum Cost to Connect Sticks', note: 'the same greedy, different furniture' },
+        { name: 'Last Stone Weight', note: 'pop-two-push-one again, but with a max-heap and subtraction' },
+      ],
+    },
+    {
+      id: 'bakery-bestsellers',
+      title: 'Bakery Bestsellers',
+      difficulty: 'medium',
+      statement: `
+A bakery's till produces one receipt line per pastry sold. At closing time the owner wants the day's **top \`k\` bestsellers** for tomorrow's chalkboard.
+
+Given \`receipts\`, a list of pastry names in the order they were sold, and an integer \`k\`, return a list of \`k\` names ranked by:
+
+1. **units sold, descending** — more sales ranks higher;
+2. on equal sales, **alphabetical order, ascending** — \`"danish"\` beats \`"eclair"\`.
+
+It is guaranteed that at least \`k\` distinct pastries were sold. The chalkboard order must be exact: the tie rule decides both *which* names make the board and *where* they stand on it.
+`,
+      examples: [
+        {
+          input: 'receipts = ["scone", "croissant", "scone", "baguette", "croissant", "scone"], k = 2',
+          output: '["scone", "croissant"]',
+          explanation: 'scone sold 3, croissant 2, baguette 1. The top two by count are scone then croissant.',
+        },
+        {
+          input: 'receipts = ["eclair", "danish", "eclair", "danish", "brioche"], k = 2',
+          output: '["danish", "eclair"]',
+          explanation:
+            'danish and eclair both sold 2 (brioche only 1). The alphabetical tie-break puts danish ahead of eclair.',
+        },
+        {
+          input: 'receipts = ["rye", "rye", "focaccia"], k = 2',
+          output: '["rye", "focaccia"]',
+          explanation: 'Only two distinct pastries exist, so both make the board, counts ordering them.',
+        },
+      ],
+      constraints: [
+        '1 <= len(receipts) <= 100_000',
+        '1 <= k <= number of distinct names in receipts',
+        'Names are non-empty lowercase strings of length <= 30',
+        'Output is ordered by (count descending, name ascending) — exactly',
+      ],
+      hints: [
+        'Counting how many of each pastry sold is the easy half. The interesting half: the ranking has two parts that pull in opposite directions — bigger is better for counts, but earlier is better for names. How do you make one structure respect both at once?',
+        'You can negate a number to flip its sort direction, but you cannot negate a string. Build a key where a plain min-heap pop order IS the chalkboard order: store (-count, name), so the smallest tuple is the best seller and alphabetical order breaks ties for free.',
+        'collections.Counter the receipts, build [(-count, name)] over the m distinct names, heapify in O(m), then heappop exactly k times, collecting names in pop order.',
+      ],
+      functionName: 'bestselling_pastries',
+      starterCode: `def bestselling_pastries(receipts: list[str], k: int) -> list[str]:
+    pass
+`,
+      solution: {
+        code: `import heapq
+from collections import Counter
+
+def bestselling_pastries(receipts: list[str], k: int) -> list[str]:
+    # Phase 1: collapse n receipt lines into m distinct (name, count) pairs.
+    counts = Counter(receipts)
+
+    # Phase 2: rank by (count DESC, name ASC). Counts negate cleanly;
+    # strings cannot be negated. Storing (-count, name) makes a single
+    # min-heap pop order equal the chalkboard order: smallest -count is
+    # the highest count, and on ties Python compares the name ascending —
+    # which is exactly the tie-break we were asked for.
+    heap = [(-count, name) for name, count in counts.items()]
+    heapq.heapify(heap)  # O(m), not O(m log m)
+
+    # Phase 3: pop exactly k times; each pop yields the next-best seller.
+    return [heapq.heappop(heap)[1] for _ in range(k)]
+`,
+        commentary: `
+The two-direction ranking is the heart of this problem. With purely numeric keys you can pick either heap direction and negate fields at will — that is how the bounded size-k idiom handles "keep the best k while streaming." But here one tie-break field is a **string**, and strings have no negation. That kills the bounded min-heap-of-keepers approach in its naive form: the root must be the *worst* keeper, which would require count ascending but name *descending* in one tuple — impossible to express without wrapper classes.
+
+So flip the architecture: instead of a small heap of survivors, build a heap over **all m distinct names** keyed \`(-count, name)\` and pop k times. Now the pop order itself is the answer's order — highest count first, alphabetical within ties — and no field ever needed an impossible negation. \`heapify\` builds the structure in \`O(m)\`, and only the k pops cost \`log m\` each, so the total is \`O(n + m + k log m)\`: better than fully sorting the distinct names (\`O(m log m)\`) whenever k is small, which is the whole premise of a top-k chalkboard.
+
+The general lesson: when a composite ranking mixes directions over non-numeric fields, *pop from a full heap in answer order* instead of *maintaining a bounded heap of keepers*. Same data structure, opposite deployment.
+`,
+        complexity: 'Time O(n + m + k log m) for m distinct names, Space O(m)',
+      },
+      testCases: [
+        {
+          input: [['scone', 'croissant', 'scone', 'baguette', 'croissant', 'scone'], 2],
+          expected: ['scone', 'croissant'],
+          label: 'worked example',
+        },
+        {
+          input: [['eclair', 'danish', 'eclair', 'danish', 'brioche'], 2],
+          expected: ['danish', 'eclair'],
+          label: 'alphabetical tie-break',
+        },
+        { input: [['rye', 'rye', 'focaccia'], 2], expected: ['rye', 'focaccia'], label: 'k equals distinct count' },
+        { input: [['plum', 'apple', 'pear'], 2], expected: ['apple', 'pear'], hidden: true, label: 'all counts equal' },
+        { input: [['bun'], 1], expected: ['bun'], hidden: true, label: 'single receipt' },
+        { input: [['bagel', 'almond', 'almond', 'bagel'], 1], expected: ['almond'], hidden: true, label: 'k = 1 decided by tie-break' },
+        {
+          input: [['muffin', 'muffin', 'muffin', 'zopf', 'zopf', 'arepa', 'arepa', 'quiche'], 3],
+          expected: ['muffin', 'arepa', 'zopf'],
+          hidden: true,
+          label: 'mixed counts with a mid-board tie',
+        },
+      ],
+      furtherPractice: [
+        { name: 'Top K Frequent Words', note: 'the identical mixed-direction tie-break' },
+        { name: 'Top K Frequent Elements', note: 'numeric-only version — bounded heap works there' },
+      ],
+    },
+    {
+      id: 'greenhouse-kth-reading',
+      title: 'K-th Driest Bench',
+      difficulty: 'medium',
+      statement: `
+A research greenhouse arranges plant benches in a rectangular grid of moisture sensors. The misting rig sits at the far back-right corner, so moisture rises toward it: in the readings grid, **every row is sorted non-decreasing left to right, and every column is sorted non-decreasing front to back**.
+
+The agronomist waters by dryness priority and wants the **k-th driest reading** in the whole grid — the value at position \`k\` (1-indexed) if all readings were lined up in non-decreasing order. Duplicate readings each count separately.
+
+Given \`grid\` and \`k\`, return that reading. The grid can be large and \`k\` small; lining up all the readings defeats the point of the sensors being pre-sorted.
+`,
+      examples: [
+        {
+          input: 'grid = [[2, 4, 7], [3, 5, 8], [6, 9, 10]], k = 4',
+          output: '5',
+          explanation:
+            'All readings in non-decreasing order: 2, 3, 4, 5, 6, 7, 8, 9, 10. The 4th is 5.',
+        },
+        {
+          input: 'grid = [[1, 2], [2, 3]], k = 3',
+          output: '2',
+          explanation: 'Order with duplicates: 1, 2, 2, 3. The 3rd reading is the second 2.',
+        },
+        {
+          input: 'grid = [[4]], k = 1',
+          output: '4',
+          explanation: 'A single sensor: its reading is the 1st driest by default.',
+        },
+      ],
+      constraints: [
+        '1 <= rows, cols <= 1_000',
+        '1 <= k <= rows * cols',
+        '0 <= grid[r][c] <= 10^9',
+        'Every row and every column is sorted non-decreasing',
+      ],
+      hints: [
+        'The driest reading is obviously the front-left corner. Once you have accounted for it, which cells could possibly be the NEXT driest? The sorted structure rules out almost the entire grid.',
+        'Treat each row as an already-sorted stream of readings. The k-th smallest overall is what a merge of those streams would emit on its k-th step — and a merge only ever considers one candidate per row at a time.',
+        'Seed a min-heap with (grid[r][0], r, 0) for the first min(k, rows) rows only — row r of the grid cannot contain the k-th smallest if r >= k, because its column predecessors are all <= it. Pop k times; after popping (val, r, c), push (grid[r][c+1], r, c+1) if it exists. The k-th popped value is the answer.',
+      ],
+      functionName: 'kth_driest_reading',
+      starterCode: `def kth_driest_reading(grid: list[list[int]], k: int) -> int:
+    pass
+`,
+      solution: {
+        code: `import heapq
+
+def kth_driest_reading(grid: list[list[int]], k: int) -> int:
+    rows = len(grid)
+    # Seed one candidate per row: its leftmost (smallest) reading.
+    # Rows beyond index k - 1 can be skipped entirely: grid[r][0] sits
+    # below r column-predecessors that are all <= it, so for r >= k its
+    # rank is already past k — as is everything to its right.
+    heap = [(grid[r][0], r, 0) for r in range(min(rows, k))]
+    heapq.heapify(heap)  # O(min(rows, k))
+
+    val = 0
+    for _ in range(k):
+        # The smallest un-emitted reading must be some row's current head:
+        # everything right of a head is >= that head (rows sorted).
+        val, r, c = heapq.heappop(heap)
+        if c + 1 < len(grid[r]):
+            # The donor row offers its next reading as a new candidate.
+            heapq.heappush(heap, (grid[r][c + 1], r, c + 1))
+    return val
+`,
+        commentary: `
+Flattening and sorting costs \`O(RC log RC)\` and ignores the gift in the problem: the grid arrives **pre-sorted along both axes**. Row-sortedness alone already makes this a k-way merge — each row is a sorted stream, and the next-smallest reading overall must be one of the current row heads. So a min-heap of at most one candidate per row replays the merge, and we simply **stop after k pops** instead of draining everything. That early stop is the key difference from a full merge: total work is \`O(k log k)\`-ish, independent of how many readings the grid holds beyond the k-th.
+
+Column-sortedness buys the second optimization: seeding only \`min(k, rows)\` rows. Reading \`grid[r][0]\` has \`r\` column-predecessors that are all \`<=\` it, so for \`r >= k\` its rank already exceeds k — and every other cell in that row is even larger. With a tall, skinny grid and a small k, this keeps the heap tiny no matter how many thousand rows exist.
+
+The \`(value, row, col)\` tuple is doing double duty again: equal readings fall back to comparing row indices, which are unique among heap entries, so comparisons are always decided before reaching a third field and pops are fully deterministic. Worth knowing for follow-up conversations: a binary search **on the value range**, counting cells \`<=\` mid per row, solves the same problem in \`O((R + C) log range)\` — but the heap version is the one that generalizes to "give me the readings in dryness order until I say stop."
+`,
+        complexity: 'Time O(min(rows, k) + k log min(rows, k)), Space O(min(rows, k))',
+      },
+      testCases: [
+        { input: [[[2, 4, 7], [3, 5, 8], [6, 9, 10]], 4], expected: 5, label: 'worked example' },
+        { input: [[[1, 2], [2, 3]], 3], expected: 2, label: 'duplicates count separately' },
+        { input: [[[4]], 1], expected: 4, label: 'single sensor' },
+        { input: [[[1, 3], [2, 4]], 4], expected: 4, hidden: true, label: 'k equals every cell' },
+        { input: [[[5, 6, 7, 8]], 3], expected: 7, hidden: true, label: 'single row' },
+        { input: [[[1], [4], [6]], 2], expected: 4, hidden: true, label: 'single column' },
+        { input: [[[7, 7], [7, 7]], 3], expected: 7, hidden: true, label: 'all readings equal' },
+        {
+          input: [[[1, 4, 9, 16], [2, 5, 10, 17], [3, 6, 11, 18], [7, 8, 12, 19]], 10],
+          expected: 10,
+          hidden: true,
+          label: 'larger 4x4 grid',
+        },
+      ],
+      furtherPractice: [
+        { name: 'Kth Smallest Element in a Sorted Matrix', note: 'this exact shape; also try the value-space binary search' },
+        { name: 'Find K Pairs with Smallest Sums', note: 'the same lazy frontier expansion over an implicit grid' },
+      ],
+    },
+    {
+      id: 'garage-emptiest-levels',
+      title: 'Emptiest Parking Levels',
+      difficulty: 'easy',
+      statement: `
+A multi-storey garage reports each level as a list of spot sensors: \`1\` for occupied, \`0\` for free. Drivers always take the first free spot past the ramp, so on every level **all the 1s come before all the 0s**.
+
+An overflow system routes incoming cars to the emptiest levels first. Given \`levels\` (each inner list the same length) and an integer \`k\`, return the **indices of the k emptiest levels**, ordered by:
+
+1. **occupied count, ascending** — fewer cars first;
+2. on equal counts, **lower level index first**.
+
+Levels are wide and numerous; take advantage of the packed-from-the-ramp layout rather than scanning every spot of every level.
+`,
+      examples: [
+        {
+          input: 'levels = [[1, 1, 0, 0], [1, 1, 1, 1], [1, 0, 0, 0], [1, 1, 0, 0]], k = 2',
+          output: '[2, 0]',
+          explanation:
+            'Occupied counts per level: 2, 4, 1, 2. Level 2 is emptiest with 1 car. Levels 0 and 3 tie at 2 cars; the lower index 0 wins the second slot.',
+        },
+        {
+          input: 'levels = [[1, 0], [1, 0], [0, 0]], k = 2',
+          output: '[2, 0]',
+          explanation: 'Counts are 1, 1, 0. Level 2 has zero cars; then levels 0 and 1 tie at one car and index 0 comes first.',
+        },
+        {
+          input: 'levels = [[1, 1], [1, 1]], k = 1',
+          output: '[0]',
+          explanation: 'Both levels are full with 2 cars each — the tie-break picks the lower index.',
+        },
+      ],
+      constraints: [
+        '1 <= k <= len(levels) <= 50_000',
+        '1 <= spots per level <= 10_000 (all levels equal width)',
+        'Each level lists all 1s before any 0s',
+        'Output is ordered by (occupied count ascending, level index ascending)',
+      ],
+      hints: [
+        'Two separate subproblems hide here: counting the cars on a level without touching every sensor, and picking k levels under a ranking with a tie rule. Solve them independently.',
+        'Because cars pack from the ramp, each level is 1s then 0s — the count of cars equals the index of the FIRST 0, which binary search finds in O(log w). For the selection, pair each count with its level index; Python compares tuples field by field, which IS your tie-break.',
+        'Build (count, index) pairs — both fields rank ascending, so no negation is needed anywhere — heapify the list in O(m), then heappop k times and collect the indices in pop order.',
+      ],
+      functionName: 'emptiest_levels',
+      starterCode: `def emptiest_levels(levels: list[list[int]], k: int) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `import heapq
+
+def emptiest_levels(levels: list[list[int]], k: int) -> list[int]:
+    def car_count(level: list[int]) -> int:
+        # The level is 1s then 0s, so the index of the first 0 IS the
+        # count of cars. Binary search for that boundary: O(log w)
+        # instead of O(w) per level.
+        lo, hi = 0, len(level)
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if level[mid] == 1:
+                lo = mid + 1   # boundary is to the right of mid
+            else:
+                hi = mid       # mid is free: boundary is at or left of mid
+        return lo
+
+    # (count, index): both ranking directions are ascending, so the raw
+    # tuple already sorts exactly the way the answer must — no negation,
+    # no custom keys. Ties on count fall through to the index field.
+    pairs = [(car_count(level), i) for i, level in enumerate(levels)]
+    heapq.heapify(pairs)  # O(m) over m levels
+
+    # k pops emit levels in (count, index) order — precisely the answer.
+    return [heapq.heappop(pairs)[1] for _ in range(k)]
+`,
+        commentary: `
+This problem layers two independent exploitations of structure, and it is worth seeing them as separate decisions.
+
+**Counting**: a level's sensors are sorted (1s then 0s), so "how many cars?" is a *boundary search*, not a scan. Binary search finds the first 0 in \`O(log w)\`; summing would cost \`O(w)\`. With 10,000 spots per level, that is ~14 probes versus 10,000 reads — and it is the kind of free win interviewers expect you to spot whenever data inside a row is monotone.
+
+**Selecting**: we need k levels under the composite key \`(count, index)\`. Both fields rank *ascending*, which makes this the friendliest possible case: the raw tuple's natural order is already the answer's order, so a plain min-heap over all m pairs, built with \`O(m)\` heapify, emits the answer with k cheap pops. Contrast this with the drone problem (every field needed negating to fake a max-heap) and the bakery problem (one field *couldn't* be negated, forcing the pop-k architecture): the data's directions, not the problem's surface story, dictate which heap deployment you reach for.
+
+Total cost: \`O(m log w)\` to count, \`O(m)\` to heapify, \`O(k log m)\` to extract — versus \`O(m log m)\` for the sort-everything baseline. For small k the heap wins; and unlike the sort, it can stop the moment the overflow system has enough levels.
+`,
+        complexity: 'Time O(m log w + m + k log m), Space O(m)',
+      },
+      testCases: [
+        {
+          input: [[[1, 1, 0, 0], [1, 1, 1, 1], [1, 0, 0, 0], [1, 1, 0, 0]], 2],
+          expected: [2, 0],
+          label: 'worked example',
+        },
+        { input: [[[1, 0], [1, 0], [0, 0]], 2], expected: [2, 0], label: 'empty level wins, then index tie-break' },
+        { input: [[[1, 1], [1, 1]], 1], expected: [0], label: 'all levels full' },
+        { input: [[[1], [0]], 2], expected: [1, 0], hidden: true, label: 'k equals all levels' },
+        { input: [[[0, 0], [0, 0], [0, 0]], 2], expected: [0, 1], hidden: true, label: 'completely empty garage' },
+        { input: [[[1, 0, 0]], 1], expected: [0], hidden: true, label: 'single level' },
+        {
+          input: [[[1, 1, 1, 1, 1, 1, 1, 0], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0]], 2],
+          expected: [2, 0],
+          hidden: true,
+          label: 'wide levels exercising the boundary search',
+        },
+      ],
+      furtherPractice: [
+        { name: 'The K Weakest Rows in a Matrix', note: 'the same count-then-select composite' },
+        { name: 'Kth Largest Element in an Array', note: 'selection without the counting layer' },
+      ],
+    },
+    {
+      id: 'press-ink-cooldown',
+      title: 'Press Schedule with Purge Gaps',
+      difficulty: 'hard',
+      statement: `
+A print shop runs one press that completes exactly **one job per time slot**. Every job is tagged with an ink color. After the press runs a job of some color, residue rules require **at least \`gap\` slots before another job of the same color** — jobs of *different* colors may run back-to-back freely. When no color is eligible, the press burns an idle purge slot.
+
+Jobs may be run in **any order**. Given \`jobs\` (a list of color tags) and the integer \`gap\`, return the **minimum total number of slots** — working plus idle — needed to finish every job.
+
+A bad ordering strands the dominant color behind its own cooldown again and again; the right ordering hides cooldowns behind other colors' work.
+`,
+      examples: [
+        {
+          input: 'jobs = ["A", "A", "A", "B", "B", "B"], gap = 2',
+          output: '8',
+          explanation:
+            'One optimal schedule: A B idle A B idle A B — every pair of same-color jobs is at least 3 slots apart, total 8 slots. No schedule finishes in 7.',
+        },
+        {
+          input: 'jobs = ["A", "A", "B", "C"], gap = 2',
+          output: '4',
+          explanation: 'A B C A works: the two A jobs sit 3 slots apart and no slot idles.',
+        },
+        {
+          input: 'jobs = ["A", "A", "A", "A"], gap = 1',
+          output: '7',
+          explanation: 'Only one color exists, so every A needs a purge slot after it except the last: A _ A _ A _ A.',
+        },
+        {
+          input: 'jobs = ["X", "X", "Y"], gap = 0',
+          output: '3',
+          explanation: 'With no cooldown the press never idles — the answer is just the job count.',
+        },
+      ],
+      constraints: [
+        '0 <= len(jobs) <= 10_000',
+        '0 <= gap <= 100',
+        'Color tags are non-empty strings (at most 20 distinct colors)',
+        'Consecutive same-color jobs must be at least gap + 1 slots apart',
+      ],
+      hints: [
+        'Schedule a small instance by hand, slot by slot. When several colors are eligible to run, does it ever pay to pick a color with FEW jobs left while a color with many jobs left is also eligible?',
+        'Greedy: in every slot, run the eligible color with the MOST remaining jobs — it is the one that threatens future idle time, so its cooldowns should start as early as possible. You need two structures: one surfacing the heaviest eligible color, one parking colors until their cooldown expires.',
+        'Max-heap (negated counts) of eligible colors + a FIFO deque of (ready_slot, negated_remaining). Each slot: move every entry whose ready_slot has arrived from the deque to the heap; then pop and run the heaviest color, parking it back in the deque if jobs remain — or idle if the heap is empty. The slot counter when both structures drain is the answer.',
+      ],
+      functionName: 'press_schedule_length',
+      starterCode: `def press_schedule_length(jobs: list[str], gap: int) -> int:
+    pass
+`,
+      solution: {
+        code: `import heapq
+from collections import Counter, deque
+
+def press_schedule_length(jobs: list[str], gap: int) -> int:
+    if not jobs:
+        return 0
+    # Only the per-color counts matter — the tags themselves never need
+    # to be compared, so the heap holds bare negated counts (max-heap).
+    heap = [-c for c in Counter(jobs).values()]
+    heapq.heapify(heap)
+
+    # Colors mid-cooldown, as (first slot they may run again, negated
+    # remaining). Ready slots are strictly increasing in insertion order
+    # (one job runs per slot), so a FIFO deque keeps them sorted for free.
+    cooling = deque()
+
+    slot = 0
+    while heap or cooling:
+        slot += 1
+        # Re-admit every color whose cooldown has expired by this slot.
+        while cooling and cooling[0][0] <= slot:
+            heapq.heappush(heap, cooling.popleft()[1])
+        if heap:
+            # Run one job of the heaviest eligible color. Negated count:
+            # adding 1 means one fewer job remaining.
+            remaining = heapq.heappop(heap) + 1
+            if remaining < 0:
+                # Still has jobs: park it until slot + gap + 1.
+                cooling.append((slot + gap + 1, remaining))
+        # else: no color eligible — this slot is an idle purge; the
+        #       clock still advances, which is the entire cost model.
+    return slot
+`,
+        commentary: `
+This is the heap as a **simulation engine** rather than a filter or a merger. The schedule unfolds slot by slot, and at each slot the press faces a priority decision over a *mutating* candidate set — colors leave when they enter cooldown and re-enter when it expires. That churn is exactly what heaps price at \`O(log m)\`.
+
+The greedy choice — always run the eligible color with the most remaining jobs — comes from asking what causes idle slots at all: one color holding so much remaining work that the others cannot fill its cooldown windows. Running the heaviest color first starts its mandatory waiting periods as early as possible, letting lighter colors pay down those windows with useful work. An exchange argument makes it exact: swapping a lighter pick to before a heavier one can only delay the heavier color's last job, never accelerate the finish.
+
+Two implementation choices carry the determinism and the cleanliness. First, the heap stores **bare negated counts, not tags**: ties between equally heavy colors are genuinely interchangeable for the schedule *length*, so dropping the tags removes both the tie-break ceremony and any risk of non-comparable payloads. Second, the cooling line is a **deque, not a second heap**: because exactly one job runs per slot, ready times are strictly increasing as they are appended, so FIFO order is already sorted order — a heap there would buy nothing and cost \`log\`. Recognizing when a queue's arrival order makes a heap redundant is its own little interview skill.
+
+The drain condition \`while heap or cooling\` plus the unconditional \`slot += 1\` is what counts idle time correctly: when everything eligible is exhausted but a color is still cooling, the loop keeps ticking — and those ticks *are* the purge slots the answer must include.
+`,
+        complexity: 'Time O(n log m + idle) for m distinct colors, Space O(m)',
+      },
+      testCases: [
+        { input: [['A', 'A', 'A', 'B', 'B', 'B'], 2], expected: 8, label: 'worked example' },
+        { input: [['A', 'A', 'B', 'C'], 2], expected: 4, label: 'no idle needed' },
+        { input: [['A', 'A', 'A', 'A'], 1], expected: 7, label: 'single color, forced purges' },
+        { input: [['X', 'X', 'Y'], 0], expected: 3, label: 'zero gap degenerates to the job count' },
+        { input: [[], 5], expected: 0, hidden: true, label: 'no jobs' },
+        { input: [['Z'], 10], expected: 1, hidden: true, label: 'one job ignores the gap' },
+        { input: [['P', 'P', 'P'], 3], expected: 9, hidden: true, label: 'heavy cooldown, lone color' },
+        { input: [['A', 'A', 'B', 'B', 'C', 'C'], 1], expected: 6, hidden: true, label: 'three colors interleave with zero idle' },
+        { input: [['A', 'A', 'A', 'B'], 4], expected: 11, hidden: true, label: 'dominant color strands the schedule' },
+      ],
+      furtherPractice: [
+        { name: 'Task Scheduler', note: 'the classic formulation — also derive the closed-form frame formula' },
+        { name: 'Reorganize String', note: 'the same greedy with gap = 1, but you must output the arrangement' },
+      ],
+    },
   ],
   quiz: [
     {

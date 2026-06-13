@@ -620,6 +620,693 @@ Step 4 is the part interviews use to separate careful engineers from fast ones: 
         { name: 'LeetCode 143. Reorder List', note: 'same middle-find + half-reversal toolkit' },
       ],
     },
+    {
+      id: 'promenade-pair-swap',
+      title: 'Promenade Pair Swap',
+      difficulty: 'easy',
+      statement: `
+A village folk dance opens with a promenade: dancers stand in single file, each holding a streamer that runs back to the dancer behind them. When the caller shouts **"trade!"**, every adjacent pair swaps places — the 1st and 2nd dancers trade, the 3rd and 4th trade, and so on down the line. If the line has an odd number of dancers, the last one holds their spot.
+
+Costumes, props, and streamers travel with their dancer, so you must move the **people**, not repaint their numbers: relink the nodes themselves rather than exchanging the values stored inside them.
+
+Given the dancer numbers in current front-to-back order, return the line after one "trade!" call, front to back.
+`,
+      examples: [
+        {
+          input: 'dancers = [1, 2, 3, 4]',
+          output: '[2, 1, 4, 3]',
+          explanation: 'Dancers 1 and 2 trade, then 3 and 4 trade; each pair stays in its own part of the line.',
+        },
+        {
+          input: 'dancers = [5, 6, 7]',
+          output: '[6, 5, 7]',
+          explanation: 'The odd dancer out, 7, has no partner and keeps their spot at the back.',
+        },
+        {
+          input: 'dancers = [9]',
+          output: '[9]',
+          explanation: 'A single dancer has nobody to trade with.',
+        },
+      ],
+      constraints: [
+        '0 <= len(dancers) <= 100_000',
+        '-10^9 <= dancers[i] <= 10^9; numbers may repeat',
+        'Swap by relinking nodes — do not exchange the values held inside them',
+        'One pass, O(1) extra space beyond the chain',
+      ],
+      hints: [
+        'Draw a four-dancer line on paper and perform one trade. Count how many streamers (links) end up pointing somewhere new — it is more than two, and the extra one is the heart of the problem.',
+        'Each swap rewires three links: into the pair, between the pair, and out of the pair. "Into the pair" needs the node just *before* it — and the very first pair has no such node unless you manufacture one.',
+        'Anchor prev at a dummy in front of the head. While prev.next and prev.next.next exist: first = prev.next; second = first.next; first.next = second.next; second.next = first; prev.next = second; prev = first. Return to_list(dummy.next).',
+      ],
+      functionName: 'swap_dance_pairs',
+      starterCode: `class ListNode:
+    """One dancer: a number plus the streamer to the dancer behind."""
+    def __init__(self, val: int, next: "ListNode | None" = None):
+        self.val = val
+        self.next = next
+
+def build_list(values: list[int]) -> "ListNode | None":
+    """Build a chain from a plain list; returns the head node (or None)."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def to_list(head: "ListNode | None") -> list[int]:
+    """Walk a chain and collect its values into a plain list."""
+    out = []
+    while head is not None:
+        out.append(head.val)
+        head = head.next
+    return out
+
+def swap_dance_pairs(dancers: list[int]) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `class ListNode:
+    """One dancer: a number plus the streamer to the dancer behind."""
+    def __init__(self, val: int, next: "ListNode | None" = None):
+        self.val = val
+        self.next = next
+
+def build_list(values: list[int]) -> "ListNode | None":
+    """Build a chain from a plain list; returns the head node (or None)."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def to_list(head: "ListNode | None") -> list[int]:
+    """Walk a chain and collect its values into a plain list."""
+    out = []
+    while head is not None:
+        out.append(head.val)
+        head = head.next
+    return out
+
+def swap_dance_pairs(dancers: list[int]) -> list[int]:
+    head = build_list(dancers)
+    dummy = ListNode(0, head)     # sentinel: gives the first pair a predecessor
+    prev = dummy                  # the node just before the pair being traded
+    while prev.next is not None and prev.next.next is not None:
+        first = prev.next         # front dancer of the pair
+        second = first.next       # back dancer of the pair
+        first.next = second.next  # 1) first re-aims past the pair (read second.next first!)
+        second.next = first       # 2) second steps in front of first
+        prev.next = second        # 3) the line ahead now leads into second
+        prev = first              # first is the back of the swapped pair: next anchor
+    # Odd dancer (or empty line): the loop guard leaves them untouched.
+    return to_list(dummy.next)
+`,
+        commentary: `
+A pair swap looks like two nodes' business but is really **three links'** business: the link *into* the pair (from \`prev\`), the link *between* the pair, and the link *out of* the pair to the rest of the line. Miss the first one and the two dancers trade correctly while the line ahead of them still points at the old leader.
+
+The write order matters for the same reason it does in reversal: \`second.next\` is the only route to the rest of the line, so step 1 reads it (\`first.next = second.next\`) before step 2 overwrites it. The dummy node makes the very first pair unremarkable — without it, swapping the head pair needs its own branch and its own return value.
+
+After a swap, \`first\` is the rear dancer of its pair, so it becomes \`prev\` for the next pair. The loop guard (\`prev.next\` and \`prev.next.next\`) does double duty: it stops cleanly on even lines (nothing left) and odd lines (one partner-less dancer left untouched), and it makes the empty line a non-event.
+`,
+        complexity: 'Time O(n), Space O(1) beyond the chain',
+      },
+      testCases: [
+        { input: [[1, 2, 3, 4]], expected: [2, 1, 4, 3], label: 'two full pairs' },
+        { input: [[5, 6, 7]], expected: [6, 5, 7], label: 'odd dancer keeps spot' },
+        { input: [[9]], expected: [9], label: 'single dancer' },
+        { input: [[1, 2]], expected: [2, 1], label: 'one pair' },
+        { input: [[]], expected: [], hidden: true, label: 'empty line' },
+        { input: [[4, 4, 4, 4]], expected: [4, 4, 4, 4], hidden: true, label: 'repeating numbers' },
+        {
+          input: [[1, 2, 3, 4, 5, 6, 7]],
+          expected: [2, 1, 4, 3, 6, 5, 7],
+          hidden: true,
+          label: 'longer odd line',
+        },
+        { input: [[-1, -2, -3, -4]], expected: [-2, -1, -4, -3], hidden: true, label: 'negative numbers' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 24. Swap Nodes in Pairs', note: 'the canonical version' },
+        { name: 'LeetCode 25. Reverse Nodes in k-Group', note: 'the same surgery generalized from pairs to blocks of k' },
+      ],
+    },
+    {
+      id: 'overnight-playlist-rotation',
+      title: 'Overnight Playlist Rotation',
+      difficulty: 'medium',
+      statement: `
+A community radio station runs its overnight show from a playlist stored as a chain of track IDs, played head to tail. Station policy says each new broadcast night must **open with the final k tracks of the previous night**, in their original order, followed by everything else: the last k tracks are detached as a block and re-attached at the front.
+
+Automation sometimes queues the same rotation many nights in a row, so \`k\` can be far larger than the playlist itself — and rotating a playlist by exactly its own length plays it unchanged.
+
+Given the track IDs head-to-tail and the integer \`k\`, return the rotated playlist head-to-tail, produced by relinking the existing chain.
+`,
+      examples: [
+        {
+          input: 'tracks = [10, 20, 30, 40, 50], k = 2',
+          output: '[40, 50, 10, 20, 30]',
+          explanation: 'The final block 40, 50 moves to the front in its original order; everything else follows unchanged.',
+        },
+        {
+          input: 'tracks = [1, 2, 3], k = 4',
+          output: '[3, 1, 2]',
+          explanation: 'Rotating by 3 returns the playlist unchanged, so k = 4 behaves exactly like k = 1.',
+        },
+        {
+          input: 'tracks = [8, 9], k = 0',
+          output: '[8, 9]',
+          explanation: 'A zero rotation plays the night unchanged.',
+        },
+      ],
+      constraints: [
+        '0 <= len(tracks) <= 100_000',
+        '0 <= k <= 10^9 (k may far exceed the playlist length)',
+        '-10^9 <= tracks[i] <= 10^9; IDs may repeat',
+        'Rotate by relinking nodes: O(n) time, O(1) extra space beyond the chain',
+      ],
+      hints: [
+        'Before touching any links, work out what rotating by exactly the playlist length does — and therefore how much of an enormous k is actually observable.',
+        'A rotation never reorders anything: the chain is cut once into a front block and a back block, then reattached the other way around. Which node has to become the new tail, counted from the old head?',
+        'Walk once to find the tail and count n; reduce k to k % n (done if 0). Close a ring with tail.next = head, step n - k - 1 hops from the old head to the new tail, set new_head = new_tail.next, then cut the ring with new_tail.next = None.',
+      ],
+      functionName: 'rotate_playlist',
+      starterCode: `class ListNode:
+    """One track: an ID plus the link to the next track."""
+    def __init__(self, val: int, next: "ListNode | None" = None):
+        self.val = val
+        self.next = next
+
+def build_list(values: list[int]) -> "ListNode | None":
+    """Build a chain from a plain list; returns the head node (or None)."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def to_list(head: "ListNode | None") -> list[int]:
+    """Walk a chain and collect its values into a plain list."""
+    out = []
+    while head is not None:
+        out.append(head.val)
+        head = head.next
+    return out
+
+def rotate_playlist(tracks: list[int], k: int) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `class ListNode:
+    """One track: an ID plus the link to the next track."""
+    def __init__(self, val: int, next: "ListNode | None" = None):
+        self.val = val
+        self.next = next
+
+def build_list(values: list[int]) -> "ListNode | None":
+    """Build a chain from a plain list; returns the head node (or None)."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def to_list(head: "ListNode | None") -> list[int]:
+    """Walk a chain and collect its values into a plain list."""
+    out = []
+    while head is not None:
+        out.append(head.val)
+        head = head.next
+    return out
+
+def rotate_playlist(tracks: list[int], k: int) -> list[int]:
+    head = build_list(tracks)
+    # Zero or one track: every rotation is a no-op.
+    if head is None or head.next is None:
+        return to_list(head)
+
+    # One walk measures the length AND lands on the tail.
+    n = 1
+    tail = head
+    while tail.next is not None:
+        tail = tail.next
+        n += 1
+
+    k %= n                        # only the remainder of k is observable
+    if k == 0:
+        return to_list(head)      # nothing moves; skip the surgery entirely
+
+    tail.next = head              # close the chain into a temporary ring
+    new_tail = head
+    for _ in range(n - k - 1):    # the new tail sits n-k-1 hops from the old head
+        new_tail = new_tail.next
+    new_head = new_tail.next      # the first of the final k tracks
+    new_tail.next = None          # cut the ring: the rotation falls out
+    return to_list(new_head)
+`,
+        commentary: `
+The decisive observation is that a rotation is **one cut, not many moves**. The output contains the same nodes in the same relative order, split into two blocks that swap positions — so the whole job reduces to finding the cut point and rewiring two links.
+
+Reducing \`k\` modulo \`n\` first is a correctness requirement, not an optimization: \`k\` can be a billion while the chain holds three nodes, and only \`k % n\` of that is observable. Conveniently, the walk that counts \`n\` ends on the tail — exactly the node the next step needs.
+
+Closing the chain into a temporary ring (\`tail.next = head\`) is the tidy trick: once the chain is circular, "move the last k to the front" becomes "open the ring at a different spot." The node \`n - k - 1\` hops from the old head is the new tail; cut there and the ring unrolls into the rotated chain. Two pointer writes total — close, then cut — and no node is ever detached individually. Forgetting the final \`new_tail.next = None\` is the classic failure: the chain stays circular and the next traversal never ends.
+`,
+        complexity: 'Time O(n), Space O(1) beyond the chain',
+      },
+      testCases: [
+        { input: [[10, 20, 30, 40, 50], 2], expected: [40, 50, 10, 20, 30], label: 'last two tracks open the night' },
+        { input: [[1, 2, 3], 4], expected: [3, 1, 2], label: 'k wraps past the length' },
+        { input: [[8, 9], 0], expected: [8, 9], label: 'zero rotation' },
+        { input: [[1, 2], 1], expected: [2, 1], label: 'pair swap-around' },
+        { input: [[], 3], expected: [], hidden: true, label: 'empty playlist' },
+        { input: [[5], 1000000000], expected: [5], hidden: true, label: 'single track, huge k' },
+        { input: [[1, 2, 3, 4], 4], expected: [1, 2, 3, 4], hidden: true, label: 'k equals the length' },
+        {
+          input: [[1, 2, 3, 4, 5, 6], 10],
+          expected: [3, 4, 5, 6, 1, 2],
+          hidden: true,
+          label: 'k = 10 acts like k = 4',
+        },
+        { input: [[7, 7, 1, 7], 3], expected: [7, 1, 7, 7], hidden: true, label: 'repeating IDs' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 61. Rotate List', note: 'the canonical version' },
+        { name: 'LeetCode 189. Rotate Array', note: 'the same idea on contiguous memory — compare what each representation pays' },
+      ],
+    },
+    {
+      id: 'triage-queue-split',
+      title: 'Triage Queue Split',
+      difficulty: 'medium',
+      statement: `
+A walk-in clinic tracks the day's waiting room as a chain of patients in order of arrival; each node holds that patient's triage score, where **lower scores mean more urgent cases**. When the duty physician arrives, the queue is reorganized once: every patient whose score is **strictly below** a threshold \`t\` moves ahead of every patient at or above it.
+
+Fairness is non-negotiable: within the urgent group, and within the routine group, patients must keep their original arrival order. And patient records are bulky — reorganize by **relinking the existing nodes**, never by copying scores between them.
+
+Given the arrival-order scores and the threshold \`t\`, return the reorganized queue front to back.
+`,
+      examples: [
+        {
+          input: 'scores = [5, 1, 8, 3, 9, 2], t = 4',
+          output: '[1, 3, 2, 5, 8, 9]',
+          explanation: 'Urgent patients 1, 3, 2 keep their arrival order and move ahead; routine patients 5, 8, 9 keep theirs too.',
+        },
+        {
+          input: 'scores = [7, 7, 7], t = 7',
+          output: '[7, 7, 7]',
+          explanation: 'Strictly below means a score equal to t counts as routine; nobody moves.',
+        },
+        {
+          input: 'scores = [2, 9, 1], t = 10',
+          output: '[2, 9, 1]',
+          explanation: 'Everyone is urgent, so the queue is unchanged — stability forbids any other answer.',
+        },
+      ],
+      constraints: [
+        '0 <= len(scores) <= 100_000',
+        '-10^9 <= scores[i] <= 10^9; -10^9 <= t <= 10^9',
+        'Patients with score == t belong to the routine (second) group',
+        'Arrival order must be preserved within each group (stable partition)',
+        'Relink existing nodes: O(n) time, O(1) extra space beyond the chain',
+      ],
+      hints: [
+        'Try shuffling urgent patients forward inside the single queue on example 1 and watch what happens to arrival order. The stability requirement is the real constraint — let it shape your plan before you write anything.',
+        'One chain fighting itself is hard; two chains are easy. Each patient makes a single yes/no decision, and appending to the back of a growing chain never disturbs the order of those already in it.',
+        'Build two chains, each with its own dummy head and tail cursor; walk the queue once, appending every node to the urgent or routine tail. Then set routine_tail.next = None (the stale-link cycle bug lives here) and splice urgent_tail.next = routine_dummy.next.',
+      ],
+      functionName: 'split_triage_queue',
+      starterCode: `class ListNode:
+    """One patient: a triage score plus the link to the next in line."""
+    def __init__(self, val: int, next: "ListNode | None" = None):
+        self.val = val
+        self.next = next
+
+def build_list(values: list[int]) -> "ListNode | None":
+    """Build a chain from a plain list; returns the head node (or None)."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def to_list(head: "ListNode | None") -> list[int]:
+    """Walk a chain and collect its values into a plain list."""
+    out = []
+    while head is not None:
+        out.append(head.val)
+        head = head.next
+    return out
+
+def split_triage_queue(scores: list[int], t: int) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `class ListNode:
+    """One patient: a triage score plus the link to the next in line."""
+    def __init__(self, val: int, next: "ListNode | None" = None):
+        self.val = val
+        self.next = next
+
+def build_list(values: list[int]) -> "ListNode | None":
+    """Build a chain from a plain list; returns the head node (or None)."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def to_list(head: "ListNode | None") -> list[int]:
+    """Walk a chain and collect its values into a plain list."""
+    out = []
+    while head is not None:
+        out.append(head.val)
+        head = head.next
+    return out
+
+def split_triage_queue(scores: list[int], t: int) -> list[int]:
+    head = build_list(scores)
+    urgent_dummy = ListNode(0)    # builder chain for scores strictly below t
+    urgent_tail = urgent_dummy
+    routine_dummy = ListNode(0)   # builder chain for everyone else
+    routine_tail = routine_dummy
+    curr = head
+    while curr is not None:
+        if curr.val < t:          # strictly below: urgent group
+            urgent_tail.next = curr
+            urgent_tail = curr
+        else:                     # at or above t: routine group
+            routine_tail.next = curr
+            routine_tail = curr
+        curr = curr.next          # nodes keep their old .next until overwritten
+    # Cut the stale link FIRST: the last routine patient may still point at a
+    # node that now lives in the urgent chain — splicing without this builds a cycle.
+    routine_tail.next = None
+    urgent_tail.next = routine_dummy.next   # urgent block, then routine block
+    return to_list(urgent_dummy.next)
+`,
+        commentary: `
+The instinct to do this inside one chain — bubbling urgent nodes forward past routine ones — collides head-on with stability: every hop past a routine patient is a chance to scramble somebody's relative order, and the bookkeeping balloons. The clean move is to admit the queue wants to be **two queues**: append-only builders preserve insertion order by construction, so stability stops being something you maintain and becomes something you get for free.
+
+Each node is examined once, appended once, and never revisited; the finale is two pointer writes — terminate the routine chain, splice it behind the urgent chain. The dummy heads mean neither builder ever asks "am I empty?", and they also make the all-urgent and all-routine extremes fall out of the same code path.
+
+The one genuine trap is the **stale link**. Appending a node does not clear its old \`.next\`; the last routine patient can still point back into a node that now lives in the urgent chain, and splicing without \`routine_tail.next = None\` quietly builds a cycle that hangs the next traversal. Cut first, then splice.
+`,
+        complexity: 'Time O(n), Space O(1) beyond the chain',
+      },
+      testCases: [
+        { input: [[5, 1, 8, 3, 9, 2], 4], expected: [1, 3, 2, 5, 8, 9], label: 'mixed queue' },
+        { input: [[7, 7, 7], 7], expected: [7, 7, 7], label: 'scores equal to t stay routine' },
+        { input: [[2, 9, 1], 10], expected: [2, 9, 1], label: 'everyone urgent' },
+        { input: [[6, 2], 5], expected: [2, 6], label: 'urgent patient at the back' },
+        { input: [[], 5], expected: [], hidden: true, label: 'empty waiting room' },
+        { input: [[3], 3], expected: [3], hidden: true, label: 'single patient at threshold' },
+        { input: [[9, 8, 7, 1, 2], 5], expected: [1, 2, 9, 8, 7], hidden: true, label: 'urgent block at the back' },
+        { input: [[4, 6, 4, 6, 4], 5], expected: [4, 4, 4, 6, 6], hidden: true, label: 'alternating groups' },
+        { input: [[1, 2, 3], 0], expected: [1, 2, 3], hidden: true, label: 'nobody urgent' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 86. Partition List', note: 'the canonical version' },
+        { name: 'LeetCode 328. Odd Even Linked List', note: 'the same two-builder splice keyed on position instead of value' },
+      ],
+    },
+    {
+      id: 'alternating-mic-lines',
+      title: 'Alternating Mic Lines',
+      difficulty: 'medium',
+      statement: `
+A developer-conference Q&A runs two microphone lines: one in the auditorium and one for remote viewers, each stored as a chain of question-ticket numbers in the order people queued. The moderator alternates strictly — the first question comes from the **auditorium line**, the next from the remote line, and so on — until one line empties, after which the remaining line proceeds uninterrupted in its own queued order.
+
+Build the single speaking order by **splicing the existing nodes** of the two chains together; ticket records are bulky and must not be copied.
+
+Given the two lines as lists, return the complete speaking order.
+`,
+      examples: [
+        {
+          input: 'room = [1, 3, 5], remote = [2, 4, 6]',
+          output: '[1, 2, 3, 4, 5, 6]',
+          explanation: 'Perfect alternation: room, remote, room, remote, room, remote.',
+        },
+        {
+          input: 'room = [10, 30], remote = [20, 40, 60, 80]',
+          output: '[10, 20, 30, 40, 60, 80]',
+          explanation: 'After the room line empties, remote tickets 60 and 80 follow in their queued order.',
+        },
+        {
+          input: 'room = [9, 1], remote = [5, 5]',
+          output: '[9, 5, 1, 5]',
+          explanation: 'Ticket values are never compared — only whose turn it is matters. This is not a sorted merge.',
+        },
+      ],
+      constraints: [
+        '0 <= len(room), len(remote) <= 100_000',
+        '-10^9 <= ticket numbers <= 10^9; tickets may repeat across lines',
+        'Alternation starts with the auditorium line and stays strict while both lines are non-empty',
+        'Splice existing nodes: O(m + n) time, O(1) extra space beyond the chains',
+      ],
+      hints: [
+        "This module's replica-log merge looks tantalizingly close. Run its comparison logic by hand on example 3 and find exactly where the two problems part ways.",
+        'No values are inspected at all: the only state deciding the next splice is whose turn it is. One boolean, flipped after every splice, plus the dummy-and-tail scaffolding you already know.',
+        'dummy/tail as in a merge. While both heads exist: splice from room if the turn flag says so, otherwise from remote; advance that chain, advance tail, flip the flag. When either line empties, attach the survivor whole and return to_list(dummy.next).',
+      ],
+      functionName: 'interleave_mic_lines',
+      starterCode: `class ListNode:
+    """One questioner: a ticket number plus the link to the next in line."""
+    def __init__(self, val: int, next: "ListNode | None" = None):
+        self.val = val
+        self.next = next
+
+def build_list(values: list[int]) -> "ListNode | None":
+    """Build a chain from a plain list; returns the head node (or None)."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def to_list(head: "ListNode | None") -> list[int]:
+    """Walk a chain and collect its values into a plain list."""
+    out = []
+    while head is not None:
+        out.append(head.val)
+        head = head.next
+    return out
+
+def interleave_mic_lines(room: list[int], remote: list[int]) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `class ListNode:
+    """One questioner: a ticket number plus the link to the next in line."""
+    def __init__(self, val: int, next: "ListNode | None" = None):
+        self.val = val
+        self.next = next
+
+def build_list(values: list[int]) -> "ListNode | None":
+    """Build a chain from a plain list; returns the head node (or None)."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def to_list(head: "ListNode | None") -> list[int]:
+    """Walk a chain and collect its values into a plain list."""
+    out = []
+    while head is not None:
+        out.append(head.val)
+        head = head.next
+    return out
+
+def interleave_mic_lines(room: list[int], remote: list[int]) -> list[int]:
+    a = build_list(room)
+    b = build_list(remote)
+    dummy = ListNode(0)           # sentinel for the speaking order under construction
+    tail = dummy
+    room_turn = True              # the auditorium line always opens the session
+    while a is not None and b is not None:
+        if room_turn:
+            tail.next = a         # splice the auditorium head onto the order
+            a = a.next
+        else:
+            tail.next = b         # splice the remote head onto the order
+            b = b.next
+        tail = tail.next
+        room_turn = not room_turn # strict alternation: flip every splice
+    # One line is empty; the survivor proceeds whole, already in queue order.
+    tail.next = a if a is not None else b
+    return to_list(dummy.next)
+`,
+        commentary: `
+Structurally this is the merge skeleton — dummy head, tail cursor, splice-and-advance — with the comparison ripped out. That substitution is the lesson: the dummy/tail scaffolding is **not about sorting**. It is a general way to build a chain left-to-right out of existing nodes, and the only thing that varies between problems is the *chooser* that picks the next node. Here the chooser is a turn flag flipped on every splice; in the replica merge it was a value comparison; in a partition it is a predicate.
+
+The tail-attachment move carries over unchanged and is still the efficiency play: when one line empties, the survivor is already in its required order, so a single pointer write attaches the entire remainder — no per-node loop.
+
+The strict-alternation contract is also why example 3 matters: \`[9, 1]\` interleaved with \`[5, 5]\` yields \`9, 5, 1, 5\` — wrong for a merge, exactly right here. If your output comes back sorted, you have solved the previous problem again instead of this one.
+`,
+        complexity: 'Time O(m + n), Space O(1) beyond the chains',
+      },
+      testCases: [
+        { input: [[1, 3, 5], [2, 4, 6]], expected: [1, 2, 3, 4, 5, 6], label: 'perfect alternation' },
+        { input: [[10, 30], [20, 40, 60, 80]], expected: [10, 20, 30, 40, 60, 80], label: 'remote line runs long' },
+        { input: [[9, 1], [5, 5]], expected: [9, 5, 1, 5], label: 'not a sorted merge' },
+        { input: [[], [9, 9]], expected: [9, 9], label: 'auditorium empty' },
+        { input: [[], []], expected: [], hidden: true, label: 'no questions at all' },
+        { input: [[1, 2, 3, 4], [5]], expected: [1, 5, 2, 3, 4], hidden: true, label: 'remote exhausted immediately' },
+        { input: [[5], []], expected: [5], hidden: true, label: 'remote line empty' },
+        {
+          input: [[2, 4, 6, 8], [1, 3, 5, 7]],
+          expected: [2, 1, 4, 3, 6, 5, 8, 7],
+          hidden: true,
+          label: 'alternation, not sorting',
+        },
+        { input: [[7], [8]], expected: [7, 8], hidden: true, label: 'one question each' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 328. Odd Even Linked List', note: 'the inverse operation — de-interleave one chain by position' },
+        { name: 'LeetCode 143. Reorder List', note: 'interleave a chain with its own reversed back half' },
+      ],
+    },
+    {
+      id: 'digit-wheel-addition',
+      title: 'Digit-Wheel Addition',
+      difficulty: 'hard',
+      statement: `
+A museum restores antique mechanical adding machines. Each machine's counter stores a non-negative integer as a chain of digit wheels with the **ones wheel first** — exactly the order the hardware consumes digits, least significant to most. So 342 is stored as \`2 → 4 → 3\`.
+
+To certify a restoration, you must add two counters the way the machine does: wheel by wheel with a running carry. Brass wheels are scarce, so the sum must be written **onto the wheels of the longer chain in place**; you may fabricate **at most one** new wheel, for a final carry that overflows past the highest existing wheel.
+
+Given the two counters' digits (ones wheel first), return the sum's digits, ones wheel first.
+`,
+      examples: [
+        {
+          input: 'a_digits = [2, 4, 3], b_digits = [5, 6, 4]',
+          output: '[7, 0, 8]',
+          explanation: '342 + 465 = 807, stored ones-first as 7 → 0 → 8.',
+        },
+        {
+          input: 'a_digits = [9, 9], b_digits = [1]',
+          output: '[0, 0, 1]',
+          explanation: '99 + 1 = 100: the carry ripples through both wheels and overflows into one newly fabricated wheel.',
+        },
+        {
+          input: 'a_digits = [0], b_digits = [0]',
+          output: '[0]',
+          explanation: 'Zero plus zero is the single wheel 0 — no spurious extra wheels.',
+        },
+      ],
+      constraints: [
+        '1 <= len(a_digits), len(b_digits) <= 100_000',
+        'Each element is a single digit 0–9, stored ones wheel first',
+        'No counter has unused high wheels: the last digit is nonzero unless the counter is exactly [0]',
+        "Write the result into the longer chain's wheels; allocate at most one new node (the overflow wheel)",
+      ],
+      hints: [
+        'Add 47 and 88 with pencil and paper. Notice which digit you write down first and what small piece of information flows from one column to the next — the chains already hand you the digits in that order.',
+        'Walk both chains in lockstep with a running carry; divmod(column_total, 10) yields the wheel digit and the next carry. The wrinkle is the wheel budget: whose nodes will hold the answer when the chains have different lengths?',
+        'Measure both lengths and let the longer chain be the accumulator (swap the names if needed). Overwrite each of its wheel values with the column digit, advancing the shorter chain alongside while it lasts, and keep a cursor on the last wheel written; if a carry survives the final column, hang exactly one new wheel off it.',
+      ],
+      functionName: 'add_digit_wheels',
+      starterCode: `class ListNode:
+    """One digit wheel: a digit 0-9 plus the link to the next-higher wheel."""
+    def __init__(self, val: int, next: "ListNode | None" = None):
+        self.val = val
+        self.next = next
+
+def build_list(values: list[int]) -> "ListNode | None":
+    """Build a chain from a plain list; returns the head node (or None)."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def to_list(head: "ListNode | None") -> list[int]:
+    """Walk a chain and collect its values into a plain list."""
+    out = []
+    while head is not None:
+        out.append(head.val)
+        head = head.next
+    return out
+
+def add_digit_wheels(a_digits: list[int], b_digits: list[int]) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `class ListNode:
+    """One digit wheel: a digit 0-9 plus the link to the next-higher wheel."""
+    def __init__(self, val: int, next: "ListNode | None" = None):
+        self.val = val
+        self.next = next
+
+def build_list(values: list[int]) -> "ListNode | None":
+    """Build a chain from a plain list; returns the head node (or None)."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def to_list(head: "ListNode | None") -> list[int]:
+    """Walk a chain and collect its values into a plain list."""
+    out = []
+    while head is not None:
+        out.append(head.val)
+        head = head.next
+    return out
+
+def _length(head: "ListNode | None") -> int:
+    """Count the wheels in a chain."""
+    n = 0
+    while head is not None:
+        n += 1
+        head = head.next
+    return n
+
+def add_digit_wheels(a_digits: list[int], b_digits: list[int]) -> list[int]:
+    a = build_list(a_digits)
+    b = build_list(b_digits)
+    # The longer chain becomes the accumulator: its wheels store the sum.
+    if _length(a) < _length(b):
+        a, b = b, a
+    head = a                      # remember the answer chain's ones wheel
+    carry = 0
+    last = None                   # trails the walk: the most recent wheel written
+    while a is not None:          # the accumulator drives; it never ends early
+        column = a.val + carry
+        if b is not None:         # the shorter chain rides along while it lasts
+            column += b.val
+            b = b.next
+        carry, a.val = divmod(column, 10)   # write this column's digit in place
+        last = a
+        a = a.next
+    if carry:                     # overflow past the highest wheel:
+        last.next = ListNode(carry)         # the single allowed new wheel
+    return to_list(head)
+`,
+        commentary: `
+Ones-wheel-first storage is the gift in this problem: it hands you digits in exactly the order column addition consumes them, so one forward walk with a \`carry\` integer reproduces pencil-and-paper arithmetic. The carry can never exceed 1 (\`9 + 9 + 1 = 19\` at worst), which is the whole reason "at most one new wheel" is even promisable — only a final ripple past the highest column can need new hardware.
+
+The wheel budget converts a textbook exercise into pointer discipline. Instead of allocating a result node per column, the longer chain is drafted as the **accumulator**: its values are overwritten in place while the shorter chain rides along until it runs dry. Swapping the two names when the first chain is shorter costs two cheap counting walks and buys an enormously simpler main loop — one chain drives, the other follows, and there is no "which one ended first?" tangle.
+
+Keeping the \`last\` cursor one step behind the walk is the standard idiom for "I may need to append after the end": when the loop finishes, \`a\` is \`None\` and useless, but \`last\` still grips the highest wheel, ready to hang the overflow wheel if the carry survived. Zero inputs need no special case — \`[0] + [0]\` walks one column, writes 0, carries nothing.
+`,
+        complexity: 'Time O(m + n), Space O(1) beyond the chains (at most one new node)',
+      },
+      testCases: [
+        { input: [[2, 4, 3], [5, 6, 4]], expected: [7, 0, 8], label: '342 + 465 = 807' },
+        { input: [[9, 9], [1]], expected: [0, 0, 1], label: 'carry overflows into a new wheel' },
+        { input: [[0], [0]], expected: [0], label: 'zero plus zero' },
+        { input: [[5], [5]], expected: [0, 1], label: 'single wheels overflow' },
+        {
+          input: [[9, 9, 9, 9], [9, 9, 9, 9]],
+          expected: [8, 9, 9, 9, 1],
+          hidden: true,
+          label: '9999 + 9999 = 19998',
+        },
+        {
+          input: [[1, 0, 0, 0, 0, 1], [3]],
+          expected: [4, 0, 0, 0, 0, 1],
+          hidden: true,
+          label: 'short counter into a long one',
+        },
+        { input: [[9], [9, 9, 9]], expected: [8, 0, 0, 1], hidden: true, label: 'shorter first argument' },
+        { input: [[7], [0]], expected: [7], hidden: true, label: 'adding zero' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 2. Add Two Numbers', note: 'the canonical version — allocates a fresh result chain' },
+        { name: 'LeetCode 445. Add Two Numbers II', note: 'most-significant wheel first — pair with reversal or a stack' },
+      ],
+    },
   ],
   quiz: [
     {

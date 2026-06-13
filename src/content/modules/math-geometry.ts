@@ -469,6 +469,476 @@ A tempting alternative is direction simulation: walk forward, and turn right whe
         { name: 'LeetCode 59. Spiral Matrix II', note: 'invert it: write 1..n^2 into spiral positions' },
       ],
     },
+    {
+      id: 'loom-warp-transpose',
+      title: 'Loom Warp-and-Weft Swap',
+      difficulty: 'easy',
+      statement: `
+A jacquard weaving loom stores a pattern as a grid of integer thread colors: \`grid[r][c]\` is the color the loom lays down at warp row \`r\`, weft column \`c\`. To weave the same design rotated onto its side, the controller needs the **transpose** of the pattern — the fabric viewed with rows and columns swapped.
+
+Given a rectangular grid with \`m\` rows and \`n\` columns, return a new grid with \`n\` rows and \`m\` columns where the entry at row \`i\`, column \`j\` of the output equals \`grid[j][i]\`. In other words, what was a row becomes a column and vice versa. The grid need **not** be square.
+
+Return the transposed grid as a list of lists. An empty pattern (no rows) transposes to an empty list.
+`,
+      examples: [
+        {
+          input: 'grid = [[1, 2, 3], [4, 5, 6]]',
+          output: '[[1, 4], [2, 5], [3, 6]]',
+          explanation: 'The 2×3 pattern becomes 3×2. The old first row 1,2,3 becomes the first column read downward.',
+        },
+        {
+          input: 'grid = [[1, 2], [3, 4], [5, 6]]',
+          output: '[[1, 3, 5], [2, 4, 6]]',
+          explanation: 'The 3×2 pattern becomes 2×3: each old column 1,3,5 and 2,4,6 becomes a row.',
+        },
+        {
+          input: 'grid = [[7]]',
+          output: '[[7]]',
+          explanation: 'A single thread is unchanged.',
+        },
+      ],
+      constraints: [
+        '0 <= m <= 200 rows and 1 <= n <= 200 columns when m > 0',
+        'Every row has the same length n (the grid is rectangular)',
+        '-10^9 <= grid[r][c] <= 10^9',
+        'Output[i][j] must equal grid[j][i]; an empty input returns []',
+      ],
+      hints: [
+        'Hold up the 2×3 example and read it once across the rows, then once down the columns. What does the second reading look like as a fresh grid?',
+        'The output has as many rows as the input has columns. Output row i is built by collecting grid[r][i] for every input row r.',
+        'Either build out[i][j] = grid[j][i] with a nested comprehension over the new dimensions, or initialize an n×m grid of zeros and assign out[c][r] = grid[r][c] while scanning the input. Mind the empty-grid case so len(grid[0]) never throws.',
+      ],
+      functionName: 'transpose_loom',
+      starterCode: `def transpose_loom(grid: list[list[int]]) -> list[list[int]]:
+    pass
+`,
+      solution: {
+        code: `def transpose_loom(grid: list[list[int]]) -> list[list[int]]:
+    # No rows means no pattern at all; the transpose is empty too.
+    if not grid:
+        return []
+    m = len(grid)        # number of input rows
+    n = len(grid[0])     # number of input columns
+    # The output is n rows by m columns. Output entry (i, j) is the
+    # input entry (j, i): reading down input column i across all rows
+    # j becomes reading across output row i. One direct comprehension
+    # implements that index swap with no temporaries.
+    return [[grid[j][i] for j in range(m)] for i in range(n)]
+`,
+        commentary: `
+Transpose is the simplest of the grid mirrors: reflect every cell across the main diagonal, sending \`(r, c)\` to \`(c, r)\`. For a **rectangular** grid the catch is that the *shape* changes too — an \`m x n\` input becomes an \`n x m\` output — so you cannot swap entries in place the way a square matrix allows; you build a fresh grid sized to the new dimensions.
+
+The clean construction reads the destination formula straight off: output row \`i\` is input column \`i\`, gathered by walking every input row \`j\` and taking \`grid[j][i]\`. The outer comprehension runs \`i\` over the \`n\` output rows; the inner runs \`j\` over the \`m\` output columns. No accumulator, no mutation, no diagonal-triangle bookkeeping — that triangle trick is only needed when you insist on transposing a *square* grid in place.
+
+The one trap is the empty grid: \`len(grid[0])\` raises \`IndexError\` when there are zero rows, so guard \`not grid\` up front and return \`[]\`. With that handled the routine is \`O(m·n)\` time — optimal, since the output has \`m·n\` cells — and \`O(m·n)\` space for the returned grid.
+`,
+        complexity: 'Time O(m·n), Space O(m·n) for the returned grid',
+      },
+      testCases: [
+        { input: [[[1, 2, 3], [4, 5, 6]]], expected: [[1, 4], [2, 5], [3, 6]], label: '2x3 to 3x2' },
+        { input: [[[1, 2], [3, 4], [5, 6]]], expected: [[1, 3, 5], [2, 4, 6]], label: '3x2 to 2x3' },
+        { input: [[[7]]], expected: [[7]], label: '1x1 fixed' },
+        { input: [[]], expected: [], hidden: true, label: 'empty pattern' },
+        {
+          input: [[[1, 2, 3], [4, 5, 6], [7, 8, 9]]],
+          expected: [[1, 4, 7], [2, 5, 8], [3, 6, 9]],
+          hidden: true,
+          label: 'square 3x3',
+        },
+        { input: [[[5], [6], [7], [8]]], expected: [[5, 6, 7, 8]], hidden: true, label: 'single column to single row' },
+        { input: [[[-1, 0, 4]]], expected: [[-1], [0], [4]], hidden: true, label: 'single row with negatives' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 867. Transpose Matrix', note: 'the same rows-to-columns swap on a rectangular grid' },
+      ],
+    },
+    {
+      id: 'happy-beacon',
+      title: 'Beacon Self-Calibration',
+      difficulty: 'medium',
+      statement: `
+A deep-space beacon recalibrates by repeatedly compressing its current integer power level: it replaces the level with the **sum of the squares of its decimal digits**, and repeats. If the level ever reaches exactly \`1\`, the beacon has **stabilized** and locks on. If instead the level falls into a repeating loop that never includes \`1\`, the beacon oscillates forever and never stabilizes.
+
+Given a positive integer starting power level \`n\`, return \`True\` if the process eventually reaches \`1\`, and \`False\` if it gets trapped in a cycle that excludes \`1\`.
+
+For example, starting at \`19\`: \`1^2 + 9^2 = 82\`, then \`8^2 + 2^2 = 68\`, then \`6^2 + 8^2 = 100\`, then \`1^2 + 0^2 + 0^2 = 1\` — stabilized, so return \`True\`.
+`,
+      examples: [
+        {
+          input: 'n = 19',
+          output: 'True',
+          explanation: '19 → 82 → 68 → 100 → 1. The chain reaches 1, so the beacon stabilizes.',
+        },
+        {
+          input: 'n = 2',
+          output: 'False',
+          explanation: '2 → 4 → 16 → 37 → 58 → 89 → 145 → 42 → 20 → 4 — it returns to 4 and loops forever without hitting 1.',
+        },
+        {
+          input: 'n = 1',
+          output: 'True',
+          explanation: 'Already at 1; stabilized immediately.',
+        },
+      ],
+      constraints: [
+        '1 <= n <= 2^31 - 1',
+        'Each step replaces the level with the sum of the squares of its base-10 digits',
+        'Return True iff the sequence ever equals 1',
+        'The transformation is deterministic, so every start either reaches 1 or enters one fixed loop',
+      ],
+      hints: [
+        'Run the rule by hand from 7 and from 4. One marches down to 1; the other comes back to a number it already produced. What general fact about a deterministic step on bounded values does that second behavior reveal?',
+        'After a few steps the value can never grow without bound — the digit-square sum of any number below, say, 1000 is itself small. So the sequence is eventually trapped in a finite set, which means it either hits 1 or revisits a value. How do you detect a revisit?',
+        'Track seen values in a set and stop when you hit 1 (return True) or re-encounter a value (return False). Or use Floyd cycle detection with a slow and fast pointer over the transform — O(1) space — and check whether the meeting point is 1.',
+      ],
+      functionName: 'beacon_stabilizes',
+      starterCode: `def beacon_stabilizes(n: int) -> bool:
+    pass
+`,
+      solution: {
+        code: `def beacon_stabilizes(n: int) -> bool:
+    def step(x: int) -> int:
+        # Replace x with the sum of the squares of its decimal digits.
+        total = 0
+        while x > 0:
+            x, d = divmod(x, 10)   # peel off the lowest digit
+            total += d * d
+        return total
+
+    # Floyd's tortoise and hare over the deterministic transform.
+    # The sequence lives in a finite set, so the slow and fast walkers
+    # must eventually collide; if the loop they share is the fixed
+    # point 1, the beacon stabilizes.
+    slow = n
+    fast = step(n)
+    while fast != 1 and slow != fast:
+        slow = step(slow)            # one step
+        fast = step(step(fast))      # two steps
+    # We exited because fast hit 1 (stabilized) or the pointers met
+    # inside a non-1 cycle. Either way the answer is "did we land on 1".
+    return fast == 1
+`,
+        commentary: `
+The key realization is that the digit-square step is a **deterministic function on a bounded domain**. Once the value drops below a few hundred (and it does almost immediately — the digit-square sum of any 10-digit number is at most \`10 · 81 = 810\`), the sequence is confined to a small finite set. A deterministic walk through a finite set must eventually repeat, so every start either reaches the fixed point \`1\` or enters some other cycle. The whole problem is therefore **cycle detection**, exactly like detecting a loop in a linked list where "next" is "apply the transform."
+
+Two standard tools work. A \`seen\` set is the obvious one: iterate the transform, return \`True\` on hitting \`1\` and \`False\` the moment you revisit a value — \`O(1)\` space is sacrificed for clarity. Floyd's tortoise-and-hare, shown here, keeps the space \`O(1)\`: advance one pointer by one step and the other by two; they are guaranteed to collide inside whatever cycle the sequence falls into. Then a single test — is the collision value \`1\`? — answers the question, because \`1\` maps to \`1\` and forms its own one-element cycle.
+
+The subtle correctness point is the loop guard. We stop when \`fast == 1\` (stabilized) **or** \`slow == fast\` (met inside a non-1 loop). Starting \`fast\` one step ahead of \`slow\` avoids a spurious immediate match. The transform itself is the only arithmetic: peel digits with \`divmod(x, 10)\`, square, accumulate.
+`,
+        complexity: 'Time O(k) steps until stabilization or collision (k tiny in practice), Space O(1)',
+      },
+      testCases: [
+        { input: [19], expected: true, label: 'classic stabilizer' },
+        { input: [2], expected: false, label: 'enters the 4-loop' },
+        { input: [1], expected: true, label: 'already locked on' },
+        { input: [7], expected: true, hidden: true, label: 'single digit that climbs then settles' },
+        { input: [4], expected: false, hidden: true, label: 'sits squarely in the oscillating cycle' },
+        { input: [100], expected: true, hidden: true, label: 'trailing zeros ignored' },
+        { input: [1111111], expected: true, hidden: true, label: 'seven ones sum to 7, which stabilizes' },
+        { input: [2147483647], expected: false, hidden: true, label: 'max 32-bit start oscillates' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 202. Happy Number', note: 'the same digit-square cycle test' },
+        { name: 'LeetCode 142. Linked List Cycle II', note: 'Floyd detection in its native linked-list setting' },
+      ],
+    },
+    {
+      id: 'vault-aisle-label',
+      title: 'Vault Aisle Labeling',
+      difficulty: 'medium',
+      statement: `
+A vast automated archive numbers its storage aisles \`1, 2, 3, …\` but prints them on signage using letters, exactly like spreadsheet column headers: aisle 1 is \`A\`, aisle 26 is \`Z\`, aisle 27 is \`AA\`, aisle 28 is \`AB\`, aisle 52 is \`AZ\`, aisle 53 is \`BA\`, and so on. This is **bijective base-26**: there is no zero digit — the "digits" are \`A\` through \`Z\` standing for \`1\` through \`26\`.
+
+Given a positive integer aisle number \`n\`, return its uppercase letter label as a string.
+
+This is the **number → label** direction only. (Note this is not plain base-26: there is no digit for zero, which is why each step subtracts one before taking the remainder.)
+`,
+      examples: [
+        {
+          input: 'n = 1',
+          output: '"A"',
+          explanation: 'The first aisle is A.',
+        },
+        {
+          input: 'n = 28',
+          output: '"AB"',
+          explanation: '28 = 26 + 2 → the high "digit" is A (1) and the low is B (2).',
+        },
+        {
+          input: 'n = 701',
+          output: '"ZY"',
+          explanation: '701 = 26·26 + 25 maps to Z (26) then Y (25).',
+        },
+        {
+          input: 'n = 703',
+          output: '"AAA"',
+          explanation: 'After ZZ (702) the labels roll over to three letters: AAA.',
+        },
+      ],
+      constraints: [
+        '1 <= n <= 2_000_000_000',
+        'Output uses only uppercase letters A–Z',
+        'Bijective base-26: A=1 … Z=26, with no zero digit',
+        'Return the label as a string',
+      ],
+      hints: [
+        'Write out the labels 1 through 28 by hand. The rollover from Z (26) to AA (27) does not behave like ordinary base-26, where 26 would be "10". What is different about the lowest place when there is no zero?',
+        'You build the label from the least-significant letter upward, peeling one letter per step. Because the alphabet is 1-based (A=1, not 0), you must shift n down by one before taking the remainder mod 26.',
+        'Loop while n > 0: set n, r = divmod(n - 1, 26); prepend chr(ord("A") + r); continue with the new n. The minus-one is what turns a multiple of 26 into the letter Z instead of a stray zero.',
+      ],
+      functionName: 'aisle_label',
+      starterCode: `def aisle_label(n: int) -> str:
+    pass
+`,
+      solution: {
+        code: `def aisle_label(n: int) -> str:
+    letters = []
+    # Peel off one letter per iteration, least-significant first.
+    while n > 0:
+        # The alphabet is 1-based: A=1 ... Z=26, with NO zero digit.
+        # Subtracting 1 before divmod re-bases each place to 0..25 so
+        # that a clean multiple of 26 yields remainder 25 -> 'Z' and
+        # carries the quotient down correctly, instead of emitting a
+        # spurious zero the way plain base-26 would.
+        n, r = divmod(n - 1, 26)
+        letters.append(chr(ord('A') + r))   # 0->'A', 25->'Z'
+    # We generated letters from low place to high, so reverse them.
+    return ''.join(reversed(letters))
+`,
+        commentary: `
+Spreadsheet columns look like base-26 but are not: ordinary base-26 has digits \`0..25\`, and \`26\` would be written \`"10"\`. Here the digits are \`A..Z\` = \`1..26\` with **no zero** — a *bijective* numeral system. That single missing zero is the whole problem, and it shows up as a \`- 1\` in exactly the right place.
+
+Each iteration extracts the lowest letter. If you naively took \`divmod(n, 26)\`, then \`n = 26\` would give remainder \`0\` (no letter for it) and quotient \`1\`, producing \`"A?"\` — wrong; \`26\` should be \`"Z"\`. Subtracting one first, \`divmod(n - 1, 26)\`, maps \`26\` to remainder \`25\` (\`'Z'\`) and quotient \`0\` (loop ends): correct. The decrement effectively borrows the missing zero from the next place up, which is precisely how bijective bases carry.
+
+Letters come out least-significant first, so reverse before joining. The loop runs once per output letter — \`O(log_26 n)\` iterations — with \`O(log_26 n)\` space for the string. Plain integer arithmetic throughout; the only "trick" is knowing where the \`- 1\` lives.
+`,
+        complexity: 'Time O(log_26 n), Space O(log_26 n) for the label',
+      },
+      testCases: [
+        { input: [1], expected: 'A', label: 'first aisle' },
+        { input: [28], expected: 'AB', label: 'two-letter' },
+        { input: [701], expected: 'ZY', label: 'high two-letter' },
+        { input: [26], expected: 'Z', hidden: true, label: 'exact multiple of 26 is a single Z, not a carry' },
+        { input: [27], expected: 'AA', hidden: true, label: 'rollover to two letters' },
+        { input: [702], expected: 'ZZ', hidden: true, label: 'last two-letter label' },
+        { input: [703], expected: 'AAA', hidden: true, label: 'rollover to three letters' },
+        { input: [18278], expected: 'ZZZ', hidden: true, label: 'last three-letter label' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 168. Excel Sheet Column Title', note: 'the identical number-to-label direction' },
+        { name: 'LeetCode 171. Excel Sheet Column Number', note: 'the inverse: parse a label back to its number' },
+      ],
+    },
+    {
+      id: 'tower-clock-angle',
+      title: 'Clock Tower Hand Angle',
+      difficulty: 'easy',
+      statement: `
+The keeper of a clock tower needs the angle between the hour and minute hands for any time, to schedule maintenance when the hands are far apart. The clock is a standard analog face: 360 degrees around, 12 hours on the dial.
+
+Given an hour \`h\` (where \`0\` and \`12\` both mean the 12 position) and a minute \`m\` (\`0\` to \`59\`), return the **smaller** of the two angles between the hands, in degrees. The minute hand sweeps \`6\` degrees per minute. The hour hand sweeps \`30\` degrees per hour **plus** \`0.5\` degrees per minute, because it creeps forward as the minutes pass.
+
+Return a number of degrees in the range \`[0, 180]\`. Because all the inputs are whole minutes, every answer is an exact multiple of \`0.5\`; the judge compares with a tolerance of \`1e-6\`.
+`,
+      examples: [
+        {
+          input: 'h = 3, m = 0',
+          output: '90.0',
+          explanation: 'At 3:00 the minute hand is at 0° and the hour hand at 90°; the gap is 90°.',
+        },
+        {
+          input: 'h = 12, m = 30',
+          output: '165.0',
+          explanation: 'Minute hand at 180°, hour hand at 15° (halfway between 12 and 1); the difference is 165°.',
+        },
+        {
+          input: 'h = 3, m = 15',
+          output: '7.5',
+          explanation: 'Minute hand at 90°, hour hand at 97.5° (90 + 15·0.5); the small gap is 7.5°.',
+        },
+      ],
+      constraints: [
+        '0 <= h <= 12 (0 and 12 both denote the 12 position)',
+        '0 <= m <= 59',
+        'Minute hand: 6° per minute. Hour hand: 30° per hour + 0.5° per minute',
+        'Return the smaller angle, a value in [0, 180]; answers are exact multiples of 0.5 (1e-6 tolerance)',
+      ],
+      hints: [
+        'Place each hand on the dial independently as an absolute angle from 12 o’clock. Does the hour hand sit exactly on the hour mark when m > 0, or has it drifted?',
+        'Minute angle is 6·m. Hour angle is 30·(h mod 12) + 0.5·m — the second term is the drift that makes 3:15 not equal 7.5° in the naive reading.',
+        'Take the absolute difference of the two angles. It might exceed 180°, in which case the hands are closer measured the other way around, so return min(diff, 360 − diff).',
+      ],
+      functionName: 'clock_hand_angle',
+      starterCode: `def clock_hand_angle(h: int, m: int) -> float:
+    pass
+`,
+      solution: {
+        code: `def clock_hand_angle(h: int, m: int) -> float:
+    # Each hand as an absolute angle measured clockwise from 12.
+    # Minute hand: a full 360-degree sweep every 60 minutes = 6 deg/min.
+    minute_angle = 6.0 * m
+    # Hour hand: 30 degrees per hour (360/12), PLUS 0.5 deg per minute,
+    # because the hour hand drifts continuously between the hour marks.
+    # h % 12 folds the 12 o'clock position (h == 12) back to 0.
+    hour_angle = 30.0 * (h % 12) + 0.5 * m
+    # Raw separation, then take whichever way around the dial is shorter.
+    diff = abs(hour_angle - minute_angle)
+    return min(diff, 360.0 - diff)
+`,
+        commentary: `
+The only modeling decision is to place each hand as an **absolute angle** from the 12 mark, then subtract — far cleaner than reasoning about relative positions. The minute hand is easy: \`6° per minute\`, so \`6m\`. The hour hand is where the naive answer goes wrong: it does not jump from one hour mark to the next, it **drifts continuously**, covering \`30°\` per hour and an extra \`0.5°\` for each minute elapsed (\`30° / 60 min\`). Forgetting the \`0.5m\` term is the single most common bug — it makes 3:15 read as \`7.5°\` worth of error.
+
+Two small guards finish it. First, \`h % 12\` folds the \`12\` position (and any \`h == 12\` input) back to \`0°\`, matching the dial. Second, the absolute difference of the two angles can exceed \`180°\`; when it does, the hands are actually closer measured the *other* way around the circle, so the answer is \`min(diff, 360 - diff)\`. That wrap is the same odometer thinking as modular arithmetic — the dial is a ring, not a line.
+
+It is \`O(1)\` arithmetic with no loops. Floats appear, but every input is a whole minute, so each result is an exact multiple of \`0.5\` and there is no accumulation of rounding error — the \`1e-6\` judge tolerance is comfortable margin.
+`,
+        complexity: 'Time O(1), Space O(1)',
+      },
+      testCases: [
+        { input: [3, 0], expected: 90.0, label: 'right angle at 3:00' },
+        { input: [12, 30], expected: 165.0, label: 'hour drift at 12:30' },
+        { input: [3, 15], expected: 7.5, label: 'small gap, hour-hand drift matters' },
+        { input: [12, 0], expected: 0.0, hidden: true, label: 'hands aligned at noon' },
+        { input: [6, 0], expected: 180.0, hidden: true, label: 'opposite hands, capped at 180' },
+        { input: [0, 0], expected: 0.0, hidden: true, label: 'h = 0 folds to the 12 position' },
+        { input: [9, 0], expected: 90.0, hidden: true, label: 'right angle the other way' },
+        { input: [11, 59], expected: 5.5, hidden: true, label: 'just before noon' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 1344. Angle Between Hands of a Clock', note: 'the same hour-hand drift and wrap-around' },
+      ],
+    },
+    {
+      id: 'survey-alignment',
+      title: 'Surveyor Sightline Alignment',
+      difficulty: 'hard',
+      statement: `
+A land surveyor has driven a set of stakes into a field at integer grid coordinates. To lay a straight fence, the surveyor wants the **largest number of stakes that lie on a single straight line** — any line, any orientation. Two stakes always lie on a line, so the answer is at least \`min(2, number of stakes)\`.
+
+Given a list \`stakes\` of \`[x, y]\` integer coordinate pairs, return the maximum number of stakes that are collinear.
+
+Stakes may be driven at the **same spot** (duplicate coordinates); duplicates all count toward any line through that spot. The answer is a single integer. An empty field returns \`0\`; one stake returns \`1\`.
+`,
+      examples: [
+        {
+          input: 'stakes = [[1, 1], [2, 2], [3, 3]]',
+          output: '3',
+          explanation: 'All three lie on the line y = x.',
+        },
+        {
+          input: 'stakes = [[1, 1], [3, 2], [5, 3], [4, 1], [2, 3], [1, 4]]',
+          output: '4',
+          explanation: 'The stakes (1,4), (2,3), (3,2), (4,1) all lie on the line y = 5 − x.',
+        },
+        {
+          input: 'stakes = [[0, 0]]',
+          output: '1',
+          explanation: 'A single stake is trivially its own line.',
+        },
+      ],
+      constraints: [
+        '0 <= number of stakes <= 300',
+        '-10^9 <= x, y <= 10^9 for every stake',
+        'Duplicate coordinates are allowed and all count toward a shared line',
+        'Use exact integer slope keys (reduced direction vectors), never float division, to avoid precision errors',
+      ],
+      hints: [
+        'Two stakes never pin down "the best" line, but a third either lies on the line they define or it does not. If you anchor one stake and look outward at all the others, what shared property do the ones on a common line through the anchor have?',
+        'Anchor each stake in turn. For every other stake, the direction from the anchor is a slope. Stakes sharing the same slope (relative to the anchor) are collinear with it. Counting the most common slope per anchor and taking the max over anchors gives the answer.',
+        'Represent each slope as a reduced integer vector: divide (dx, dy) by gcd(|dx|, |dy|) and fix a canonical sign so that e.g. (1,2) and (−1,−2) collapse to one key — never use dy/dx as a float. Handle exact duplicates (dx = dy = 0) separately and add them to every line through the anchor.',
+      ],
+      functionName: 'max_aligned_stakes',
+      starterCode: `def max_aligned_stakes(stakes: list[list[int]]) -> int:
+    pass
+`,
+      solution: {
+        code: `from math import gcd
+
+def max_aligned_stakes(stakes: list[list[int]]) -> int:
+    n = len(stakes)
+    # Zero, one, or two stakes are degenerate: the count IS n itself,
+    # since any two points are collinear and fewer can't beat that.
+    if n <= 2:
+        return n
+
+    best = 1
+    for i in range(n):
+        # Anchor stake i. Group every other stake by the DIRECTION of
+        # the segment from the anchor to it. Same direction (reduced)
+        # => collinear with the anchor along one line.
+        slopes: dict[tuple, int] = {}
+        duplicates = 0          # stakes sitting exactly on the anchor
+        local_best = 0          # most stakes sharing one slope here
+        ax, ay = stakes[i]
+        for j in range(n):
+            if i == j:
+                continue
+            dx = stakes[j][0] - ax
+            dy = stakes[j][1] - ay
+            if dx == 0 and dy == 0:
+                # Same spot as the anchor: lies on EVERY line through it.
+                duplicates += 1
+                continue
+            # Reduce the direction vector to lowest terms so that, say,
+            # (2, 4) and (1, 2) and (3, 6) all key to the same slope.
+            g = gcd(dx, dy)     # gcd is positive for nonzero input
+            dx //= g
+            dy //= g
+            # Canonicalize the sign so (1, 2) and (-1, -2) — opposite
+            # directions along the SAME line — collapse to one key.
+            if dx < 0 or (dx == 0 and dy < 0):
+                dx, dy = -dx, -dy
+            key = (dx, dy)
+            slopes[key] = slopes.get(key, 0) + 1
+            if slopes[key] > local_best:
+                local_best = slopes[key]
+        # A line through the anchor holds: the anchor itself (+1), every
+        # stake duplicated on it, and the largest single-slope group.
+        best = max(best, local_best + duplicates + 1)
+    return best
+`,
+        commentary: `
+The defining trick is **anchor and group by slope**. A line is hard to pin down from scratch, but if you *fix one stake as an anchor*, every other stake defines a direction (slope) relative to it, and the stakes lying on one line through the anchor are exactly those sharing that slope. So for each anchor, bucket the others by slope, take the biggest bucket, and the best line through that anchor holds \`biggest_bucket + 1\` stakes (the +1 is the anchor). Maximize over all anchors and you have the global best — \`O(n^2)\` total, which is the standard bound for this problem.
+
+Two correctness landmines, both about representing the slope **exactly**. First, never use \`dy / dx\` as a float — equal lines can produce slightly different floats and split a bucket, and a vertical line divides by zero. Instead key on the **reduced integer direction vector**: divide \`(dx, dy)\` by \`gcd(dx, dy)\` so \`(2,4)\`, \`(1,2)\`, \`(3,6)\` all collapse to \`(1,2)\`. Second, a line has two opposite directions — \`(1,2)\` and \`(-1,-2)\` describe the *same* line — so canonicalize the sign (force the first nonzero component positive) to merge them into one key.
+
+The last subtlety is **duplicate stakes** sitting exactly on the anchor (\`dx == dy == 0\`): they have no direction, but they lie on *every* line through the anchor, so they are counted once into \`duplicates\` and added to every candidate. That is why the per-anchor total is \`local_best + duplicates + 1\`. Pure integer arithmetic throughout keeps the whole thing exact.
+`,
+        complexity: 'Time O(n^2), Space O(n) for the per-anchor slope buckets',
+      },
+      testCases: [
+        { input: [[[1, 1], [2, 2], [3, 3]]], expected: 3, label: 'three on y = x' },
+        {
+          input: [[[1, 1], [3, 2], [5, 3], [4, 1], [2, 3], [1, 4]]],
+          expected: 4,
+          label: 'best line is y = 5 - x',
+        },
+        { input: [[[0, 0]]], expected: 1, label: 'single stake' },
+        { input: [[]], expected: 0, hidden: true, label: 'empty field' },
+        {
+          input: [[[0, 0], [0, 1], [0, 2], [1, 0], [2, 0]]],
+          expected: 3,
+          hidden: true,
+          label: 'vertical line of 3 beats the horizontal of 3? tie at 3',
+        },
+        { input: [[[1, 1], [1, 1], [1, 1]]], expected: 3, hidden: true, label: 'all stakes on the same spot' },
+        {
+          input: [[[4, 0], [4, -1], [4, 5], [4, 3]]],
+          expected: 4,
+          hidden: true,
+          label: 'vertical line, no float division',
+        },
+        {
+          input: [[[0, 0], [2, 4], [1, 2], [3, 6], [1, 0]]],
+          expected: 4,
+          hidden: true,
+          label: 'reduced slope (1,2) groups four points',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 149. Max Points on a Line', note: 'the canonical version with the same gcd-slope keying' },
+      ],
+    },
   ],
   quiz: [
     {

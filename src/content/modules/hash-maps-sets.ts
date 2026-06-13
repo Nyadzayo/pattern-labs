@@ -496,6 +496,475 @@ Why is the total \`O(n)\`? Amortize: every element is touched at most twice — 
         { name: 'LeetCode 41. First Missing Positive', note: 'related presence-probing idea, O(1) space twist' },
       ],
     },
+    {
+      id: 'double-report',
+      title: 'Chatty Sensor Check',
+      difficulty: 'easy',
+      statement: `
+A facilities team suspects that some smoke detectors in an office tower are double-reporting. The building's gateway keeps a heartbeat log: a list of sensor IDs in the exact order their packets arrived.
+
+A sensor counts as **chatty** if the same ID appears at two different positions \`i\` and \`j\` with \`abs(i - j) <= w\`, where \`w\` is the tolerance window the team configures — a healthy sensor should stay quiet at least that long between heartbeats.
+
+Given the log \`ids\` and the window \`w\`, return \`True\` if any sensor is chatty and \`False\` otherwise.
+`.trim(),
+      examples: [
+        {
+          input: 'ids = ["a7", "b2", "a7"], w = 2',
+          output: 'True',
+          explanation: 'Sensor "a7" reports at positions 0 and 2 — a gap of 2, which is within the window.',
+        },
+        {
+          input: 'ids = ["a7", "b2", "a7"], w = 1',
+          output: 'False',
+          explanation: 'The only repeated ID is "a7", but its two reports are 2 positions apart, which exceeds w = 1.',
+        },
+        {
+          input: 'ids = ["s1", "s2", "s3"], w = 10',
+          output: 'False',
+          explanation: 'No ID ever repeats, so no window setting can make a sensor chatty.',
+        },
+      ],
+      constraints: [
+        '0 <= len(ids) <= 10^5',
+        '0 <= w <= 10^5',
+        'Sensor IDs are non-empty strings of lowercase letters and digits',
+      ],
+      hints: [
+        'The brute force compares every entry against the w entries just before it — O(n · w). As you scan, what single fact about each sensor ID would let you decide instantly at the current position?',
+        'At position j, only the MOST RECENT earlier occurrence of this ID matters: any older occurrence is strictly farther away. A dictionary mapping ID → last index seen answers "how far back?" in O(1).',
+        'One pass: if the ID is already in the map and j - map[id] <= w, return True. Otherwise set map[id] = j — always overwrite, because the freshest index is the closest candidate this ID can ever offer to future positions.',
+      ],
+      functionName: 'has_double_report',
+      starterCode: `def has_double_report(ids: list[str], w: int) -> bool:
+    pass
+`,
+      solution: {
+        code: `def has_double_report(ids: list[str], w: int) -> bool:
+    # Maps a sensor ID -> the most recent index where it appeared.
+    last_seen: dict[str, int] = {}
+
+    for j, sensor in enumerate(ids):
+        # Only the latest earlier occurrence can be close enough: any older
+        # report of this sensor is strictly farther from j.
+        if sensor in last_seen and j - last_seen[sensor] <= w:
+            return True
+        # Always overwrite. For every position still to come, the freshest
+        # index is the closest candidate this ID can offer.
+        last_seen[sensor] = j
+
+    # No ID ever repeated within the window.
+    return False
+`,
+        commentary: `
+The brute force re-scans a \`w\`-wide slice of history at every step — \`O(n * w)\`. The hash-map insight is that almost all of that history is *dead*: to answer "is there a same-ID report within \`w\` of position \`j\`?", only the **most recent** earlier occurrence of the current ID can possibly qualify, because every older one is strictly farther away. One remembered index per sensor is all the memory the problem actually needs.
+
+Notice how this flips what the complement-search move stores. There we kept the *first* index of each value (to minimize \`i\`); here we keep the *last*, overwriting on every visit, because the question is about distance to the current position and fresher is always closer. Matching *what you store* to *the question being asked* is most of the design work in map problems.
+
+The check-before-overwrite order matters too: probing first guarantees the stored index is a strictly earlier position, so \`j - last_seen[sensor]\` is a genuine gap. The \`w = 0\` setting then falls out correctly with no special case — two distinct positions are at least 1 apart, so the test never fires and the answer is \`False\`. An alternative is a sliding set holding exactly the last \`w\` IDs (add on arrival, evict the one that just fell out of range); same complexity, more bookkeeping to get wrong.
+`.trim(),
+        complexity: 'Time O(n), Space O(min(n, d)) for d distinct sensor IDs',
+      },
+      testCases: [
+        { input: [['a7', 'b2', 'a7'], 2], expected: true, label: 'repeat inside window' },
+        { input: [['a7', 'b2', 'a7'], 1], expected: false, label: 'repeat outside window' },
+        { input: [['s1', 's2', 's3', 's1'], 3], expected: true, label: 'gap exactly equals window' },
+        { input: [[], 5], expected: false, hidden: true, label: 'empty log' },
+        { input: [['k9', 'k9'], 0], expected: false, hidden: true, label: 'w = 0 can never fire' },
+        { input: [['k9', 'k9'], 1], expected: true, hidden: true, label: 'adjacent repeat' },
+        { input: [['a', 'b', 'c', 'b', 'a'], 3], expected: true, hidden: true, label: 'inner pair qualifies' },
+        { input: [['a', 'b', 'c', 'a'], 2], expected: false, hidden: true, label: 'all repeats too far apart' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 219. Contains Duplicate II', note: 'the classic version of this exact move' },
+        { name: 'LeetCode 220. Contains Duplicate III', note: 'value-distance twist that outgrows a plain map' },
+      ],
+    },
+    {
+      id: 'chant-transcripts',
+      title: 'Matching Field Transcriptions',
+      difficulty: 'easy',
+      statement: `
+A linguistics archive holds recordings of ceremonial chants transcribed by two different field assistants — and each assistant invented their own private symbol alphabet. Two transcriptions can describe the same chant only if a **consistent one-to-one substitution** connects their symbols: every occurrence of a given symbol in \`a\` must line up with the same symbol in \`b\`, and no two distinct symbols of \`a\` may map to the same symbol of \`b\`.
+
+Given two transcriptions \`a\` and \`b\`, return \`True\` if such a substitution exists and \`False\` otherwise. Transcriptions of different lengths can never match; two empty transcriptions match trivially.
+`.trim(),
+      examples: [
+        {
+          input: 'a = "egg", b = "add"',
+          output: 'True',
+          explanation: 'The substitution e→a, g→d lines up every position, and no two sources share a target.',
+        },
+        {
+          input: 'a = "foo", b = "bar"',
+          output: 'False',
+          explanation: 'The symbol "o" would have to map to "a" at position 1 and "r" at position 2 — one source cannot take two targets.',
+        },
+        {
+          input: 'a = "ab", b = "aa"',
+          output: 'False',
+          explanation: '"a" and "b" would both have to map onto "a", which breaks the one-to-one requirement.',
+        },
+      ],
+      constraints: [
+        '0 <= len(a), len(b) <= 10^4',
+        'a and b consist of lowercase English letters',
+      ],
+      hints: [
+        'Line up "egg" with "add" by hand, symbol by symbol. What commitment does each pairing create for the rest of the string? Now try "ab" against "aa" — it feels consistent reading left to right, yet it is not a valid match. What exactly went wrong?',
+        'A dictionary from symbols of a to symbols of b records each commitment and catches a symbol trying to take two different targets. But "ab" vs "aa" sails through that check — the failure there is two SOURCES collapsing onto one target, which the forward map alone cannot see.',
+        'Walk both strings in lockstep with two maps, a→b and b→a. At each position, if either map already holds a different commitment for its symbol, return False; otherwise record the pairing in both directions. Surviving the whole walk proves a bijection exists.',
+      ],
+      functionName: 'transcripts_match',
+      starterCode: `def transcripts_match(a: str, b: str) -> bool:
+    pass
+`,
+      solution: {
+        code: `def transcripts_match(a: str, b: str) -> bool:
+    # Different lengths can never line up symbol-for-symbol.
+    if len(a) != len(b):
+        return False
+
+    forward: dict[str, str] = {}   # symbol in a -> committed symbol in b
+    backward: dict[str, str] = {}  # symbol in b -> committed symbol in a
+
+    for x, y in zip(a, b):
+        # If x already promised a target, it must be y again.
+        if x in forward and forward[x] != y:
+            return False
+        # If y is already claimed by a source, it must be x again --
+        # this direction is what enforces ONE-to-one (no collapsing).
+        if y in backward and backward[y] != x:
+            return False
+        # Record the commitment in both directions.
+        forward[x] = y
+        backward[y] = x
+
+    return True
+`,
+        commentary: `
+A one-to-one substitution is a bijection, and a bijection has two distinct ways to fail: one symbol trying to claim two targets (\`"foo"\` / \`"bar"\`, where \`o\` needs both \`a\` and \`r\`), and two symbols collapsing onto one target (\`"ab"\` / \`"aa"\`, where both \`a\` and \`b\` need \`a\`). Each failure mode is an exact-key question about a different *direction*, so each gets its own dictionary: forward asks "what did this source promise?", backward asks "who already owns this target?".
+
+The single-map version is the classic near-miss — it catches the first failure mode, silently accepts the second, and passes most casually chosen tests. That is what makes this a pattern problem rather than a trivia problem: the hash maps don't just make it fast, they *encode the invariant*. After every position, "all pairings seen so far form a partial bijection" holds; reaching the end is a proof that a full bijection exists, so \`True\` needs no further verification.
+
+Each position costs two \`O(1)\` probes and two \`O(1)\` writes. A neat alternative with the same spirit is the positional fingerprint — replace every symbol with the index of its first occurrence and compare the two fingerprint sequences — but the two-map walk is the version that is easiest to write and justify out loud under interview pressure.
+`.trim(),
+        complexity: 'Time O(n), Space O(k) for alphabet size k (at most 26 entries per direction)',
+      },
+      testCases: [
+        { input: ['egg', 'add'], expected: true, label: 'simple substitution' },
+        { input: ['foo', 'bar'], expected: false, label: 'one source, two targets' },
+        { input: ['paper', 'title'], expected: true, label: 'longer match' },
+        { input: ['ab', 'aa'], expected: false, hidden: true, label: 'two sources collapse onto one target' },
+        { input: ['', ''], expected: true, hidden: true, label: 'both empty' },
+        { input: ['abc', 'de'], expected: false, hidden: true, label: 'length mismatch' },
+        { input: ['badc', 'baba'], expected: false, hidden: true, label: 'backward conflict appears late' },
+        { input: ['x', 'y'], expected: true, hidden: true, label: 'single symbols' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 205. Isomorphic Strings', note: 'the classic version' },
+        { name: 'LeetCode 290. Word Pattern', note: 'same bijection check, between letters and whole words' },
+      ],
+    },
+    {
+      id: 'dock-rebalance',
+      title: 'Bike-Share Rebalancing Report',
+      difficulty: 'medium',
+      statement: `
+The city's bike-share network logs every ride as the name of the station where the bike was unlocked. Each morning, the operations crew sends rebalancing trucks to the stations that generated the most pickups the previous day, so the emptiest racks get restocked first.
+
+Given \`rides\` — yesterday's pickup log, one station name per ride in chronological order — and an integer \`k\`, return the names of the \`k\` busiest stations as a list, ordered from most pickups to fewest. If two stations tie on pickup count, the name that comes first alphabetically ranks higher and appears earlier in the output.
+`.trim(),
+      examples: [
+        {
+          input: 'rides = ["river", "park", "river", "depot", "park", "river"], k = 2',
+          output: '["river", "park"]',
+          explanation: '"river" has 3 pickups, "park" has 2, "depot" has 1 — the top two are clear.',
+        },
+        {
+          input: 'rides = ["oak", "elm", "oak", "elm", "ash"], k = 2',
+          output: '["elm", "oak"]',
+          explanation: '"oak" and "elm" both have 2 pickups; the tie breaks alphabetically, so "elm" outranks "oak". Both beat "ash" with 1.',
+        },
+        {
+          input: 'rides = ["hub", "hub", "hub"], k = 1',
+          output: '["hub"]',
+          explanation: 'Only one station exists, so it is trivially the busiest.',
+        },
+      ],
+      constraints: [
+        '1 <= len(rides) <= 10^5',
+        'Station names are non-empty strings of lowercase letters',
+        '1 <= k <= number of distinct station names in rides',
+      ],
+      hints: [
+        'Two separate jobs hide in this problem: measuring how much traffic each station got, and choosing k winners under a tie rule. Keep them separate — mixing them is where the bugs live.',
+        'One pass with a Counter turns the raw log into station → pickup count. The remaining job is purely about ordering the distinct stations: larger counts first, and alphabetical order INSIDE each count.',
+        'Sort the distinct station names with the composite key (-count, name) and slice the first k. Negating the count makes "descending by count" and "ascending by name" point the same way, so one ordinary ascending sort enforces both rules at once.',
+      ],
+      functionName: 'busiest_stations',
+      starterCode: `def busiest_stations(rides: list[str], k: int) -> list[str]:
+    pass
+`,
+      solution: {
+        code: `from collections import Counter
+
+
+def busiest_stations(rides: list[str], k: int) -> list[str]:
+    # Pass 1: collapse the ride log into station -> pickup count.
+    pickups = Counter(rides)
+
+    # Rank with a composite key: the negated count puts bigger counts
+    # first under an ascending sort, and equal counts fall through to
+    # the name comparison -- one sort enforces both rules.
+    ranked = sorted(pickups, key=lambda station: (-pickups[station], station))
+
+    # The k busiest under that ordering.
+    return ranked[:k]
+`,
+        commentary: `
+This is count-first, decide-second with a ranking stage bolted on. The frequency pass is forced — pickup totals simply do not exist anywhere in the raw log — and once you have them, the log itself is dead weight: every later step works on the \`d\` distinct stations, which is usually far smaller than the \`n\` rides.
+
+The part interviewers actually probe is the tie-break. "Most pickups first, alphabetical among equals" sounds like two sorts, but it is one composite key: \`(-count, name)\`. Python compares tuples left to right, so the negated count dominates and bigger counts bubble up; only equal counts fall through to the name comparison, which is already ascending. Encoding the entire ranking rule in one key makes the determinism auditable at a glance — no path through the code leaves ties to chance, or to dict-iteration order, which promises nothing useful here.
+
+Sorting all \`d\` stations costs \`O(d log d)\`. When \`k\` is tiny and \`d\` is huge, a size-\`k\` heap keyed the same way drops selection to \`O(d log k)\` — worth saying out loud in an interview, followed by the observation that the plain sort is shorter, simpler, and entirely defensible at these input sizes.
+`.trim(),
+        complexity: 'Time O(n + d log d) for n rides and d distinct stations, Space O(d)',
+      },
+      testCases: [
+        {
+          input: [['river', 'park', 'river', 'depot', 'park', 'river'], 2],
+          expected: ['river', 'park'],
+          label: 'clear top two',
+        },
+        {
+          input: [['oak', 'elm', 'oak', 'elm', 'ash'], 2],
+          expected: ['elm', 'oak'],
+          label: 'alphabetical tie-break',
+        },
+        { input: [['hub', 'hub', 'hub'], 1], expected: ['hub'], label: 'single station' },
+        {
+          input: [['d', 'b', 'c', 'a'], 3],
+          expected: ['a', 'b', 'c'],
+          hidden: true,
+          label: 'all tied, pure alphabetical',
+        },
+        { input: [['a', 'b', 'a'], 2], expected: ['a', 'b'], hidden: true, label: 'k equals distinct count' },
+        {
+          input: [['x', 'y', 'y', 'z', 'z', 'w'], 2],
+          expected: ['y', 'z'],
+          hidden: true,
+          label: 'tie at the cut line',
+        },
+        { input: [['m', 'n', 'n', 'm', 'o', 'o', 'o'], 1], expected: ['o'], hidden: true, label: 'k = 1' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 347. Top K Frequent Elements', note: 'the classic, with a heap/bucket-sort follow-up' },
+        { name: 'LeetCode 692. Top K Frequent Words', note: 'adds the alphabetical tie-break, as here' },
+      ],
+    },
+    {
+      id: 'pantry-overlap',
+      title: 'Food Truck Swap Crate',
+      difficulty: 'medium',
+      statement: `
+Two food trucks park side by side at a street fair and agree to build a shared **swap crate** for a collaborative sampler menu. Each truck's stock is a list of ingredient names with one entry per physical unit on board — an ingredient that appears three times means three units of it.
+
+An ingredient goes into the crate once per **matched pair of units**: if truck A carries it \`x\` times and truck B carries it \`y\` times, the crate receives \`min(x, y)\` units of that ingredient. Ingredients that only one truck carries stay on that truck.
+
+Given \`truck_a\` and \`truck_b\`, return the crate's contents as a flat list of ingredient names — repeats included — sorted in ascending alphabetical order.
+`.trim(),
+      examples: [
+        {
+          input: 'truck_a = ["basil", "lime", "basil", "corn"], truck_b = ["basil", "corn", "corn", "basil", "basil"]',
+          output: '["basil", "basil", "corn"]',
+          explanation: 'Basil: min(2, 3) = 2 units. Corn: min(1, 2) = 1 unit. Lime is only on truck A, so it contributes nothing.',
+        },
+        {
+          input: 'truck_a = ["egg", "egg"], truck_b = ["egg", "egg", "egg"]',
+          output: '["egg", "egg"]',
+          explanation: 'Two units on one side, three on the other — only two pairs can be matched.',
+        },
+        {
+          input: 'truck_a = ["rice"], truck_b = ["beans"]',
+          output: '[]',
+          explanation: 'No ingredient is carried by both trucks, so the crate stays empty.',
+        },
+      ],
+      constraints: [
+        '0 <= len(truck_a), len(truck_b) <= 10^5',
+        'Ingredient names are non-empty strings of lowercase letters',
+      ],
+      hints: [
+        'A working but slow plan: for each unit on truck A, scan truck B for an unused matching unit and cross it off. What summary of each truck would replace all that scanning and crossing-off with plain arithmetic?',
+        'Count both stocks. For an ingredient both trucks carry, the number of matched pairs is min(count_a[x], count_b[x]); an ingredient missing from either side contributes zero. Note that a plain set intersection would throw away exactly the multiplicities the crate depends on.',
+        'Counter supports & — per-key minimum, which is multiset intersection — and .elements() re-expands the result into individual units. Sort that flat list before returning; the counters themselves promise no useful order.',
+      ],
+      functionName: 'shared_pantry',
+      starterCode: `def shared_pantry(truck_a: list[str], truck_b: list[str]) -> list[str]:
+    pass
+`,
+      solution: {
+        code: `from collections import Counter
+
+
+def shared_pantry(truck_a: list[str], truck_b: list[str]) -> list[str]:
+    # Collapse each stock list into a multiset: ingredient -> unit count.
+    count_a = Counter(truck_a)
+    count_b = Counter(truck_b)
+
+    # Counter's & operator keeps only keys present in BOTH, each at the
+    # minimum of the two counts -- exactly "matched pairs of units".
+    overlap = count_a & count_b
+
+    # .elements() re-expands the multiset into one entry per unit;
+    # sorting gives the deterministic order the problem demands.
+    return sorted(overlap.elements())
+`,
+        commentary: `
+The reflex answer — "common elements? set intersection" — destroys exactly the information this problem is built on. A set can say *whether* both trucks carry basil; the crate needs to know *how many units* match. When multiplicity is the substance of the question, the model is a multiset, and Python's multiset is \`Counter\`.
+
+With both stocks counted, the whole computation is a per-key minimum over shared keys, and that operation already has a name: \`Counter\`'s \`&\` operator is multiset intersection. \`min(x, y)\` is the right combiner because each matched pair consumes one unit from *each* truck — pairs run out the moment the scarcer side does. Contrast this with multiset *containment* (can one list be assembled from another's parts?): same counting step, different reduction — \`all(need <= have)\` or a floor-divide for "how many times". Recognizing which reduction a story is asking for is the real skill; the counting is identical either way.
+
+\`.elements()\` re-expands the intersected counter into individual units, and the final \`sorted(...)\` is not decoration: dict iteration order reflects insertion history, which depends on how the inputs happened to be laid out, and the problem demands an order that does not. Counting is \`O(n + m)\`; sorting the \`t\` crate units adds \`O(t log t)\`, with \`t\` never exceeding the smaller stock.
+`.trim(),
+        complexity: 'Time O(n + m + t log t) for stock sizes n, m and crate size t, Space O(n + m)',
+      },
+      testCases: [
+        {
+          input: [
+            ['basil', 'lime', 'basil', 'corn'],
+            ['basil', 'corn', 'corn', 'basil', 'basil'],
+          ],
+          expected: ['basil', 'basil', 'corn'],
+          label: 'mixed multiplicities',
+        },
+        { input: [['egg', 'egg'], ['egg', 'egg', 'egg']], expected: ['egg', 'egg'], label: 'scarcer side caps pairs' },
+        { input: [['rice'], ['beans']], expected: [], label: 'no overlap' },
+        { input: [[], ['salt']], expected: [], hidden: true, label: 'one truck empty' },
+        { input: [[], []], expected: [], hidden: true, label: 'both trucks empty' },
+        {
+          input: [
+            ['a', 'b', 'a'],
+            ['a', 'b', 'a'],
+          ],
+          expected: ['a', 'a', 'b'],
+          hidden: true,
+          label: 'identical stocks, sorted output',
+        },
+        {
+          input: [
+            ['z', 'y', 'x'],
+            ['x', 'z', 'w'],
+          ],
+          expected: ['x', 'z'],
+          hidden: true,
+          label: 'output sorted regardless of input order',
+        },
+        { input: [['m', 'm', 'm', 'n'], ['m']], expected: ['m'], hidden: true, label: 'min on the other side' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 350. Intersection of Two Arrays II', note: 'the classic version' },
+        { name: 'LeetCode 349. Intersection of Two Arrays', note: 'the set version — multiplicity dropped' },
+      ],
+    },
+    {
+      id: 'scrim-balance',
+      title: 'Scrim Record Balance',
+      difficulty: 'hard',
+      statement: `
+An esports coach is reviewing the season's scrim log: a list where each entry is \`"W"\` for a won practice match or \`"L"\` for a lost one, in the order the matches were played. For a morale report, the coach wants the team's longest stretch of **even form** — the longest contiguous block of matches containing exactly as many wins as losses.
+
+Given \`results\`, return the length of that longest balanced block. If no non-empty block is balanced (say the team never lost), return \`0\`.
+
+**Target:** \`O(n)\` time. Testing every block separately re-counts the same matches over and over — a full season deserves better.
+`.trim(),
+      examples: [
+        {
+          input: 'results = ["W", "L"]',
+          output: '2',
+          explanation: 'The whole log is one win and one loss — already balanced.',
+        },
+        {
+          input: 'results = ["W", "W", "L", "W", "L", "L", "W"]',
+          output: '6',
+          explanation: 'The first six matches hold three wins and three losses. No length-7 block can balance — an odd-length block never can.',
+        },
+        {
+          input: 'results = ["W", "W", "W"]',
+          output: '0',
+          explanation: 'Every block contains only wins, so nothing is ever balanced.',
+        },
+        {
+          input: 'results = []',
+          output: '0',
+          explanation: 'An empty season has no non-empty block at all.',
+        },
+      ],
+      constraints: [
+        '0 <= len(results) <= 10^5',
+        'results[i] is either "W" or "L"',
+        'Expected solution runs in O(n) time',
+      ],
+      hints: [
+        'Checking every block and counting its wins is O(n²) at best. Is there one running quantity you can maintain in a single left-to-right pass that captures "wins versus losses so far" at every prefix of the season?',
+        'Score a win as +1 and a loss as -1 and keep a running total. A block is balanced exactly when the running total is the SAME just before the block starts and at its end — everything inside cancels out.',
+        'So the question becomes: which two positions with equal running totals are farthest apart? Store the FIRST index where each total appears (seed the map with total 0 at index -1). On every revisit of a known total, the gap back to its first index is a balanced block; never overwrite a first index — an earlier left end only lengthens future blocks.',
+      ],
+      functionName: 'longest_balanced_block',
+      starterCode: `def longest_balanced_block(results: list[str]) -> int:
+    pass
+`,
+      solution: {
+        code: `def longest_balanced_block(results: list[str]) -> int:
+    # Score wins +1 and losses -1. A block is balanced exactly when the
+    # running score is identical just before it starts and at its end.
+    first_seen: dict[int, int] = {0: -1}  # score 0 happens "before match 0"
+    score = 0
+    best = 0
+
+    for i, outcome in enumerate(results):
+        score += 1 if outcome == "W" else -1
+
+        if score in first_seen:
+            # Seen this score before: the matches strictly after that
+            # earlier position, up to and including here, cancel to zero.
+            best = max(best, i - first_seen[score])
+        else:
+            # Record only the FIRST index for each score. The earliest
+            # left end maximizes every future block that ends later.
+            first_seen[score] = i
+
+    return best
+`,
+        commentary: `
+The unlock is a re-encoding: score \`"W"\` as \`+1\`, \`"L"\` as \`-1\`, and track the running total. Inside any block, wins and losses cancel exactly when there are equally many of each — so a block is balanced **iff the running total is the same at both of its ends**. A statement about the *interior* of every window has been converted into a statement about *two point values*, and "have I seen this exact value before, and where first?" is precisely the question hash maps answer in \`O(1)\`.
+
+Two details carry the correctness. The seed \`{0: -1}\` declares that the empty prefix has total 0 — without it, a balanced block starting at match 0 (like \`["W", "L"]\`) is invisible, a bug that hides until exactly that test. And the map stores only the *first* index of each total, never overwriting: for a fixed right end, the block is longest when its left end is earliest, and a later occurrence of the same total can never beat the first one. Overwriting fails quietly — answers come out short, not wrong-shaped, which makes it the most dangerous bug in this family.
+
+The template generalizes well beyond win/loss logs: any "longest span where X and Y balance" yields to it once you find a running quantity that is equal at the ends exactly when the property holds inside. One probe and at most one insert per match — \`O(n)\` time, \`O(n)\` space for the distinct totals.
+`.trim(),
+        complexity: 'Time O(n), Space O(n)',
+      },
+      testCases: [
+        { input: [['W', 'L']], expected: 2, label: 'minimal balanced log' },
+        { input: [['W', 'W', 'L', 'W', 'L', 'L', 'W']], expected: 6, label: 'balanced block from the start' },
+        { input: [['W', 'W', 'W']], expected: 0, label: 'wins only' },
+        { input: [[]], expected: 0, hidden: true, label: 'empty season' },
+        {
+          input: [['L', 'W', 'W', 'L', 'L', 'L', 'W', 'W']],
+          expected: 8,
+          hidden: true,
+          label: 'entire log balances',
+        },
+        { input: [['L', 'L', 'W']], expected: 2, hidden: true, label: 'balanced suffix' },
+        { input: [['W']], expected: 0, hidden: true, label: 'single match' },
+        { input: [['L', 'W', 'L']], expected: 2, hidden: true, label: 'two overlapping candidates' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 525. Contiguous Array', note: 'the classic version' },
+        { name: 'LeetCode 560. Subarray Sum Equals K', note: 'same prefix trick, counting occurrences instead of first indices' },
+      ],
+    },
   ],
   quiz: [
     {

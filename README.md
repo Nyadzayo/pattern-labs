@@ -6,7 +6,7 @@ All content is original. Classic problems are referenced by name only as "furthe
 
 ## Features
 
-- **19 curriculum modules** — Two Pointers through Math & Geometry, each with a 600–1000-word concept explainer, 4 original practice problems (3 progressive hints, commented reference solution, 6–10 judge test cases), an 8-question quiz, and 10 flashcards
+- **19 curriculum modules** — Two Pointers through Math & Geometry, each with a 600–1000-word concept explainer, 9 original practice problems (3 progressive hints, commented reference solution, 6–10 judge test cases), an 8-question quiz, and 10 flashcards
 - **16 interactive visualizers** — pure-function frame engines with play/pause/step/scrub/speed controls, synced pseudocode highlighting, and editable inputs; deterministic and fully step-reversible
 - **Practice arena** — CodeMirror editor, Run (visible cases) / Submit (all cases) judged by **Pyodide in a Web Worker** with a 5-second timeout; per-case expected-vs-actual diffs; clean solves tracked separately from solved-with-help
 - **Spaced repetition** — SM-2 scheduler, per-module decks plus a global "due today" deck

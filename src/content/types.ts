@@ -99,7 +99,7 @@ export interface Problem {
   /** Python starter stub shown in the editor. */
   starterCode: string
   solution: ReferenceSolution
-  /** 6–10 cases including edge cases. */
+  /** 6–10 cases including edge cases (judged by the Pyodide worker). */
   testCases: TestCase[]
   /** Optional similarly-themed classics, referenced by name only. */
   furtherPractice?: { name: string; note?: string }[]

@@ -441,6 +441,448 @@ The upper bound \`max(bins)\` is safe because \`hours >= len(bins)\` guarantees 
         { name: 'LeetCode 410. Split Array Largest Sum', note: 'minimize-the-maximum with a greedy feasibility check' },
       ],
     },
+    {
+      id: 'kiln-peak-reading',
+      title: 'Kiln Turnover Minute',
+      difficulty: 'medium',
+      statement: `
+A pottery studio's electric kiln logs one temperature reading per minute during a firing. The controller guarantees a clean profile: readings **strictly increase** while the elements heat, hit a single peak, then **strictly decrease** through cooldown — and either phase may be missing entirely if logging started late or was cut short.
+
+Given the list \`readings\`, return the **index of the peak reading** — the minute the firing turned over.
+
+The studio dashboard replays thousands of archived firings on every refresh, so each lookup must run in \`O(log n)\`; rescanning every minute of every log is off the table.
+`,
+      examples: [
+        {
+          input: 'readings = [110, 230, 480, 950, 700, 420]',
+          output: '3',
+          explanation: 'Temperatures climb to 950 at index 3, then fall. Minute 3 is the turnover.',
+        },
+        {
+          input: 'readings = [220, 180, 90]',
+          output: '0',
+          explanation: 'Logging began after the peak — the whole log is cooldown, so the hottest reading is the very first one.',
+        },
+        {
+          input: 'readings = [100, 400]',
+          output: '1',
+          explanation: 'All heating: the peak is the final reading. Either phase of the profile may be empty.',
+        },
+      ],
+      constraints: [
+        '1 <= len(readings) <= 100_000',
+        '0 <= readings[k] <= 2_000',
+        'readings strictly increases to a single peak, then strictly decreases (either side may be empty)',
+        'Adjacent readings are never equal',
+        'Required: O(log n) time',
+      ],
+      hints: [
+        'Finding a maximum normally means looking at everything. But this log is not arbitrary data: pick any single minute and compare it with the next one, and the result tells you which phase of the firing that minute belongs to. What does knowing the phase rule out?',
+        'If readings[mid] < readings[mid + 1], minute mid sits on the heating ramp, so the peak lies strictly to its right — discard mid and everything left of it. Otherwise mid is the peak or already cooling, so the peak is at mid or to its left. Every probe kills half the log.',
+        'Boundary template: lo, hi = 0, len(readings) - 1; while lo < hi: mid = (lo + hi) // 2; on a rise (readings[mid] < readings[mid + 1]) set lo = mid + 1, otherwise hi = mid. The mid + 1 access is always safe because lo < hi forces mid < hi. Return lo.',
+      ],
+      functionName: 'kiln_peak_index',
+      starterCode: `def kiln_peak_index(readings: list[int]) -> int:
+    pass
+`,
+      solution: {
+        code: `def kiln_peak_index(readings: list[int]) -> int:
+    # Boundary template: the peak index always lives inside [lo, hi].
+    lo, hi = 0, len(readings) - 1
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if readings[mid] < readings[mid + 1]:
+            # Rising slope: mid cannot be the peak — its right
+            # neighbour is hotter. The peak is strictly right of mid.
+            lo = mid + 1
+        else:
+            # Falling here: mid might BE the peak, so keep it alive.
+            hi = mid
+    # lo == hi: the lone surviving index is the turnover minute.
+    return lo
+`,
+        commentary: `
+There is no target value to compare against — the trick is that the **slope** is the monotone predicate. Define \`falling(i)\` as "\`readings[i] > readings[i + 1]\`". On a strict rise-then-fall profile this predicate is false at every heating minute and true from the peak onward: a clean false→true stripe, even though the raw temperatures go up and then down. The peak is the first index where the stripe flips, so the \`lo < hi\` boundary template applies unchanged.
+
+The moves follow the template's golden rule — discard \`mid\` only when it provably is not the answer. A rising comparison proves \`mid\` cannot be the peak (its right neighbour is hotter), hence \`lo = mid + 1\`; a non-rising comparison leaves \`mid\` alive as a candidate, hence \`hi = mid\`. Strictness is what keeps the verdict unambiguous: a plateau would make \`readings[mid]\` equal to its neighbour and the halving argument would collapse.
+
+Two boundary details carry the implementation. \`hi\` starts at \`len(readings) - 1\` rather than \`len(readings)\` because the peak is guaranteed to exist inside the array — there is no "not found" lane to leave room for. And the \`mid + 1\` probe never falls off the end: \`lo < hi\` guarantees \`mid < hi <= n - 1\`. A single-reading log skips the loop entirely and returns index 0.
+`,
+        complexity: 'Time O(log n), Space O(1)',
+      },
+      testCases: [
+        { input: [[110, 230, 480, 950, 700, 420]], expected: 3, label: 'peak mid-log' },
+        { input: [[220, 180, 90]], expected: 0, label: 'all cooldown — peak at index 0' },
+        { input: [[100, 400]], expected: 1, label: 'all heating — peak at the last index' },
+        { input: [[640]], expected: 0, hidden: true, label: 'single reading' },
+        { input: [[1, 2, 3, 4, 5]], expected: 4, hidden: true, label: 'monotone rise' },
+        { input: [[5, 9, 8, 7, 6, 4, 2]], expected: 1, hidden: true, label: 'peak at index 1' },
+        { input: [[8, 3]], expected: 0, hidden: true, label: 'two readings, falling' },
+        { input: [[2, 4, 6, 9, 12, 11]], expected: 4, hidden: true, label: 'late peak' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 852. Peak Index in a Mountain Array', note: 'the classic unimodal phrasing' },
+        { name: 'LeetCode 162. Find Peak Element', note: 'no unimodal guarantee — any local peak counts' },
+      ],
+    },
+    {
+      id: 'record-shelf-slot',
+      title: 'Record Shop Shelf Slot',
+      difficulty: 'easy',
+      statement: `
+A second-hand record shop keeps one long shelf of vinyl sorted by catalog number in **non-decreasing** order — duplicates are common, since popular albums went through many pressings. When a new record arrives, a clerk slides it into the shelf so the order survives, and shop policy is firm: a new arrival goes **in front of every existing copy** with the same catalog number, because newest stock sells first.
+
+Given the shelf as a list \`catalog\` and the new record's number \`incoming\`, return the index of the slot where it must be inserted. An answer of \`len(catalog)\` means the far right end.
+
+The flagship store shelves tens of thousands of records and logs arrivals all day, so each placement must be computed in \`O(log n)\`.
+`,
+      examples: [
+        {
+          input: 'catalog = [12, 30, 30, 47], incoming = 30',
+          output: '1',
+          explanation: 'Policy puts the new pressing ahead of both existing copies of 30, so it takes index 1.',
+        },
+        {
+          input: 'catalog = [12, 30, 30, 47], incoming = 35',
+          output: '3',
+          explanation: 'Number 35 slots between the block of 30s and the 47.',
+        },
+        {
+          input: 'catalog = [12, 30, 30, 47], incoming = 90',
+          output: '4',
+          explanation: 'Bigger than everything on the shelf: it goes at the far right end, index len(catalog).',
+        },
+      ],
+      constraints: [
+        '0 <= len(catalog) <= 100_000',
+        '0 <= catalog[k], incoming <= 10^9',
+        'catalog is sorted in non-decreasing order (duplicates allowed)',
+        'Required: O(log n) time',
+      ],
+      hints: [
+        'Describe the correct slot without naming any algorithm: every number to its left must be strictly smaller than the incoming one, and the number sitting at the slot — if the slot is occupied — must be at least as large. Convince yourself exactly one index fits that description.',
+        'The predicate catalog[i] >= incoming is false for a prefix of indices and true for all the rest — a monotone stripe — and your slot is the first true index. Include len(catalog) itself as a candidate, since the record may belong past the last slot.',
+        'lo, hi = 0, len(catalog); while lo < hi: mid = (lo + hi) // 2; if catalog[mid] >= incoming keep the candidate (hi = mid), else discard it (lo = mid + 1). Return lo — unlike a find-the-target search, every possible exit value is already a valid slot, so no final verification is needed.',
+      ],
+      functionName: 'shelf_insert_slot',
+      starterCode: `def shelf_insert_slot(catalog: list[int], incoming: int) -> int:
+    pass
+`,
+      solution: {
+        code: `def shelf_insert_slot(catalog: list[int], incoming: int) -> int:
+    # Search [0, n] INCLUSIVE of n: "past the last record" is a real slot.
+    lo, hi = 0, len(catalog)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if catalog[mid] >= incoming:
+            # Slot mid works (everything from here shifts right), and it
+            # might be the leftmost workable slot — keep it as a candidate.
+            hi = mid
+        else:
+            # catalog[mid] is strictly smaller: the slot is right of mid.
+            lo = mid + 1
+    # lo == hi: the leftmost index whose value is >= incoming.
+    return lo
+`,
+        commentary: `
+This is the lower-bound boundary hunt where the loop's exit state **is** the answer — there is no "not found" outcome to guard against. Whether \`incoming\` already exists on the shelf (slide in front of the duplicates), falls between two numbers, or beats everything, the first index satisfying \`catalog[i] >= incoming\` is exactly the slot the policy demands. That is why no verification follows the loop, in contrast to a find-the-target search where the surviving candidate must still be checked against the target.
+
+The search range is the subtle part: \`hi\` starts at \`len(catalog)\`, one *past* the last index, because "append at the far right" is a legitimate answer and the boundary template must keep every possible answer inside \`[lo, hi]\` at all times. Start \`hi\` at \`len(catalog) - 1\` and any incoming number larger than the whole shelf gets filed one slot too early.
+
+Duplicates cost nothing. With \`catalog = [7, 7, 7]\` and \`incoming = 7\`, every probe satisfies \`>=\`, so \`hi\` walks down to 0 — in front of the leftmost copy — with no special handling. In fact the strict-versus-non-strict choice in that one comparison *is* the entire shop policy: testing \`catalog[mid] > incoming\` instead would file the new arrival after the existing copies (an upper bound rather than a lower bound).
+
+An empty shelf never enters the loop (\`lo == hi == 0\`) and correctly reports slot 0.
+`,
+        complexity: 'Time O(log n), Space O(1)',
+      },
+      testCases: [
+        { input: [[12, 30, 30, 47], 30], expected: 1, label: 'duplicates present — leftmost slot' },
+        { input: [[12, 30, 30, 47], 35], expected: 3, label: 'between two numbers' },
+        { input: [[12, 30, 30, 47], 90], expected: 4, label: 'past the right end' },
+        { input: [[], 5], expected: 0, hidden: true, label: 'empty shelf' },
+        { input: [[7, 7, 7], 7], expected: 0, hidden: true, label: 'entire shelf is one catalog number' },
+        { input: [[10], 10], expected: 0, hidden: true, label: 'single record, equal number' },
+        { input: [[2, 4, 6, 8], 5], expected: 2, hidden: true, label: 'absent, lands mid-shelf' },
+        { input: [[5, 10, 15], 1], expected: 0, hidden: true, label: 'smaller than everything' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 35. Search Insert Position', note: 'the no-duplicates phrasing' },
+        { name: 'LeetCode 744. Find Smallest Letter Greater Than Target', note: 'an upper bound, with wraparound' },
+      ],
+    },
+    {
+      id: 'plaza-square-side',
+      title: 'Largest Plaza Square',
+      difficulty: 'easy',
+      statement: `
+A paving contractor won a plaza job with a fixed inventory of \`tiles\` identical granite tiles. The design calls for the largest possible **solid square** — an \`s × s\` grid consuming exactly \`s * s\` tiles — with any leftovers returned to the quarry.
+
+Return the largest integer side \`s\` such that \`s * s <= tiles\`. An inventory of zero means no square at all (\`s = 0\`).
+
+One catch: inventories come straight from the quarry's ledger and can reach \`10^18\`. A 64-bit float cannot represent every integer that large, so \`math.sqrt\`-style shortcuts can mis-round near perfect squares — your answer must be exact across the full range using integer arithmetic, in \`O(log tiles)\` steps.
+`,
+      examples: [
+        {
+          input: 'tiles = 26',
+          output: '5',
+          explanation: 'A 5 × 5 square uses 25 tiles; 6 × 6 would need 36 and overdraw the inventory. One tile goes back to the quarry.',
+        },
+        {
+          input: 'tiles = 49',
+          output: '7',
+          explanation: 'A perfect square: the inventory is consumed exactly.',
+        },
+        {
+          input: 'tiles = 0',
+          output: '0',
+          explanation: 'No tiles, no plaza.',
+        },
+      ],
+      constraints: [
+        '0 <= tiles <= 10^18',
+        'No floating-point square roots: the result must be exact over the full range',
+        'Required: O(log tiles) time',
+      ],
+      hints: [
+        'List the candidate sides 0, 1, 2, 3, ... next to the tile count each one needs: 0, 1, 4, 9, ... The requirement only ever grows as the side grows. Somewhere that growing requirement crosses your fixed inventory — and you already know a tool for finding a crossing without checking candidates one at a time.',
+        'The predicate s * s <= tiles is true for every side up to the answer and false forever after. You are hunting the LAST true value — the mirror image of the usual first-true hunt — which flips which branch gets to keep mid, and that changes how mid must round.',
+        'Search [0, tiles] with while lo < hi, but take mid = (lo + hi + 1) // 2 — the CEILING. The keeping branch is lo = mid (mid is affordable, maybe something bigger is too); the discarding branch is hi = mid - 1. With a floor midpoint, lo = mid makes a two-candidate range spin forever.',
+      ],
+      functionName: 'largest_square_side',
+      starterCode: `def largest_square_side(tiles: int) -> int:
+    pass
+`,
+      solution: {
+        code: `def largest_square_side(tiles: int) -> int:
+    # Candidate sides: 0..tiles (s * s <= tiles forces s <= tiles).
+    # We hunt the LAST side whose square is still affordable.
+    lo, hi = 0, tiles
+    while lo < hi:
+        # CEILING midpoint: the keeping branch below is lo = mid, and a
+        # floor midpoint would stall forever on a two-candidate range.
+        mid = (lo + hi + 1) // 2
+        if mid * mid <= tiles:
+            # mid is affordable — it may be the largest such side; keep it.
+            lo = mid
+        else:
+            # mid overdraws the inventory, and so does every bigger side.
+            hi = mid - 1
+    # lo == hi: the largest side with lo * lo <= tiles.
+    return lo
+`,
+        commentary: `
+The answer space is the integers themselves — no array anywhere. Sides \`0..tiles\` split into an affordable prefix (\`s * s <= tiles\`) and an unaffordable suffix, and we want the **last** element of the prefix. That single word "last" reorganizes the whole loop relative to a lower-bound search: now it is the *satisfying* branch that must keep \`mid\` alive as \`lo = mid\`, and the failing branch that discards with \`hi = mid - 1\`.
+
+That branch shape forces the ceiling midpoint. With \`lo = 4, hi = 5\`, the floor midpoint is 4: if the test passes, \`lo = mid\` leaves the range exactly where it was — an infinite loop. \`(lo + hi + 1) // 2\` picks 5 instead, so both branches make strict progress. The rule of thumb from the concept notes: whenever a branch assigns \`lo = mid\`, round the midpoint up.
+
+Why ban \`math.sqrt\`? Python floats are 64-bit doubles with 53 bits of mantissa, and above \`2^53 ≈ 9 × 10^15\` they cannot represent every integer. \`math.isqrt\` aside, a float square root of \`10^18\`-scale ledger values can land one off near perfect squares, and \`int()\` truncation turns that into a wrong answer. The binary search runs entirely in Python's exact arbitrary-precision integers: about 60 probes for \`10^18\`, each a single multiplication.
+
+Setting \`hi = tiles\` is correct because \`s * s <= tiles\` implies \`s <= tiles\` for every non-negative integer, and the degenerate inventories fall out free: \`tiles = 0\` starts with \`lo == hi == 0\`, and \`tiles = 1\` converges to side 1.
+`,
+        complexity: 'Time O(log tiles), Space O(1)',
+      },
+      testCases: [
+        { input: [26], expected: 5, label: 'leftover tile' },
+        { input: [49], expected: 7, label: 'perfect square' },
+        { input: [0], expected: 0, label: 'empty inventory' },
+        { input: [1], expected: 1, hidden: true, label: 'one tile' },
+        { input: [8], expected: 2, hidden: true, label: 'one short of 3 × 3' },
+        { input: [120], expected: 10, hidden: true, label: 'one short of 11 × 11' },
+        { input: [999999999999999999], expected: 999999999, hidden: true, label: 'just below 10^18 — float sqrt territory' },
+        { input: [1000000000000000000], expected: 1000000000, hidden: true, label: 'perfect square at the ledger maximum' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 69. Sqrt(x)', note: 'the classic integer square root' },
+        { name: 'LeetCode 367. Valid Perfect Square', note: 'same search, boolean verdict' },
+      ],
+    },
+    {
+      id: 'patrol-log-search',
+      title: 'Night Patrol Badge Log',
+      difficulty: 'medium',
+      statement: `
+A security firm assigns each night guard a fixed loop of checkpoints. Checkpoint IDs were issued in **strictly increasing** order walking the loop from its official start — but a guard begins wherever the previous shift handed off, so the night's badge log is that increasing sequence **rotated** by an unknown offset (possibly zero).
+
+Given the log \`scans\` and a checkpoint ID \`target\`, return the index in the log where that checkpoint was badged, or \`-1\` if the checkpoint is not on this route.
+
+The audit system replays thousands of logs per minute against incident reports, so each lookup must run in \`O(log n)\` — re-walking the route row by row is not an option.
+`,
+      examples: [
+        {
+          input: 'scans = [15, 18, 2, 5, 9, 12], target = 5',
+          output: '3',
+          explanation: 'The shift started at checkpoint 15; checkpoint 5 was badged fourth, at index 3.',
+        },
+        {
+          input: 'scans = [15, 18, 2, 5, 9, 12], target = 16',
+          output: '-1',
+          explanation: 'No checkpoint 16 exists anywhere on this loop.',
+        },
+        {
+          input: 'scans = [3, 5, 8], target = 8',
+          output: '2',
+          explanation: 'The handoff happened at the official start — a rotation of zero. Your search must survive the not-actually-rotated case.',
+        },
+      ],
+      constraints: [
+        '1 <= len(scans) <= 100_000',
+        '0 <= scans[k], target <= 10^9',
+        'All checkpoint IDs are distinct',
+        'scans is a strictly increasing sequence rotated by some offset in [0, n)',
+        'Required: O(log n) time',
+      ],
+      hints: [
+        'The rotation ruined the single sorted order, but not by much: slice the log at any position and look at the two pieces. Convince yourself that at least one piece is always perfectly sorted — and think about which questions a sorted piece can answer instantly.',
+        'Compare scans[lo] with scans[mid] to identify the sorted half. A sorted half answers "is the target inside my value range?" with two comparisons. If it is, the search continues there; if not, the target — if it exists at all — must be hiding in the other, still-rotated half.',
+        'Exact-match loop, while lo <= hi, returning mid on a hit. If scans[lo] <= scans[mid], the left half is sorted: shrink into it when scans[lo] <= target < scans[mid], otherwise go right. Else the right half is sorted: go right when scans[mid] < target <= scans[hi], otherwise go left. Range empty means -1.',
+      ],
+      functionName: 'patrol_log_position',
+      starterCode: `def patrol_log_position(scans: list[int], target: int) -> int:
+    pass
+`,
+      solution: {
+        code: `def patrol_log_position(scans: list[int], target: int) -> int:
+    lo, hi = 0, len(scans) - 1
+    while lo <= hi:  # exact-match template: run the range to empty
+        mid = (lo + hi) // 2
+        if scans[mid] == target:
+            return mid  # direct hit ends the search
+        if scans[lo] <= scans[mid]:
+            # Left half [lo, mid] is sorted (the cliff is to the right).
+            if scans[lo] <= target < scans[mid]:
+                hi = mid - 1  # target's value fits the sorted half
+            else:
+                lo = mid + 1  # provably absent on the left — go right
+        else:
+            # Right half [mid, hi] is sorted (the cliff is to the left).
+            if scans[mid] < target <= scans[hi]:
+                lo = mid + 1  # target's value fits the sorted half
+            else:
+                hi = mid - 1  # provably absent on the right — go left
+    return -1  # range emptied: checkpoint not on this route
+`,
+        commentary: `
+The rotated-minimum problem hunts the cliff; this one never needs to find it. The load-bearing structural fact: cut a rotated sorted list at any midpoint and **at least one half is fully sorted**, because the single cliff can only live on one side of the cut. The comparison \`scans[lo] <= scans[mid]\` detects which half that is — and distinct IDs keep it unambiguous, since equality only happens when \`lo == mid\`, a one-element (trivially sorted) half.
+
+A sorted half is the only place a *range test* can be trusted: "is the target between \`scans[lo]\` and \`scans[mid]\`?" is meaningful precisely because those endpoints are the half's true minimum and maximum. If the target's value fits, the search shrinks into the sorted half. If it does not fit, the target is **provably absent** there — that is a real discard, not a guess — so the other half, still rotated but half the size, inherits the search. One probe, two comparisons, half the candidates destroyed: the same bulk-destruction argument as plain binary search, just with a two-step verdict.
+
+This is the exact-match template (\`lo <= hi\`, return on hit, \`-1\` on an empty range) rather than a boundary hunt, because a single probe *can* finish the job and "not on the route" is a legal outcome. The fence-posts in the range tests are where bugs breed: the sorted-left test is \`scans[lo] <= target < scans[mid]\` — the \`<=\` admits the half's left endpoint, while the strict \`<\` is safe because the equality check above already ruled out \`mid\` itself.
+`,
+        complexity: 'Time O(log n), Space O(1)',
+      },
+      testCases: [
+        { input: [[15, 18, 2, 5, 9, 12], 5], expected: 3, label: 'target in the low run' },
+        { input: [[15, 18, 2, 5, 9, 12], 16], expected: -1, label: 'ID absent from the loop' },
+        { input: [[3, 5, 8], 8], expected: 2, label: 'rotation of zero' },
+        { input: [[15, 18, 2, 5, 9, 12], 15], expected: 0, label: 'target at index 0' },
+        { input: [[7], 7], expected: 0, hidden: true, label: 'single checkpoint, hit' },
+        { input: [[7], 4], expected: -1, hidden: true, label: 'single checkpoint, miss' },
+        { input: [[9, 1, 3, 5], 1], expected: 1, hidden: true, label: 'target is the smallest ID' },
+        { input: [[4, 6, 8, 1, 2], 8], expected: 2, hidden: true, label: 'target at the top of the cliff' },
+        { input: [[5, 6, 7, 1, 2, 3], 4], expected: -1, hidden: true, label: 'absent ID falls in the rotation gap' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 33. Search in Rotated Sorted Array', note: 'the classic phrasing' },
+        { name: 'LeetCode 81. Search in Rotated Sorted Array II', note: 'duplicates degrade the worst case — see how' },
+      ],
+    },
+    {
+      id: 'mural-crew-split',
+      title: 'Festival Mural Crews',
+      difficulty: 'hard',
+      statement: `
+A street-art festival is painting one long wall divided into panels, numbered left to right; panel \`i\` needs \`panels[i]\` hours of work. The festival hired \`crews\` painting crews. Scaffolding is rented per stretch of wall, so each crew receives exactly one **contiguous block** of consecutive panels; every panel belongs to exactly one crew and no block may be empty.
+
+All crews start at the same moment and work in parallel. A crew's finish time is the sum of its panels' hours, and the mural is unveiled only when the **slowest crew** finishes.
+
+Choose the block boundaries so the unveiling happens as early as possible, and return that minimum finish time in hours.
+`,
+      examples: [
+        {
+          input: 'panels = [4, 1, 3, 2, 6], crews = 2',
+          output: '8',
+          explanation: 'Split [4, 1, 3 | 2, 6]: both crews carry exactly 8 hours. Every other boundary leaves some crew with 10 or more.',
+        },
+        {
+          input: 'panels = [7, 2, 5, 10, 8], crews = 2',
+          output: '18',
+          explanation: 'Split [7, 2, 5 | 10, 8]: loads 14 and 18. Shifting the boundary left gives 23, right gives 24 — 18 is the best worst-case.',
+        },
+        {
+          input: 'panels = [5, 5, 5], crews = 3',
+          output: '5',
+          explanation: 'One panel per crew; the slowest crew needs 5 hours, and no split can beat the biggest single panel.',
+        },
+      ],
+      constraints: [
+        '1 <= len(panels) <= 10_000',
+        '1 <= panels[i] <= 10^6',
+        '1 <= crews <= len(panels)',
+        'Blocks must be contiguous, non-empty, and cover every panel',
+        'Required: O(n log S) time where S = sum(panels)',
+      ],
+      hints: [
+        'Enumerating boundary placements explodes combinatorially. Turn the optimization around: suppose the festival director simply announced "we unveil in T hours." How hard would it be to decide whether ANY assignment of contiguous blocks lets every crew finish within T?',
+        'For a fixed deadline T, a greedy sweep settles it: walk the panels left to right, piling them onto the current crew until one more would push it past T, then hand off to a fresh crew. If the crews used stay within budget, T is achievable — and any deadline above an achievable one is achievable too. That is a monotone stripe over candidate deadlines.',
+        'Binary search the deadline over [max(panels), sum(panels)] with the lo < hi template: achievable(mid) → hi = mid, otherwise lo = mid + 1. The greedy check is O(n) and runs O(log S) times; the survivor is the earliest possible unveiling.',
+      ],
+      functionName: 'min_mural_hours',
+      starterCode: `def min_mural_hours(panels: list[int], crews: int) -> int:
+    pass
+`,
+      solution: {
+        code: `def min_mural_hours(panels: list[int], crews: int) -> int:
+    def crews_needed(deadline: int) -> int:
+        # Greedy sweep: pack panels onto the current crew until one more
+        # would blow the deadline, then hand off to a fresh crew. This
+        # uses the fewest possible crews for the given deadline.
+        used, load = 1, 0
+        for hours in panels:
+            if load + hours > deadline:
+                used += 1     # current crew is full — hand off
+                load = hours  # the new crew starts with this panel
+            else:
+                load += hours
+        return used
+
+    # Candidate deadlines, NOT positions on the wall. Anything below
+    # max(panels) is impossible (someone must paint the biggest panel),
+    # and sum(panels) always works (one crew paints everything).
+    lo, hi = max(panels), sum(panels)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if crews_needed(mid) <= crews:
+            hi = mid      # achievable — an earlier unveiling may exist
+        else:
+            lo = mid + 1  # too ambitious — discard mid and below
+    return lo  # the earliest achievable unveiling time
+`,
+        commentary: `
+"Minimize the maximum block sum" sounds like an optimization over exponentially many boundary placements, but the answer itself lives on a number line — so binary-search the **answer space**. The decision version, "can the wall be finished by deadline T?", is monotone: a split that meets deadline T meets every later deadline verbatim. False up to some point, true forever after — and the unveiling time we want is exactly the stripe's boundary, which the \`lo < hi\` template extracts: achievable \`mid\` stays a candidate (\`hi = mid\`), unachievable \`mid\` dies with everything below it (\`lo = mid + 1\`).
+
+The feasibility check is where this problem outgrows the simple rate search. Because blocks must be *contiguous*, checking a deadline means partitioning the wall, and the greedy sweep is provably optimal for that: extend the current crew's block while it fits, hand off only when forced. An exchange argument shows why — ending any block earlier than forced can only push more work into the remaining wall, never less, so no other strategy uses fewer crews for the same deadline. If the greedy count comes in under budget, idle crews are harmless: splitting any block further only lowers loads, never raises the maximum (this is why \`crews <= len(panels)\` keeps every block non-empty).
+
+The search bounds encode two facts about the answer, not guesses: no deadline below \`max(panels)\` can work because some crew must paint the biggest panel whole, and \`sum(panels)\` always works with a single crew. Starting \`lo\` at 1 would still converge — the tighter bound just trims probes. Each probe costs one \`O(n)\` sweep and the range halves \`O(log S)\` times, so \`n = 10^4\` panels with sums near \`10^10\` resolve in a few hundred thousand operations.
+`,
+        complexity: 'Time O(n log S) where S = sum(panels), Space O(1)',
+      },
+      testCases: [
+        { input: [[4, 1, 3, 2, 6], 2], expected: 8, label: 'two crews, perfectly balanced cut' },
+        { input: [[7, 2, 5, 10, 8], 2], expected: 18, label: 'best split is uneven' },
+        { input: [[5, 5, 5], 3], expected: 5, label: 'one panel per crew' },
+        { input: [[10], 1], expected: 10, hidden: true, label: 'single panel' },
+        { input: [[1, 2, 3, 4, 5], 1], expected: 15, hidden: true, label: 'one crew paints the whole wall' },
+        { input: [[1, 1, 1, 1], 4], expected: 1, hidden: true, label: 'crews equal panels' },
+        { input: [[9, 1, 1, 1, 9], 3], expected: 9, hidden: true, label: 'biggest panel sets the floor' },
+        { input: [[2, 3, 1, 2, 4, 3], 3], expected: 6, hidden: true, label: 'three-way split' },
+        { input: [[5, 1, 1, 1, 1, 5], 2], expected: 7, hidden: true, label: 'symmetric wall, asymmetric arithmetic' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 410. Split Array Largest Sum', note: 'the classic phrasing of this exact problem' },
+        { name: 'LeetCode 1011. Capacity To Ship Packages Within D Days', note: 'same skeleton, capacity instead of time' },
+        { name: 'LeetCode 1552. Magnetic Force Between Two Balls', note: 'the maximize-the-minimum mirror image' },
+      ],
+    },
   ],
   quiz: [
     {

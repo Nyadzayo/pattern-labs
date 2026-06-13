@@ -445,6 +445,457 @@ Tabulation beats memoization here for a practical reason: 500×500 = 250,000 sta
         { name: 'LeetCode 583. Delete Operation for Two Strings', note: 'edit distance with a restricted operation set' },
       ],
     },
+    {
+      id: 'gallery-polisher-routes',
+      title: 'Gallery Polisher Routes',
+      difficulty: 'easy',
+      statement: `
+A museum's overnight floor-polishing machine is parked on the northwest tile of a rectangular gallery and must dock at the southeast tile. The gallery floor is a grid: \`floor[r][c]\` is \`0\` for an open tile and \`1\` for a tile occupied by a display pedestal the machine may never touch. To keep its polishing pattern even, the machine only ever moves **one tile south** or **one tile east** per step.
+
+Given the grid \`floor\`, return the number of distinct routes from the northwest tile to the southeast tile that avoid every pedestal. Two routes are distinct if their move sequences differ anywhere. If the start tile or the dock tile itself holds a pedestal, return \`0\`.
+
+An open 15×15 floor already has tens of millions of routes — enumerating them one by one will not finish before the museum opens.
+`,
+      examples: [
+        {
+          input: 'floor = [[0,0,0],[0,1,0],[0,0,0]]',
+          output: '2',
+          explanation:
+            'The centre pedestal splits the traffic: east-east-south-south along the top edge and south-south-east-east along the left edge are the only legal routes.',
+        },
+        {
+          input: 'floor = [[0,1],[1,0]]',
+          output: '0',
+          explanation: 'Both two-step routes pass through a pedestal, so the dock is unreachable.',
+        },
+        {
+          input: 'floor = [[0,0],[0,0]]',
+          output: '2',
+          explanation: 'East-then-south and south-then-east.',
+        },
+      ],
+      constraints: [
+        '1 <= len(floor), len(floor[0]) <= 15, and every row has the same length',
+        'floor[r][c] is 0 (open tile) or 1 (pedestal)',
+        'The machine starts at floor[0][0], docks at the bottom-right tile, and moves only one tile south or one tile east per step',
+        'If the start or dock tile holds a pedestal, the answer is 0',
+      ],
+      hints: [
+        'Trace the 3×3 example with the centre pedestal and list both routes by hand. Now pick any open tile in the middle of the floor: given that the machine moves only south or east, which tiles could it have occupied immediately before reaching that one?',
+        'Let routes(r, c) be the number of legal routes from the start to tile (r, c). For an open tile, routes(r, c) = routes(r-1, c) + routes(r, c-1), treating missing neighbours as 0; for a pedestal tile it is 0, which automatically stops routes flowing through it. routes(0, 0) is 1 when the start tile is open.',
+        'Fill a rows × cols table top-to-bottom, left-to-right so the north and west cells are always ready. Seed dp[0][0] from the start tile, force every pedestal cell to 0, and return dp[rows-1][cols-1] — which is already 0 whenever the dock tile is blocked.',
+      ],
+      functionName: 'count_polish_routes',
+      starterCode: `def count_polish_routes(floor: list[list[int]]) -> int:
+    pass
+`,
+      solution: {
+        code: `def count_polish_routes(floor: list[list[int]]) -> int:
+    rows, cols = len(floor), len(floor[0])
+    # dp[r][c] = number of legal routes from the start tile to tile (r, c).
+    dp = [[0] * cols for _ in range(rows)]
+    # Base case: the start tile carries one (empty) route, unless blocked.
+    dp[0][0] = 1 if floor[0][0] == 0 else 0
+    for r in range(rows):
+        for c in range(cols):
+            if floor[r][c] == 1:
+                # A pedestal can never be stood on: zero routes end here,
+                # which also stops routes from "flowing through" it.
+                dp[r][c] = 0
+                continue
+            if r == 0 and c == 0:
+                continue  # already seeded
+            # The machine moves only south or east, so it arrived from the
+            # north neighbour or the west neighbour (when those exist).
+            from_north = dp[r - 1][c] if r > 0 else 0
+            from_west = dp[r][c - 1] if c > 0 else 0
+            dp[r][c] = from_north + from_west
+    return dp[rows - 1][cols - 1]
+`,
+        commentary: `
+Counting routes one at a time is hopeless, but the routes share massive structure: every route into a tile arrives **either from the north or from the west**, and those two families are disjoint. That is the entire transition: \`routes(r, c) = routes(r-1, c) + routes(r, c-1)\`. The state is just the tile, because *how* the machine got somewhere has no bearing on the tiles still ahead of it.
+
+Pedestals integrate with zero special machinery. A blocked tile supports no routes, so its cell holds 0 — and since every later cell only *adds* its neighbours, that zero does exactly the right thing: routes neither end on the pedestal nor pass through it. The same logic covers a blocked start or dock tile, so no early returns are needed; the zeros simply propagate.
+
+The fill order falls straight out of the dependencies: each cell reads north and west, so sweeping rows top-to-bottom and columns left-to-right guarantees both are ready. Conceptually this is the ladder-routine recurrence from earlier in the module with one extra state dimension — position now needs two coordinates — and like that one, the table compresses further if you want it to: row r only reads row r-1, so a single rolling row of length cols suffices.
+`,
+        complexity: 'Time O(rows * cols), Space O(rows * cols) (reducible to O(cols) with a rolling row)',
+      },
+      testCases: [
+        { input: [[[0, 0, 0], [0, 1, 0], [0, 0, 0]]], expected: 2, label: 'pedestal in the centre' },
+        { input: [[[0, 1], [1, 0]]], expected: 0, label: 'both corridors blocked' },
+        { input: [[[0, 0], [0, 0]]], expected: 2, label: 'small open floor' },
+        { input: [[[0]]], expected: 1, hidden: true, label: 'single open tile: the empty route' },
+        { input: [[[1]]], expected: 0, hidden: true, label: 'start tile blocked' },
+        { input: [[[0, 0, 1, 0]]], expected: 0, hidden: true, label: 'single row severed by a pedestal' },
+        { input: [[[0, 0], [0, 1]]], expected: 0, hidden: true, label: 'dock tile blocked' },
+        { input: [[[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [1, 0, 0, 0]]], expected: 3, hidden: true, label: 'three pedestals, three survivors' },
+        { input: [[[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]], expected: 10, hidden: true, label: 'open 3x4 floor' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 63. Unique Paths II', note: 'the canonical obstacle-grid counting problem' },
+        { name: 'LeetCode 62. Unique Paths', note: 'the obstacle-free version with a closed form' },
+        { name: 'LeetCode 64. Minimum Path Sum', note: 'same grid, but minimize a cost instead of counting' },
+      ],
+    },
+    {
+      id: 'telegram-phrasebook',
+      title: 'Telegram Phrasebook Check',
+      difficulty: 'medium',
+      statement: `
+A telegraph office delivers a message only after a clerk verifies it against the official phrasebook: the wire strips out every space, so the received string must split — end to end, with nothing left over — into a sequence of approved phrasebook words. The same word may appear in the split any number of times, and book entries may overlap in tricky ways (\`'st'\` and \`'storm'\` can both be in the book).
+
+Given the received string \`message\` and the list \`phrasebook\`, return \`True\` if at least one complete split exists and \`False\` otherwise. An empty message passes vacuously.
+
+Messages run to 300 characters and the book holds up to 100 words, so trying every combination of cut points will explode.
+`,
+      examples: [
+        {
+          input: "message = 'sendcashnow', phrasebook = ['send', 'cash', 'now']",
+          output: 'True',
+          explanation: "Split as 'send' + 'cash' + 'now' with nothing left over.",
+        },
+        {
+          input: "message = 'stormdelay', phrasebook = ['storm', 'delays', 'st', 'arm']",
+          output: 'False',
+          explanation:
+            "'storm' leaves 'delay', which is not in the book ('delays' is one letter too long), and 'st' leaves 'ormdelay', which no word starts. Every split dead-ends.",
+        },
+        {
+          input: "message = 'nownownow', phrasebook = ['now', 'nownow']",
+          output: 'True',
+          explanation: "Several splits work, e.g. 'now' + 'nownow'; one witness is enough.",
+        },
+      ],
+      constraints: [
+        '0 <= len(message) <= 300',
+        '1 <= len(phrasebook) <= 100 and 1 <= len(phrasebook[i]) <= 20',
+        'message and all phrasebook entries contain lowercase letters only',
+        'Phrasebook words may be reused any number of times within one split',
+        'The empty message is considered segmentable (return True)',
+      ],
+      hints: [
+        "Try to segment 'stormdelay' against ['storm', 'delays', 'st', 'arm'] by hand. After you commit to a first word, what exactly does the remaining task depend on — the particular word you chose, or only the position where it ended?",
+        'Define ok(i) = True when the first i characters split cleanly into phrasebook words. The last word of any such split covers message[j:i] for some j, so ok(i) holds when some j has ok(j) true AND message[j:i] in the book. ok(0) is True: the empty prefix needs no justification.',
+        'Put the phrasebook in a set and record the longest word length L. Build dp[0..n] with dp[0] = True; for each i, scan j from max(0, i - L) to i - 1, setting dp[i] when dp[j] and message[j:i] is in the set, breaking on the first hit. Return dp[n].',
+      ],
+      functionName: 'can_segment_telegram',
+      starterCode: `def can_segment_telegram(message: str, phrasebook: list[str]) -> bool:
+    pass
+`,
+      solution: {
+        code: `def can_segment_telegram(message: str, phrasebook: list[str]) -> bool:
+    words = set(phrasebook)                    # O(1) membership checks
+    longest = max(len(w) for w in words)       # no last word can exceed this
+    n = len(message)
+    # dp[i] = True if the first i characters split cleanly into book words.
+    dp = [False] * (n + 1)
+    dp[0] = True                               # empty prefix: nothing to justify
+    for i in range(1, n + 1):
+        # Condition on the LAST word of a split ending at i: it spans
+        # message[j:i] for some cut j, and the part before j must itself split.
+        start = max(0, i - longest)            # longer spans can never match
+        for j in range(start, i):
+            if dp[j] and message[j:i] in words:
+                dp[i] = True
+                break                          # feasibility: one witness suffices
+    return dp[n]
+`,
+        commentary: `
+The brute force tries every first word and recurses on the rest — and that recursion tree re-asks the same suffixes constantly, because many different chains of choices end at the same cut position. The key observation is **history-blindness**: once a split has reached position i, *which* words got it there is irrelevant to whether the remainder can be finished. So the cut position alone is the state, and there are only n + 1 of them instead of exponentially many partial splits.
+
+The recurrence conditions on the last word of a successful split of the first i characters: it occupies \`message[j:i]\` for some earlier cut j, and everything before j must itself be splittable. Because this is a *feasibility* DP, each cell stores a boolean and one witness is enough — the inner loop breaks on the first success rather than tallying anything. \`dp[0] = True\` encodes that the empty prefix needs no words at all, which is both the base case that seeds every real split and the reason the empty message passes.
+
+Two cheap engineering moves keep it fast: the phrasebook goes into a set for O(1) membership, and since no entry exceeds L characters, the scan for j only needs to look back L positions. That bounds the work at roughly n × L substring checks instead of n² — the difference between a snappy check and a sluggish one at 300 characters.
+`,
+        complexity: 'Time O(n * L^2) worst case (n positions, <=L lookbacks, O(L) substring hash), Space O(n) plus the word set',
+      },
+      testCases: [
+        { input: ['sendcashnow', ['send', 'cash', 'now']], expected: true, label: 'clean three-word split' },
+        { input: ['stormdelay', ['storm', 'delays', 'st', 'arm']], expected: false, label: 'every split dead-ends' },
+        { input: ['nownownow', ['now', 'nownow']], expected: true, label: 'overlapping reusable words' },
+        { input: ['', ['stop']], expected: true, hidden: true, label: 'empty message passes vacuously' },
+        { input: ['arrivemonday', ['arrive', 'mon', 'day', 'monday']], expected: true, hidden: true, label: 'two distinct splits exist' },
+        { input: ['aaaaaaab', ['a', 'aa', 'aaa']], expected: false, hidden: true, label: 'unmatchable final character' },
+        { input: ['wirefunds', ['wire', 'fund']], expected: false, hidden: true, label: 'one stray letter left over' },
+        { input: ['regards', ['regards']], expected: true, hidden: true, label: 'whole message is a single book word' },
+        { input: ['sosos', ['so', 'sos', 'os']], expected: true, hidden: true, label: 'requires the right first cut' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 139. Word Break', note: 'the canonical segmentation-feasibility DP' },
+        { name: 'LeetCode 140. Word Break II', note: 'enumerate the splits instead of testing feasibility' },
+        { name: 'LeetCode 472. Concatenated Words', note: 'run the same check across an entire dictionary' },
+      ],
+    },
+    {
+      id: 'amp-chain-gain',
+      title: 'Amplifier Chain Gain',
+      difficulty: 'medium',
+      statement: `
+An audio engineer is debugging a rack of amplifier stages wired in a fixed series order. Stage \`i\` applies an integer gain \`gains[i]\`: positive for a normal stage, **negative for an inverting stage** (it flips the signal's polarity while scaling it), and \`0\` for a stage muted by a fault. The engineer patches a test signal in before some stage and taps it out after some later (or the same) stage, so the chosen stages form one contiguous run of **at least one stage**, and the run's overall gain is the **product** of its stages' gains.
+
+Given \`gains\`, return the maximum overall gain achievable by any contiguous run.
+
+Beware: two inverting stages cancel. A deeply negative running product can snap to a large positive one a stage later, so a rule that abandons a run the moment its product looks bad will miss the best answer.
+`,
+      examples: [
+        {
+          input: 'gains = [2, 3, -2, 4]',
+          output: '6',
+          explanation:
+            'The run [2, 3] gives 6. Extending into the inverting stage gives -12, and [4] alone gives only 4.',
+        },
+        {
+          input: 'gains = [-4, -3, -2]',
+          output: '12',
+          explanation: 'Two inverting stages cancel: [-4, -3] gives 12. All three together give -24.',
+        },
+        {
+          input: 'gains = [-2, 0, -1]',
+          output: '0',
+          explanation:
+            'Every run avoiding the muted stage is negative, so tapping the muted stage alone — overall gain 0 — is the best available.',
+        },
+      ],
+      constraints: [
+        '1 <= len(gains) <= 10_000',
+        '-10 <= gains[i] <= 10',
+        'The patched run must be contiguous and contain at least one stage',
+        'For all provided tests the answer fits comfortably in a 64-bit integer',
+      ],
+      hints: [
+        'Work through [-4, -3, -2] by hand: write down the product of every contiguous run. Notice which run wins, and what the second negative gain does to a large negative running product. Why does "extend the run while the product stays big" miss it?',
+        'A single "best product ending here" is not enough state, because a negative gain turns the smallest (most negative) product into the largest. Carry two values per position: the maximum AND the minimum product over runs ending exactly at that stage.',
+        'Initialise hi = lo = answer = gains[0]. For each later gain g, a run ending there either starts fresh at g or extends the previous hi or lo: take candidates (g, hi*g, lo*g), set hi to their max and lo to their min, and fold hi into answer. Zeros need no special case — they reset both trackers to 0, which competes fairly for the answer.',
+      ],
+      functionName: 'max_chain_gain',
+      starterCode: `def max_chain_gain(gains: list[int]) -> int:
+    pass
+`,
+      solution: {
+        code: `def max_chain_gain(gains: list[int]) -> int:
+    # best_hi / best_lo = the largest and smallest products over all runs
+    # that END at the current stage. Both matter: a negative gain swaps them.
+    best_hi = best_lo = answer = gains[0]
+    for g in gains[1:]:
+        # A run ending here either starts fresh at g, or extends the best /
+        # worst run ending one stage earlier. When g is negative, the old
+        # minimum becomes the new maximum — so all three must compete.
+        candidates = (g, best_hi * g, best_lo * g)
+        best_hi = max(candidates)
+        best_lo = min(candidates)
+        # The optimal run ends SOMEWHERE; track the best ending seen so far.
+        answer = max(answer, best_hi)
+    return answer
+`,
+        commentary: `
+Sum-style reasoning — "keep extending while the running value is good" — breaks here because multiplication is not monotone: a negative gain *inverts the ordering* of candidate products. The run \`[-4, -3]\` is the proof. After one stage the running product is the worst value in sight; one stage later it is the best. Any algorithm that discards "bad" partial products throws away exactly the information a future inverting stage needs.
+
+The fix is to widen the state. For each stage, track the best **and** worst products over runs ending exactly there. Both are computable from the previous pair: a run ending at stage i either starts fresh at \`g\` or extends a run ending at i-1, so the candidates are \`g\`, \`hi*g\`, and \`lo*g\` — and when \`g\` is negative the roles swap, with the old minimum producing the new maximum. The global answer is the largest \`hi\` observed at any position, because the optimal run must end *somewhere*.
+
+Zeros fall out for free: a muted stage collapses both trackers to 0 (the fresh-start candidate revives the run afterwards), and 0 itself competes for the answer — which is exactly right when every zero-avoiding run is negative, as in \`[-2, 0, -1]\`. The transferable lesson: when a transition can invert what "better" means, carry the full frontier of optima — here a (max, min) pair — instead of a single best value.
+`,
+        complexity: 'Time O(n), Space O(1)',
+      },
+      testCases: [
+        { input: [[2, 3, -2, 4]], expected: 6, label: 'inverting stage cuts the run' },
+        { input: [[-4, -3, -2]], expected: 12, label: 'two negatives cancel' },
+        { input: [[-2, 0, -1]], expected: 0, label: 'muted stage is the best option' },
+        { input: [[5]], expected: 5, hidden: true, label: 'single stage' },
+        { input: [[-7]], expected: -7, hidden: true, label: 'single inverting stage: answer is negative' },
+        { input: [[2, -5, -2, -4, 3]], expected: 24, hidden: true, label: 'best run sits in the middle' },
+        { input: [[0, 0, 0]], expected: 0, hidden: true, label: 'all muted' },
+        { input: [[-2, 3, 0, 4, -1, -5]], expected: 20, hidden: true, label: 'zero splits the rack into segments' },
+        { input: [[3, -1, 4]], expected: 4, hidden: true, label: 'crossing the negative never pays' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 152. Maximum Product Subarray', note: 'the canonical max/min-pair product DP' },
+        { name: 'LeetCode 53. Maximum Subarray', note: 'the additive version, where one tracker suffices' },
+        { name: 'LeetCode 1567. Maximum Length of Subarray With Positive Product', note: 'track sign parity instead of value' },
+      ],
+    },
+    {
+      id: 'pager-numeric-decode',
+      title: 'Pager Code Interpretations',
+      difficulty: 'medium',
+      statement: `
+A 1990s paging service let callers spell short words on a phone keypad: each letter was transmitted as its alphabet position — \`A\` as \`1\` through \`Z\` as \`26\` — and the digits arrived back-to-back with **no separators**. Reading a pager message therefore means re-inserting the token boundaries, and many digit strings support several readings.
+
+Given the digit string \`signal\`, return the number of distinct complete readings. A token must represent 1 through 26 with no leading zero: \`'0'\` by itself maps to no letter, and \`'06'\` is not a valid way to send 6. If no complete reading exists, return \`0\`.
+
+Signals run up to 60 digits, and the number of readings can grow far too quickly to enumerate them one at a time.
+`,
+      examples: [
+        {
+          input: "signal = '26'",
+          output: '2',
+          explanation: "Read as 2,6 ('B','F') or as the single token 26 ('Z').",
+        },
+        {
+          input: "signal = '206'",
+          output: '1',
+          explanation: 'The 0 can only ride inside the token 20, forcing the reading 20,6 — exactly one way.',
+        },
+        {
+          input: "signal = '1011'",
+          output: '2',
+          explanation: 'Valid readings: 10,1,1 and 10,11. Starting with a lone 1 would strand the 0.',
+        },
+      ],
+      constraints: [
+        '1 <= len(signal) <= 60',
+        'signal contains only the digits 0-9',
+        "Tokens represent 1..26; '0' alone maps to nothing and tokens may not carry a leading zero ('06' is not 6)",
+        'Return 0 when no complete reading exists',
+      ],
+      hints: [
+        "Decode '26' and '1011' fully by hand and count the readings. Each reading is determined entirely by where the token boundaries fall. Now focus on the LAST token of any valid reading: how many digits can it span, and which digit strings of each length are actually legal?",
+        "Let readings(i) = the number of valid readings of the first i digits. The last token is either one digit — legal unless it is '0' — contributing readings(i-1), or two digits — legal when they read as 10 through 26 — contributing readings(i-2). Illegal tokens contribute nothing, and readings(0) = 1 for the empty prefix.",
+        "Build dp[0..n] with dp[0] = 1. At each i, add dp[i-1] if signal[i-1] != '0', and add dp[i-2] if i >= 2 and 10 <= int(signal[i-2:i]) <= 26 — the numeric comparison rejects '06'-style tokens automatically. Return dp[n]; dead ends simply propagate zeros.",
+      ],
+      functionName: 'count_pager_readings',
+      starterCode: `def count_pager_readings(signal: str) -> int:
+    pass
+`,
+      solution: {
+        code: `def count_pager_readings(signal: str) -> int:
+    n = len(signal)
+    # dp[i] = number of valid readings of the first i digits.
+    dp = [0] * (n + 1)
+    dp[0] = 1  # the empty prefix has exactly one reading: read nothing
+    for i in range(1, n + 1):
+        # Case 1: the last token is ONE digit. Legal unless it is '0',
+        # because no letter is encoded as 0.
+        if signal[i - 1] != '0':
+            dp[i] += dp[i - 1]
+        # Case 2: the last token is TWO digits. Legal exactly when the pair
+        # reads as 10..26; a leading zero like '06' parses below 10 and is
+        # rejected by the same comparison.
+        if i >= 2 and 10 <= int(signal[i - 2 : i]) <= 26:
+            dp[i] += dp[i - 2]
+    return dp[n]
+`,
+        commentary: `
+Every reading is a way of cutting the signal into legal tokens, and here is the collapse that makes DP work: the number of ways to finish reading depends only on **how many digits are already consumed**, never on how the earlier digits were grouped. "Digits consumed" is therefore a complete state, folding exponentially many token sequences onto just n + 1 cells.
+
+The transition conditions on the last token of a reading. It spans one digit — legal unless that digit is \`'0'\`, since no letter encodes as zero — or two digits, legal exactly when the pair reads as 10 through 26. The numeric test does double duty: \`'06'\` parses as 6, falls below 10, and is rejected without any explicit leading-zero rule. The two cases consume different amounts of signal, so they can never describe the same reading twice, and the counts add cleanly. A position with no legal last token receives 0, and that zero propagates forward so dead signals like \`'100'\` finish at 0 with no special handling.
+
+Structurally this is the ladder recurrence wearing a validity mask: \`dp[i]\` still draws from \`dp[i-1]\` and \`dp[i-2]\`, but each contribution is gated by a token-legality predicate, so the count can stall at zero instead of growing like a Fibonacci sequence — and on an all-ones signal it does grow exactly like one. The base \`dp[0] = 1\` (one way to read nothing) is what lets the first legal token inherit a count rather than start from nothing.
+`,
+        complexity: 'Time O(n), Space O(n) (reducible to O(1) with two rolling counts)',
+      },
+      testCases: [
+        { input: ['26'], expected: 2, label: 'pair or single letters' },
+        { input: ['206'], expected: 1, label: 'zero locked inside 20' },
+        { input: ['1011'], expected: 2, label: 'two readings around the zero' },
+        { input: ['0'], expected: 0, hidden: true, label: 'lone zero: unreadable' },
+        { input: ['100'], expected: 0, hidden: true, label: 'second zero strands the signal' },
+        { input: ['11106'], expected: 2, hidden: true, label: 'the 06 trap' },
+        { input: ['27'], expected: 1, hidden: true, label: '27 exceeds Z, so only 2,7' },
+        { input: ['10'], expected: 1, hidden: true, label: 'exactly the token J' },
+        { input: ['111111111111111111111111111111'], expected: 1346269, hidden: true, label: '30 ones: Fibonacci-scale growth' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 91. Decode Ways', note: 'the canonical digit-string decoding count' },
+        { name: 'LeetCode 639. Decode Ways II', note: "adds wildcard '*' digits to the same recurrence" },
+        { name: 'LeetCode 1416. Restore The Array', note: 'tokens bounded by an arbitrary k instead of 26' },
+      ],
+    },
+    {
+      id: 'ferry-lane-balance',
+      title: 'Ferry Lane Balance',
+      difficulty: 'hard',
+      statement: `
+A vehicle ferry loads freight crates into two parallel deck lanes, port and starboard. Harbour rules are strict: **every crate on the manifest must be loaded**, and the two lanes must carry **exactly the same total weight**, or the ferry lists and is refused departure clearance. Crates cannot be split, and the loadmaster cares only about weight — which lane an individual crate ends up in is otherwise irrelevant.
+
+Given the list \`weights\` of crate weights, return \`True\` if the crates can be divided between the two lanes so the lane totals are exactly equal, and \`False\` otherwise. An empty manifest balances trivially (0 = 0), and a lane is allowed to remain empty.
+
+Up to 200 crates may appear on a manifest, so checking all 2^200 lane assignments is unthinkable.
+`,
+      examples: [
+        {
+          input: 'weights = [3, 1, 4, 2]',
+          output: 'True',
+          explanation: 'Load {3, 2} to port and {1, 4} to starboard: 5 = 5.',
+        },
+        {
+          input: 'weights = [5, 3, 3]',
+          output: 'False',
+          explanation: 'The total is 11, which is odd — no split of an odd total can be equal.',
+        },
+        {
+          input: 'weights = [2, 2, 2, 5, 5]',
+          output: 'False',
+          explanation:
+            'The total 16 is even, but no subset of these crates sums to 8: combinations of 2s reach only 2, 4, 6, and adding any 5 overshoots or undershoots.',
+        },
+        {
+          input: 'weights = [7]',
+          output: 'False',
+          explanation: 'The single crate must go somewhere, leaving 7 versus 0.',
+        },
+      ],
+      constraints: [
+        '0 <= len(weights) <= 200',
+        '0 <= weights[i] <= 100',
+        'Every crate must be loaded onto exactly one of the two lanes',
+        'A lane may remain empty; an empty manifest balances trivially',
+      ],
+      hints: [
+        "Add up all the crate weights in [3, 1, 4, 2] and look at the successful split: each lane carries 5. What must be true of the grand total before any perfect balance is even conceivable? And once one lane's manifest is fixed, how much choice is actually left for the other lane?",
+        'A perfect balance exists exactly when some subset of crates sums to total / 2 — the remaining crates fill the other lane automatically. So track reachable sums: after considering some crates, reachable(s) says whether a subset of THOSE crates sums to s. Each new crate extends every previously reachable sum by its weight.',
+        'Build a boolean array reachable[0..total//2] with reachable[0] = True. For each crate w, sweep s DOWNWARD from the target to w, setting reachable[s] when reachable[s - w] holds — the downward sweep is what stops a single crate from being loaded twice. Reject odd totals up front and return reachable[target].',
+      ],
+      functionName: 'can_balance_lanes',
+      starterCode: `def can_balance_lanes(weights: list[int]) -> bool:
+    pass
+`,
+      solution: {
+        code: `def can_balance_lanes(weights: list[int]) -> bool:
+    total = sum(weights)
+    # An exact balance gives each lane total / 2, so an odd total is hopeless.
+    if total % 2 == 1:
+        return False
+    target = total // 2
+    # reachable[s] = True if some subset of the crates seen so far sums to s.
+    reachable = [False] * (target + 1)
+    reachable[0] = True  # the empty subset: leave a lane empty
+    for w in weights:
+        # Sweep DOWNWARD so this crate is counted at most once: for s scanned
+        # high-to-low, reachable[s - w] still describes subsets that EXCLUDE
+        # the current crate. An upward sweep would let one crate be "loaded"
+        # again and again, answering a different (unbounded) question.
+        for s in range(target, w - 1, -1):
+            if reachable[s - w]:
+                reachable[s] = True
+    return reachable[target]
+`,
+        commentary: `
+The first move is a **reduction**, not a recurrence. If the lanes balance, each carries exactly half the grand total — so an odd total fails instantly, and otherwise the question becomes: does some *subset* of crates sum to total/2? The complement automatically fills the other lane, so two-lane balancing collapses to single-target subset-sum.
+
+The state is the pair (crates considered, sum aimed for), and each cell stores feasibility: after processing k crates, \`reachable[s]\` says whether some subset of those k crates hits s. Each crate either joins the chosen subset or does not, giving \`reachable_k[s] = reachable_(k-1)[s] or reachable_(k-1)[s - w]\`. The crate dimension compresses to one array updated in place — but only if the inner sweep runs **downward**. Scanning s from high to low guarantees \`reachable[s - w]\` was written in a previous crate's round, so it describes subsets that exclude the current crate. Sweep upward and the freshly set entries feed back into the same round: one crate gets loaded repeatedly, and you have silently solved the unbounded token-machine problem from earlier in this module instead. The direction of a single loop is the entire difference between 0/1 and unbounded choice.
+
+The cost is pseudo-polynomial: O(n × total/2) cell updates — comfortable for 200 crates of weight ≤ 100, a 10,001-wide array — while remaining untouched by the 2^200 assignment space. Subset-sum is NP-complete in general; this DP is tractable precisely because the *numeric size* of the target is small, not the number of crates. That distinction is worth saying out loud in an interview.
+`,
+        complexity: 'Time O(n * T) where T = total/2, Space O(T)',
+      },
+      testCases: [
+        { input: [[3, 1, 4, 2]], expected: true, label: 'balances at 5 per lane' },
+        { input: [[5, 3, 3]], expected: false, label: 'odd total: instant rejection' },
+        { input: [[2, 2, 2, 5, 5]], expected: false, label: 'even total but no subset hits half' },
+        { input: [[7]], expected: false, hidden: true, label: 'single crate cannot balance' },
+        { input: [[]], expected: true, hidden: true, label: 'empty manifest: 0 = 0' },
+        { input: [[0, 0]], expected: true, hidden: true, label: 'weightless crates' },
+        { input: [[1, 1, 1, 1, 1, 1]], expected: true, hidden: true, label: 'three ones per lane' },
+        { input: [[3, 3, 4, 8]], expected: false, hidden: true, label: 'even total 18, but 9 is unreachable' },
+        { input: [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]], expected: true, hidden: true, label: 'twenty crates, target 105' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 416. Partition Equal Subset Sum', note: 'the canonical equal-partition feasibility DP' },
+        { name: 'LeetCode 494. Target Sum', note: 'count the assignments instead of testing feasibility' },
+        { name: 'LeetCode 1049. Last Stone Weight II', note: 'minimize the lane imbalance rather than demanding zero' },
+      ],
+    },
   ],
   quiz: [
     {

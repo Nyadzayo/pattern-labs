@@ -451,6 +451,447 @@ This is a recurring interview escalation: pattern (two pointers) gives the *shap
         { name: 'LeetCode 1216. Valid Palindrome III', note: 'the k-deletion core of this problem' },
       ],
     },
+    {
+      id: 'thruster-trim',
+      title: 'Three-Thruster Trim Burn',
+      difficulty: 'medium',
+      statement: `
+A cargo tug balances its attitude by firing **exactly three** of its thrusters together. Each thruster \`k\` contributes a signed impulse \`impulses[k]\` (positive ones push forward, negative ones brake). Flight control wants the combined impulse of the three chosen thrusters to land as close as possible to a desired \`target\`.
+
+Given the list \`impulses\` (at least three entries, in any order) and an integer \`target\`, return the **sum** of the best three-thruster combination — the achievable sum whose distance \`abs(sum - target)\` is smallest. If two different sums are equally close, return the **smaller** of the two sums.
+
+Brute-forcing all triples is \`O(n^3)\`; the fleet has thousands of thrusters, so do better.
+`,
+      examples: [
+        {
+          input: 'impulses = [-1, 2, 1, -4], target = 1',
+          output: '2',
+          explanation: 'The triple (-1, 2, 1) sums to 2, distance 1 from the target. No triple lands exactly on 1.',
+        },
+        {
+          input: 'impulses = [1, 2, 6, 4], target = 10',
+          output: '9',
+          explanation:
+            'Sorted, the candidate triples include 1+2+6=9 and 1+4+6=11, both distance 1 from 10. The tie is broken toward the smaller sum, 9.',
+        },
+        {
+          input: 'impulses = [0, 0, 0], target = 7',
+          output: '0',
+          explanation: 'Only one triple exists; its sum is 0.',
+        },
+      ],
+      constraints: [
+        '3 <= len(impulses) <= 3000',
+        '-10^6 <= impulses[k] <= 10^6',
+        'impulses is given in arbitrary order',
+        '-10^9 <= target <= 10^9',
+        'On a distance tie, return the smaller sum',
+      ],
+      hints: [
+        'Three free choices is one too many to converge directly. Is there an ordering of the thrusters that would let you pin one of the three down and reason about the other two with a rule?',
+        'Sort first. Then fix the lowest thruster of the triple with an outer loop, and on the remaining suffix run a converging pair scan toward (target - fixed).',
+        'For each fixed index i, set lo=i+1, hi=last. Compare impulses[i]+impulses[lo]+impulses[hi] to the target: track the closest sum (preferring the smaller on ties), then move lo up if the sum is below target, else hi down.',
+      ],
+      functionName: 'closest_triplet_sum',
+      starterCode: `def closest_triplet_sum(impulses: list[int], target: int) -> int:
+    pass
+`,
+      solution: {
+        code: `def closest_triplet_sum(impulses: list[int], target: int) -> int:
+    # Sorting unlocks the converging scan; it also makes the suffix monotone.
+    arr = sorted(impulses)
+    n = len(arr)
+    best = arr[0] + arr[1] + arr[2]  # any real triple seeds the search
+    for i in range(n - 2):
+        # Fix the lowest thruster of the triple; converge the other two.
+        lo, hi = i + 1, n - 1
+        while lo < hi:
+            total = arr[i] + arr[lo] + arr[hi]
+            # Update on a strictly closer sum, or an equally close smaller one.
+            if (abs(total - target) < abs(best - target)
+                    or (abs(total - target) == abs(best - target) and total < best)):
+                best = total
+            if total == target:
+                return total            # cannot beat distance 0
+            if total < target:
+                lo += 1                 # need a bigger sum
+            else:
+                hi -= 1                 # need a smaller sum
+    return best
+`,
+        commentary: `
+Three independent choices look like an \`O(n^3)\` problem, but two pointers collapses the inner two.
+
+The move is **fix-one, converge-two**. Sort the impulses, then let an outer loop nail down the smallest member of the triple at index \`i\`. The remaining task — pick two thrusters from the sorted suffix whose sum is closest to \`target - arr[i]\` — is exactly the converging pair scan: when the running triple sum is below target the only way to grow it is to advance \`lo\`; when it is above, retreat \`hi\`. Each inner scan is linear, so the whole thing is \`O(n^2)\`, a clean win over brute force.
+
+Two details earn the hidden cases. First, **seed \`best\` with a genuine triple** (\`arr[0]+arr[1]+arr[2]\`) rather than a sentinel like infinity, so the very first comparison is against a feasible answer. Second, the **tie-break**: when a new sum is exactly as far from the target as the incumbent, the problem asks for the smaller sum, so the update guard includes \`total < best\`. Sorting also guarantees determinism — the same multiset of impulses always explores triples in the same order.
+`,
+        complexity: 'Time O(n^2), Space O(1) extra (O(n) if the sort is counted)',
+      },
+      testCases: [
+        { input: [[-1, 2, 1, -4], 1], expected: 2, label: 'classic closest, not exact' },
+        { input: [[1, 2, 6, 4], 10], expected: 9, label: 'distance tie resolves to smaller sum' },
+        { input: [[0, 0, 0], 7], expected: 0, label: 'only one triple' },
+        { input: [[1, 1, 1], 100], expected: 3, hidden: true, label: 'all equal, far target' },
+        { input: [[-3, -2, 5, 10], 4], expected: 5, hidden: true, label: 'negatives in the mix' },
+        { input: [[5, -2, -1, 4, 7], 0], expected: 1, hidden: true, label: 'closest is just off zero' },
+        { input: [[1, 3, 6, 5, 8], 10], expected: 10, label: 'exact hit available' },
+        { input: [[-1000000, -1000000, 1000000, 1000000], 0], expected: -1000000, hidden: true, label: 'extreme magnitudes' },
+        { input: [[2, 2, 2, 2], 5], expected: 6, hidden: true, label: 'every triple identical' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 16. 3Sum Closest', note: 'the canonical fix-one-converge-two problem' },
+        { name: 'LeetCode 15. 3Sum', note: 'same skeleton, exact-zero variant with dedup' },
+        { name: 'LeetCode 259. 3Sum Smaller', note: 'count triples under a threshold with the same scan' },
+      ],
+    },
+    {
+      id: 'lane-merge',
+      title: 'Highway On-Ramp Merge',
+      difficulty: 'easy',
+      statement: `
+Two traffic cameras each emit a stream of vehicle arrival timestamps (whole seconds since midnight). Each camera's stream is already sorted in non-decreasing order. A monitoring dashboard needs a **single combined timeline** of all arrivals, also sorted in non-decreasing order, preserving every timestamp (duplicates across the two streams are all kept).
+
+Given two sorted lists \`lane_a\` and \`lane_b\`, return one new list containing every timestamp from both, in non-decreasing order. When timestamps tie, an entry from \`lane_a\` should appear before the equal entry from \`lane_b\`.
+
+Do not concatenate-then-sort; exploit the fact that both inputs already arrive sorted.
+`,
+      examples: [
+        {
+          input: 'lane_a = [1, 3, 5], lane_b = [2, 4, 6]',
+          output: '[1, 2, 3, 4, 5, 6]',
+          explanation: 'The two interleave cleanly into one ascending timeline.',
+        },
+        {
+          input: 'lane_a = [2, 2], lane_b = [1, 2]',
+          output: '[1, 2, 2, 2]',
+          explanation: 'On the tie at 2, lane_a entries are emitted before the equal lane_b entry.',
+        },
+        {
+          input: 'lane_a = [], lane_b = [4, 9]',
+          output: '[4, 9]',
+          explanation: 'An empty stream contributes nothing; the other passes through.',
+        },
+      ],
+      constraints: [
+        '0 <= len(lane_a), len(lane_b) <= 100_000',
+        '0 <= timestamp <= 86_400',
+        'Both lane_a and lane_b are sorted in non-decreasing order',
+        'On ties, a lane_a timestamp precedes the equal lane_b timestamp (stable)',
+      ],
+      hints: [
+        'You are walking down two already-ordered lists at once. At any moment, where must the globally smallest remaining timestamp be sitting?',
+        'Keep one pointer at the front of each stream. The smaller of the two heads is the next item for the combined timeline; emit it and advance only that pointer.',
+        'Loop while both pointers are in range, appending the smaller head (take from lane_a when the heads tie, to stay stable). When one stream runs dry, append the untouched tail of the other.',
+      ],
+      functionName: 'merge_arrival_streams',
+      starterCode: `def merge_arrival_streams(lane_a: list[int], lane_b: list[int]) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `def merge_arrival_streams(lane_a: list[int], lane_b: list[int]) -> list[int]:
+    i, j = 0, 0          # one read pointer per sorted stream
+    merged = []
+    # Walk both streams; the smaller head is always next in the timeline.
+    while i < len(lane_a) and j < len(lane_b):
+        # "<=" takes from lane_a on ties, keeping the merge stable.
+        if lane_a[i] <= lane_b[j]:
+            merged.append(lane_a[i])
+            i += 1
+        else:
+            merged.append(lane_b[j])
+            j += 1
+    # Exactly one stream may have leftovers; it is already sorted, so append it whole.
+    merged.extend(lane_a[i:])
+    merged.extend(lane_b[j:])
+    return merged
+`,
+        commentary: `
+This is the **parallel two-pointer walk** — the same merge that powers merge sort's combine step and sort-merge joins in databases.
+
+The invariant: everything already pushed into \`merged\` is sorted and is smaller than (or equal to) every timestamp still unread in either stream. That holds because at each step the next item must be the minimum of the two heads — every other unread value is \`>=\` its own head, which is \`>=\` the smaller head we just took. So picking the smaller head and advancing only that pointer can never strand a smaller value behind us.
+
+Concatenating then sorting would cost \`O((m+n) log(m+n))\` and throw away the gift of pre-sorted inputs; this merge is \`O(m+n)\` because each timestamp is touched exactly once. The \`<=\` (rather than \`<\`) in the comparison is what makes the merge **stable**: on a tie we drain \`lane_a\` first, so equal timestamps keep their lane order. When either pointer reaches its end, the other stream's remaining suffix is already sorted and strictly later, so it appends verbatim — no further comparisons needed.
+`,
+        complexity: 'Time O(m + n), Space O(m + n) for the output',
+      },
+      testCases: [
+        { input: [[1, 3, 5], [2, 4, 6]], expected: [1, 2, 3, 4, 5, 6], label: 'clean interleave' },
+        { input: [[2, 2], [1, 2]], expected: [1, 2, 2, 2], label: 'stable tie handling' },
+        { input: [[], [4, 9]], expected: [4, 9], label: 'one empty stream' },
+        { input: [[], []], expected: [], hidden: true, label: 'both empty' },
+        { input: [[1, 1, 1], [1, 1]], expected: [1, 1, 1, 1, 1], hidden: true, label: 'all equal across both' },
+        { input: [[0, 86400], [0, 86400]], expected: [0, 0, 86400, 86400], hidden: true, label: 'extreme timestamps' },
+        { input: [[5], [1, 2, 3, 4]], expected: [1, 2, 3, 4, 5], label: 'one straggler at the end' },
+        { input: [[1, 2, 3], [4, 5, 6]], expected: [1, 2, 3, 4, 5, 6], hidden: true, label: 'fully disjoint, a before b' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 88. Merge Sorted Array', note: 'the in-place classic, merged from the back' },
+        { name: 'LeetCode 21. Merge Two Sorted Lists', note: 'identical merge over linked lists' },
+        { name: 'LeetCode 23. Merge k Sorted Lists', note: 'generalize to k streams with a heap' },
+      ],
+    },
+    {
+      id: 'triage-queue',
+      title: 'Emergency Triage Reorder',
+      difficulty: 'easy',
+      statement: `
+A clinic logs incoming patients in arrival order, each tagged with a severity score. A surge protocol kicks in: patients whose severity is **at or above** a \`critical\` threshold must be seen before everyone else. To keep the process fair and auditable, the relative arrival order **within** each group must be preserved — criticals stay in the order they arrived, and so do the non-criticals.
+
+Given the list \`severities\` (in arrival order) and the integer \`critical\` threshold, return a new list with all critical patients (\`severity >= critical\`) first, followed by all non-critical patients (\`severity < critical\`), each group keeping its original arrival order.
+
+The reorder must be **stable**; a plain sort by a true/false key would also work, but here you should achieve it with a linear two-pass scan.
+`,
+      examples: [
+        {
+          input: 'severities = [3, 9, 1, 8, 2], critical = 7',
+          output: '[9, 8, 3, 1, 2]',
+          explanation: 'Criticals (>=7) in arrival order are 9 then 8; the rest (3, 1, 2) follow in arrival order.',
+        },
+        {
+          input: 'severities = [5, 5, 5], critical = 5',
+          output: '[5, 5, 5]',
+          explanation: 'All meet the threshold, so the list is unchanged.',
+        },
+        {
+          input: 'severities = [1, 2, 3], critical = 10',
+          output: '[1, 2, 3]',
+          explanation: 'Nobody is critical, so the non-critical group is the whole list, unchanged.',
+        },
+      ],
+      constraints: [
+        '0 <= len(severities) <= 100_000',
+        '0 <= severities[k] <= 1000',
+        'severities is in arrival order (not sorted)',
+        'Within each group, original arrival order must be preserved (stable)',
+        'critical may be larger than every severity, or smaller than every severity',
+      ],
+      hints: [
+        'You need two groups concatenated, each keeping its internal order. What is the simplest way to lay down the first group without disturbing how its members were spaced?',
+        'Use a write pointer. Sweep once and copy every critical patient to the front in the order you meet them; remember where the front block ends.',
+        'First pass: read pointer scans all, write pointer drops each critical (severity >= critical) at the next front slot. Second pass: the same write pointer continues, dropping each non-critical after the criticals. Return the filled list.',
+      ],
+      functionName: 'triage_reorder',
+      starterCode: `def triage_reorder(severities: list[int], critical: int) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `def triage_reorder(severities: list[int], critical: int) -> list[int]:
+    # Build into a fresh buffer so the caller's arrival log is untouched.
+    out = list(severities)
+    write = 0
+    # Pass 1: pack the criticals at the front, in arrival order.
+    for read in range(len(severities)):
+        if severities[read] >= critical:
+            out[write] = severities[read]
+            write += 1
+    # Pass 2: the same write pointer continues with the non-criticals,
+    # also in arrival order, right after the critical block.
+    for read in range(len(severities)):
+        if severities[read] < critical:
+            out[write] = severities[read]
+            write += 1
+    return out
+`,
+        commentary: `
+This is a **stable partition** built from the read/write two-pointer idiom, done in two linear passes.
+
+A single-pass swap-based partition (the Lomuto/Hoare style used inside quicksort) is faster on memory but **not stable** — swapping drags elements past each other and scrambles arrival order, which this audit-friendly problem forbids. The two-pass write-pointer version keeps order for free: each pass walks the original \`severities\` left to right and appends qualifying elements in the exact order it meets them, so neither group is ever reordered.
+
+The shared \`write\` pointer is the elegant part. After pass one it sits exactly at the boundary between the critical block and the empty tail; pass two simply keeps advancing it, laying the non-criticals down immediately after. Because every element is copied exactly once across the two passes, total work is \`O(n)\` with \`O(n)\` output space. The output is fully deterministic: it depends only on the input order and the threshold, with no tie-break ambiguity since equal values within a group never change places. Edge inputs — empty list, everyone critical, no one critical — all fall out correctly: one of the passes simply contributes nothing.
+`,
+        complexity: 'Time O(n), Space O(n) for the output',
+      },
+      testCases: [
+        { input: [[3, 9, 1, 8, 2], 7], expected: [9, 8, 3, 1, 2], label: 'mixed, both groups non-empty' },
+        { input: [[5, 5, 5], 5], expected: [5, 5, 5], label: 'all critical (threshold inclusive)' },
+        { input: [[1, 2, 3], 10], expected: [1, 2, 3], label: 'none critical' },
+        { input: [[], 4], expected: [], hidden: true, label: 'empty log' },
+        { input: [[8], 8], expected: [8], hidden: true, label: 'single patient, exactly at threshold' },
+        { input: [[2, 8, 2, 8, 2], 5], expected: [8, 8, 2, 2, 2], hidden: true, label: 'alternating, stability matters' },
+        { input: [[10, 1, 10, 1, 10], 5], expected: [10, 10, 10, 1, 1], label: 'criticals lead, order kept' },
+        { input: [[0, 1000, 0, 1000], 1000], expected: [1000, 1000, 0, 0], hidden: true, label: 'extremes at the threshold' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 905. Sort Array By Parity', note: 'partition by even/odd predicate' },
+        { name: 'LeetCode 283. Move Zeroes', note: 'stable partition keeping non-zeros, the write-pointer staple' },
+        { name: 'LeetCode 75. Sort Colors', note: 'three-way Dutch-flag partition, one pass' },
+      ],
+    },
+    {
+      id: 'twin-frequency',
+      title: 'Twin-Receiver Frequency Lock',
+      difficulty: 'medium',
+      statement: `
+A ground station tunes two independent radios to lock onto a satellite. Radio A can only sit on the frequencies in the sorted list \`freqs_a\`; radio B is restricted to the sorted list \`freqs_b\` (both in megahertz, non-decreasing). To minimize interference, the operator wants to pick **one frequency from each radio** so the two are as close together as possible.
+
+Given \`freqs_a\` and \`freqs_b\` (each non-empty and sorted), return the pair \`[a, b]\` — \`a\` drawn from \`freqs_a\`, \`b\` from \`freqs_b\` — with the smallest absolute gap \`abs(a - b)\`. If several pairs share the smallest gap, return the one the linear scan reaches first when both pointers start at the low end and advance the side holding the smaller value.
+
+Comparing every cross pair is \`O(m * n)\`; both catalogues can hold tens of thousands of channels.
+`,
+      examples: [
+        {
+          input: 'freqs_a = [1, 4, 7], freqs_b = [3, 8, 12]',
+          output: '[4, 3]',
+          explanation: 'The closest cross pair is 4 and 3, a gap of 1; nothing else is nearer.',
+        },
+        {
+          input: 'freqs_a = [-5, 0, 5], freqs_b = [3, 4, 9]',
+          output: '[5, 4]',
+          explanation: 'abs(5 - 4) = 1 is the tightest lock available.',
+        },
+        {
+          input: 'freqs_a = [10, 20], freqs_b = [15]',
+          output: '[10, 15]',
+          explanation: 'Both 10 and 20 sit 5 MHz from 15; the scan reaches the [10, 15] pair first.',
+        },
+      ],
+      constraints: [
+        '1 <= len(freqs_a), len(freqs_b) <= 50_000',
+        '-10^9 <= frequency <= 10^9',
+        'freqs_a and freqs_b are each sorted in non-decreasing order',
+        'Both lists are non-empty',
+        'On a tie, return the pair reached first by the low-to-high advancing scan',
+      ],
+      hints: [
+        'Both catalogues are sorted. If the A-frequency you are looking at is below the B-frequency, what does that say about pairing this same B with even smaller A values?',
+        'Start a pointer at the low end of each list. The gap can only improve by moving the pointer that sits on the smaller value — moving the larger one widens the gap.',
+        'Loop while both pointers are in range: record the current pair if its gap beats the best so far; if the two values are equal the gap is 0 (return immediately); otherwise advance whichever pointer holds the smaller value.',
+      ],
+      functionName: 'closest_frequency_pair',
+      starterCode: `def closest_frequency_pair(freqs_a: list[int], freqs_b: list[int]) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `def closest_frequency_pair(freqs_a: list[int], freqs_b: list[int]) -> list[int]:
+    i, j = 0, 0                 # walk both sorted catalogues from the low end
+    best_gap = None
+    best_pair = None
+    while i < len(freqs_a) and j < len(freqs_b):
+        a, b = freqs_a[i], freqs_b[j]
+        gap = abs(a - b)
+        # Strict "<" keeps the first-reached pair on ties (scan order).
+        if best_gap is None or gap < best_gap:
+            best_gap = gap
+            best_pair = [a, b]
+        if a == b:
+            return [a, b]       # gap 0 is unbeatable
+        # Advance the smaller side: it is the only move that can shrink the gap.
+        if a < b:
+            i += 1
+        else:
+            j += 1
+    return best_pair
+`,
+        commentary: `
+The naive approach pairs every A with every B at \`O(m * n)\`. Because both lists are sorted, a single **parallel two-pointer walk** finds the closest pair in \`O(m + n)\`.
+
+The exchange argument: suppose \`freqs_a[i] < freqs_b[j]\`. Every B-frequency from \`j\` onward is \`>= freqs_b[j]\`, so pairing the current (small) A with any of them only widens the gap — the current pair is the best this A can do against the remaining Bs. We have squeezed everything useful out of \`freqs_a[i]\`, so we retire it by advancing \`i\`. Symmetrically when B is the smaller value. The pointer on the smaller side is always the one that, when advanced, can *reduce* the gap; advancing the larger side provably cannot help. An exact match (\`a == b\`) gives gap 0, the global optimum, so we stop immediately.
+
+Determinism comes from two design choices spelled out in the statement: both pointers start low and we advance the smaller side, and the update uses a **strict** \`<\` so the *first* pair achieving the minimum gap wins any tie. Each iteration advances exactly one pointer, bounding the loop at \`m + n\` steps with only a couple of scalars of state.
+`,
+        complexity: 'Time O(m + n), Space O(1)',
+      },
+      testCases: [
+        { input: [[1, 4, 7], [3, 8, 12]], expected: [4, 3], label: 'tightest lock is interior' },
+        { input: [[-5, 0, 5], [3, 4, 9]], expected: [5, 4], label: 'spans negatives' },
+        { input: [[10, 20], [15]], expected: [10, 15], label: 'tie resolves to first-reached pair' },
+        { input: [[1], [1]], expected: [1, 1], hidden: true, label: 'exact match, gap zero' },
+        { input: [[0], [1000000000]], expected: [0, 1000000000], hidden: true, label: 'singletons, huge gap' },
+        { input: [[2, 2, 2], [2]], expected: [2, 2], label: 'duplicates with exact match' },
+        { input: [[-1000000000, 1000000000], [0]], expected: [-1000000000, 0], hidden: true, label: 'extremes straddling zero' },
+        { input: [[1, 2, 3, 4], [10, 11, 12]], expected: [4, 10], hidden: true, label: 'disjoint ranges, closest at the seam' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 658. Find K Closest Elements', note: 'closest-to-target cousin with a sliding window' },
+        { name: 'Minimum absolute difference between two sorted arrays', note: 'the bare version of this scan' },
+        { name: 'LeetCode 350. Intersection of Two Arrays II', note: 'same dual-pointer walk, equality instead of closeness' },
+      ],
+    },
+    {
+      id: 'depth-readings',
+      title: 'Sonar Depth Energy Sort',
+      difficulty: 'medium',
+      statement: `
+A submersible logs vertical displacement readings in meters, sorted in non-decreasing order. Negative readings mean it rose above the reference plane, positive means it sank below. The analysis pipeline needs the **acoustic energy** of each reading, which is proportional to the square of its displacement, returned as a list sorted in **non-decreasing order**.
+
+Given the sorted list \`displacements\` (which may contain negatives, zero, and positives), return a new list of \`displacement * displacement\` for each reading, sorted in non-decreasing order. The output length equals the input length.
+
+The squares of a sorted list are **not** themselves sorted when negatives are present (e.g. \`[-3, 2]\` squares to \`[9, 4]\`). Re-sorting from scratch is \`O(n log n)\`; you can do it in \`O(n)\`.
+`,
+      examples: [
+        {
+          input: 'displacements = [-4, -1, 0, 3, 10]',
+          output: '[0, 1, 9, 16, 100]',
+          explanation: 'Squares are 16, 1, 0, 9, 100; sorted ascending gives [0, 1, 9, 16, 100].',
+        },
+        {
+          input: 'displacements = [-3, -2, -1]',
+          output: '[1, 4, 9]',
+          explanation: 'All negative: the largest magnitude (-3) yields the largest square, so the order reverses.',
+        },
+        {
+          input: 'displacements = [0, 1, 2]',
+          output: '[0, 1, 4]',
+          explanation: 'No negatives means the squares are already sorted.',
+        },
+      ],
+      constraints: [
+        '0 <= len(displacements) <= 100_000',
+        '-10^4 <= displacements[k] <= 10^4',
+        'displacements is sorted in non-decreasing order',
+        'Output is sorted in non-decreasing order and has the same length as the input',
+      ],
+      hints: [
+        'The biggest square does not come from the middle of the list. Given the array is sorted, where do the two largest squares have to live?',
+        'The largest magnitude sits at one of the two ends. Compare the absolute values at the ends and you know which square is the biggest remaining.',
+        'Put a pointer at each end and fill the output from the back forward: at each step square the end with the larger absolute value, place it, and move that pointer inward.',
+      ],
+      functionName: 'sorted_energy',
+      starterCode: `def sorted_energy(displacements: list[int]) -> list[int]:
+    pass
+`,
+      solution: {
+        code: `def sorted_energy(displacements: list[int]) -> list[int]:
+    n = len(displacements)
+    out = [0] * n                 # we will fill this from the back forward
+    lo, hi = 0, n - 1             # the two ends hold the largest magnitudes
+    for pos in range(n - 1, -1, -1):
+        # Whichever end has the bigger absolute value owns the bigger square.
+        if abs(displacements[lo]) > abs(displacements[hi]):
+            out[pos] = displacements[lo] * displacements[lo]
+            lo += 1               # that low (very negative) reading is placed
+        else:
+            out[pos] = displacements[hi] * displacements[hi]
+            hi -= 1               # that high reading is placed
+    return out
+`,
+        commentary: `
+Squaring scrambles a sorted-with-negatives array because magnitude, not value, drives the square. The trick is to realize the array is sorted by value, so it is **bitonic by magnitude**: magnitudes fall to a minimum somewhere in the middle and rise again toward both ends. That means the single largest magnitude is always at one of the two ends.
+
+So put a pointer at each end and **fill the output from the back**, where the biggest squares belong. At every step, compare \`abs(displacements[lo])\` against \`abs(displacements[hi])\`; the larger one is the biggest square not yet placed, so drop it at the current back slot and pull that pointer inward. The pointers converge as the write position walks left, and each reading is squared and placed exactly once.
+
+This is \`O(n)\` time and \`O(n)\` space (just the output), versus \`O(n log n)\` for square-then-sort. The comparison uses \`>\` so ties (e.g. \`-2\` and \`2\`) take the high end first, but since their squares are identical the output is the same either way — fully deterministic. Empty and single-element inputs need no special casing: the fill loop runs zero or one times. Reading right-to-left is essential; trying to fill front-to-back would force you to find the *smallest* square, which can sit anywhere the magnitudes bottom out, defeating the clean end-pointer rule.
+`,
+        complexity: 'Time O(n), Space O(n) for the output',
+      },
+      testCases: [
+        { input: [[-4, -1, 0, 3, 10]], expected: [0, 1, 9, 16, 100], label: 'mixed signs' },
+        { input: [[-3, -2, -1]], expected: [1, 4, 9], label: 'all negative, order reverses' },
+        { input: [[0, 1, 2]], expected: [0, 1, 4], label: 'no negatives, already sorted' },
+        { input: [[]], expected: [], hidden: true, label: 'empty log' },
+        { input: [[5]], expected: [25], hidden: true, label: 'single reading' },
+        { input: [[-2, 2]], expected: [4, 4], label: 'symmetric pair, equal squares' },
+        { input: [[0, 0, 0]], expected: [0, 0, 0], hidden: true, label: 'all zero' },
+        { input: [[-10000, -3, 0, 7, 10000]], expected: [0, 9, 49, 100000000, 100000000], hidden: true, label: 'extreme magnitudes at both ends' },
+        { input: [[-7, -3, 2, 3, 11]], expected: [4, 9, 9, 49, 121], label: 'duplicate squares from different signs' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 977. Squares of a Sorted Array', note: 'the canonical end-pointer fill' },
+        { name: 'LeetCode 88. Merge Sorted Array', note: 'same back-to-front filling discipline' },
+        { name: 'LeetCode 360. Sort Transformed Array', note: 'generalizes to any quadratic transform' },
+      ],
+    },
   ],
   quiz: [
     {

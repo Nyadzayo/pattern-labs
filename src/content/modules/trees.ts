@@ -769,6 +769,820 @@ Note what the policy clause "a person counts as a member of their own team" buys
         { name: 'LeetCode 700. Search in a Binary Search Tree', note: 'the single-target version of the same walk' },
       ],
     },
+    {
+      id: 'rose-window-symmetry',
+      title: 'Rose Window Mirror Audit',
+      difficulty: 'easy',
+      statement: `
+The restoration team at a coastal chapel is cataloguing its rose window before re-leading the glass. The window's panels form a binary tree: the central boss is the root, and every panel splits into at most two smaller panels further out. Each panel carries an integer **color code**. The layout arrives as a **level-order list** with \`null\` marking an absent panel; the starter's \`build_tree\` reconstructs it.
+
+The original glazier worked symmetrically: the finished window should read the same in a mirror. Concretely, the window is **mirror-true** when the left half and the right half of the tree are reflections of each other — matching shapes AND matching color codes, pane for pane, across the vertical centerline.
+
+Given \`values\`, return \`True\` if the window is mirror-true and \`False\` otherwise. An empty window and a lone central boss are both mirror-true.
+`,
+      examples: [
+        {
+          input: 'values = [1, 2, 2, 3, 4, 4, 3]',
+          output: 'True',
+          explanation:
+            'Fold the window down its centerline: the 2s land on each other, the outer 3s pair up, and the inner 4s pair up.',
+        },
+        {
+          input: 'values = [1, 2, 2, null, 3, null, 3]',
+          output: 'False',
+          explanation:
+            'Both 3s hang as inner-right panels. The two halves are identical copies — but a mirror would flip one of them, so the reflection does not match.',
+        },
+        {
+          input: 'values = []',
+          output: 'True',
+          explanation: 'Nothing to mirror.',
+        },
+      ],
+      constraints: [
+        '0 <= number of panels <= 10^3',
+        '-10^9 <= color code <= 10^9',
+        'Color codes may repeat freely; only position and code matter',
+        'Both the shape and the color codes must mirror',
+      ],
+      hints: [
+        'Trace example 2 by hand: the two halves are exact COPIES of each other, yet the window fails. What is the difference between a copy and a reflection?',
+        'Mirroring is a relation between PAIRS of panels, not a property you can check one panel at a time. After matching the two children of the boss against each other, which two pairs of grandchildren must be compared next — and which pairing would be wrong?',
+        'Write mirror(p, q): true if both are absent; false if exactly one is absent or the codes differ; otherwise require mirror(p.left, q.right) AND mirror(p.right, q.left) — the outer pair, then the inner pair. Kick off with mirror(root.left, root.right).',
+      ],
+      functionName: 'window_is_symmetric',
+      starterCode: `class TreeNode:
+    """One glass panel: a color code plus up to two smaller panels further out."""
+    def __init__(self, val: int, left: "TreeNode | None" = None, right: "TreeNode | None" = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build_tree(values: list) -> "TreeNode | None":
+    """Build a binary tree from a level-order list; None marks a missing child."""
+    if not values or values[0] is None:
+        return None
+    root = TreeNode(values[0])
+    queue = [root]
+    head = 0   # next parent to wire up
+    i = 1      # next slot in the level-order list
+    while head < len(queue) and i < len(values):
+        node = queue[head]
+        head += 1
+        if i < len(values):
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.left = TreeNode(v)
+                queue.append(node.left)
+        if i < len(values):
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.right = TreeNode(v)
+                queue.append(node.right)
+    return root
+
+def window_is_symmetric(values: list) -> bool:
+    # root = build_tree(values), then compare the two halves against each other
+    pass
+`,
+      solution: {
+        code: `class TreeNode:
+    """One glass panel: a color code plus up to two smaller panels further out."""
+    def __init__(self, val: int, left: "TreeNode | None" = None, right: "TreeNode | None" = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build_tree(values: list) -> "TreeNode | None":
+    """Build a binary tree from a level-order list; None marks a missing child."""
+    if not values or values[0] is None:
+        return None
+    root = TreeNode(values[0])
+    queue = [root]
+    head = 0   # next parent to wire up
+    i = 1      # next slot in the level-order list
+    while head < len(queue) and i < len(values):
+        node = queue[head]
+        head += 1
+        if i < len(values):                     # left child slot
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.left = TreeNode(v)
+                queue.append(node.left)
+        if i < len(values):                     # right child slot
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.right = TreeNode(v)
+                queue.append(node.right)
+    return root
+
+def window_is_symmetric(values: list) -> bool:
+    root = build_tree(values)
+    if root is None:
+        return True                     # an empty window is trivially mirror-true
+
+    # Pair contract: panels p and q mirror each other when their codes match,
+    # p's OUTER child mirrors q's OUTER child, and the inner pair likewise.
+    def mirror(p: "TreeNode | None", q: "TreeNode | None") -> bool:
+        if p is None and q is None:
+            return True                 # two absent panels mirror perfectly
+        if p is None or q is None:
+            return False                # a panel on one side only: shape breaks
+        if p.val != q.val:
+            return False                # colors must match across the centerline
+        # Outer pair: p's left lines up with q's RIGHT. Inner pair: the reverse.
+        return mirror(p.left, q.right) and mirror(p.right, q.left)
+
+    return mirror(root.left, root.right)
+`,
+        commentary: `
+The instinct to walk each half separately and compare the two visit logs is the trap worth naming: example 2 defeats it. Its two halves are identical *copies*, so any one-sided traversal produces identical logs for both — yet a mirror flips left and right, and copies are exactly what a mirror does NOT produce.
+
+The clean fix is to make the recursion itself two-handed. Instead of the usual one-node contract, define a contract over a **pair**: \`mirror(p, q)\` answers "are these two subtrees reflections of each other?" The combine step encodes the geometry of reflection directly — p's left child must pair with q's *right* child (the two outer panels) and p's right child with q's left (the two inner panels). Get those two recursive calls crossed correctly and the rest collapses into three base cases: two absent panels mirror, an absent/present pair does not, and mismatched color codes do not.
+
+This pairwise recursion is a "same tree" check with one of the two argument orders flipped — a useful way to remember it. Each panel participates in exactly one pair comparison, so the sweep is linear, and the recursion depth equals the window's height.
+
+An equivalent iterative version pushes pairs onto an explicit stack — handy if the window is a degenerate chain deep enough to threaten Python's recursion limit.
+`,
+        complexity: 'Time O(n), Space O(h) recursion stack (O(n) worst case on a chain)',
+      },
+      testCases: [
+        { input: [[1, 2, 2, 3, 4, 4, 3]], expected: true, label: 'mirror-true window' },
+        { input: [[1, 2, 2, null, 3, null, 3]], expected: false, label: 'identical halves are not reflections' },
+        { input: [[]], expected: true, label: 'empty window' },
+        { input: [[7]], expected: true, hidden: true, label: 'lone central boss' },
+        {
+          input: [[1, 2, 2, 3, 4, 4, 3, 5, 6, 7, 8, 8, 7, 6, 5]],
+          expected: true,
+          hidden: true,
+          label: 'four tiers, fully mirrored',
+        },
+        { input: [[1, 2, 2, 3, 4, 4, 9]], expected: false, hidden: true, label: 'one outer color breaks the mirror' },
+        { input: [[1, 2, 3]], expected: false, label: 'children differ immediately' },
+        {
+          input: [[2, 1, 1, 2, null, null, 2]],
+          expected: true,
+          hidden: true,
+          label: 'awkward-looking list, symmetric window',
+        },
+        { input: [[1, 2, 2, 2, null, 2]], expected: false, hidden: true, label: 'same shape both sides, mirror fails' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 101. Symmetric Tree', note: 'the classic form of this pair recursion' },
+        { name: 'LeetCode 100. Same Tree', note: 'the un-flipped twin: compare without crossing' },
+        { name: 'LeetCode 226. Invert Binary Tree', note: 'build the reflection instead of checking it' },
+      ],
+    },
+    {
+      id: 'mobile-snapshot',
+      title: 'Kinetic Mobile, Shot from the Right',
+      difficulty: 'easy',
+      statement: `
+A sculpture gallery is photographing its newest kinetic mobile for the exhibition catalog. The mobile is a binary tree of hanging ornaments: the ceiling hook holds the root ornament, and each ornament suspends at most two more below it on short wires. The piece arrives as a **level-order list** of ornament IDs with \`null\` for an empty wire; the starter's \`build_tree\` rebuilds it.
+
+The photographer shoots from the right-hand wall of the gallery, dead level with the piece. From there, exactly one ornament per **hanging tier** is visible: whichever hangs furthest to the right at that depth hides everything else on its tier.
+
+Given \`values\`, return the list of visible ornament IDs **ordered from the top tier down to the deepest tier**. Return \`[]\` for an empty mobile.
+`,
+      examples: [
+        {
+          input: 'values = [5, 3, 9, 1, null, null, 4]',
+          output: '[5, 9, 4]',
+          explanation: 'Tier by tier, the rightmost ornaments are 5, then 9, then 4.',
+        },
+        {
+          input: 'values = [1, 2, null, 3]',
+          output: '[1, 2, 3]',
+          explanation:
+            'Every ornament hangs on a left wire, yet all three are visible: each is the only — and therefore the rightmost — ornament on its tier.',
+        },
+        {
+          input: 'values = []',
+          output: '[]',
+          explanation: 'An empty hook photographs as a blank wall.',
+        },
+      ],
+      constraints: [
+        '0 <= number of ornaments <= 10^4',
+        '-10^9 <= ornament ID <= 10^9',
+        'IDs may repeat; visibility depends only on position',
+        'Output must be ordered top tier first, deepest tier last',
+      ],
+      hints: [
+        'Sketch values = [1, 2, null, 3] and look at your sketch from the right edge of the page. Why is ornament 3 visible even though it never hangs on a right-hand wire?',
+        'Visibility is decided per tier, not per subtree: each depth contributes exactly one ornament — whichever sits furthest right AT THAT DEPTH, regardless of which arm of the mobile it hangs from. Group the ornaments by tier before deciding anything.',
+        'Queue sweep: snapshot width = len(queue) before the inner loop, pop exactly width ornaments while enqueueing children left-then-right, and record the LAST ornament popped in each round — the enqueue order makes it the rightmost.',
+      ],
+      functionName: 'visible_ornaments',
+      starterCode: `class TreeNode:
+    """One ornament: an ID plus up to two more ornaments wired below it."""
+    def __init__(self, val: int, left: "TreeNode | None" = None, right: "TreeNode | None" = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build_tree(values: list) -> "TreeNode | None":
+    """Build a binary tree from a level-order list; None marks a missing child."""
+    if not values or values[0] is None:
+        return None
+    root = TreeNode(values[0])
+    queue = [root]
+    head = 0   # next parent to wire up
+    i = 1      # next slot in the level-order list
+    while head < len(queue) and i < len(values):
+        node = queue[head]
+        head += 1
+        if i < len(values):
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.left = TreeNode(v)
+                queue.append(node.left)
+        if i < len(values):
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.right = TreeNode(v)
+                queue.append(node.right)
+    return root
+
+def visible_ornaments(values: list) -> list[int]:
+    # root = build_tree(values), then walk tier by tier
+    pass
+`,
+      solution: {
+        code: `from collections import deque
+
+class TreeNode:
+    """One ornament: an ID plus up to two more ornaments wired below it."""
+    def __init__(self, val: int, left: "TreeNode | None" = None, right: "TreeNode | None" = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build_tree(values: list) -> "TreeNode | None":
+    """Build a binary tree from a level-order list; None marks a missing child."""
+    if not values or values[0] is None:
+        return None
+    root = TreeNode(values[0])
+    queue = [root]
+    head = 0   # next parent to wire up
+    i = 1      # next slot in the level-order list
+    while head < len(queue) and i < len(values):
+        node = queue[head]
+        head += 1
+        if i < len(values):                     # left child slot
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.left = TreeNode(v)
+                queue.append(node.left)
+        if i < len(values):                     # right child slot
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.right = TreeNode(v)
+                queue.append(node.right)
+    return root
+
+def visible_ornaments(values: list) -> list[int]:
+    root = build_tree(values)
+    if root is None:
+        return []                       # nothing hangs, nothing shows
+
+    seen: list = []
+    tier = deque([root])                # invariant: queue holds exactly one full tier
+    while tier:
+        width = len(tier)               # snapshot BEFORE pushing any children
+        for i in range(width):
+            node = tier.popleft()
+            if i == width - 1:
+                seen.append(node.val)   # last pop of the round = rightmost on the tier
+            if node.left:
+                tier.append(node.left)  # children accumulate as the NEXT tier,
+            if node.right:
+                tier.append(node.right) # enqueued left-then-right
+    return seen
+`,
+        commentary: `
+This sits one notch away from a per-tier aggregate like a sum or an average — and the difference is instructive. An aggregate consumes every node on the tier; here the tier is scanned only to **select** one node. The mechanics are unchanged: at the top of each round the queue holds exactly one full tier (the invariant), \`width = len(tier)\` is snapshotted before any children are pushed, and the inner loop pops exactly \`width\` ornaments. Because children are enqueued left-then-right, a tier comes off the queue in left-to-right order, so the pop at \`i == width - 1\` is the rightmost — no comparison, no max, just position.
+
+The example worth internalizing is the left chain \`[1, 2, null, 3]\`. "Rightmost per tier" is a statement about *depth*, not about right children: a tier whose only occupant hangs far out on the left arm still shows that occupant. Any attempt to answer this by chasing right pointers down from the hook dies on this case immediately.
+
+There is a slick DFS alternative: preorder visiting the RIGHT child first, carrying a depth counter, and recording a node only when its depth appears for the first time — the first arrival at each depth is automatically the rightmost. Same O(n) time with a stack instead of a queue. It is worth knowing, but the queue version states the per-tier structure of the question directly, which is what you want to be able to produce on demand.
+`,
+        complexity: 'Time O(n), Space O(w) for the queue, up to O(n) on the widest tier',
+      },
+      testCases: [
+        { input: [[5, 3, 9, 1, null, null, 4]], expected: [5, 9, 4], label: 'rightmost of each tier' },
+        { input: [[1, 2, null, 3]], expected: [1, 2, 3], label: 'left chain, all visible' },
+        { input: [[]], expected: [], label: 'empty mobile' },
+        { input: [[7]], expected: [7], hidden: true, label: 'single ornament' },
+        { input: [[1, 2, 3, 4, 5, 6, 7]], expected: [1, 3, 7], hidden: true, label: 'perfect mobile' },
+        { input: [[1, 2, 3, 4]], expected: [1, 3, 4], hidden: true, label: 'deepest tier hangs on the left arm' },
+        {
+          input: [[10, 8, 12, 6, 9, 11, 15, null, 7]],
+          expected: [10, 12, 15, 7],
+          hidden: true,
+          label: 'bottom ornament dangles under the left wing',
+        },
+        { input: [[2, 2, 2]], expected: [2, 2], label: 'repeated IDs' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 199. Binary Tree Right Side View', note: 'the classic form of this selection' },
+        { name: 'LeetCode 513. Find Bottom Left Tree Value', note: 'select by tier on the other axis' },
+        { name: 'LeetCode 515. Find Largest Value in Each Tree Row', note: 'swap positional pick for a max' },
+      ],
+    },
+    {
+      id: 'hotline-extensions',
+      title: 'Hotline Extension Checksum',
+      difficulty: 'medium',
+      statement: `
+A regional utility runs its customer hotline on a keypad menu tree. Every node of the tree is one spoken prompt labeled with a single **digit** \`0\`–\`9\`: the greeting is the root, and after each prompt the caller presses one of at most two digits to descend. When a caller reaches a **leaf** prompt, the digits pressed along the way — root first, leaf last — spell out the internal **extension number** the call is routed to. A prompt with even one follow-up is not an extension; the dialing continues below it.
+
+The billing team audits the menu with a checksum: the **sum of every extension number** the tree encodes, as one integer. Concatenation is numeric — the path 4 → 0 spells the extension 40, and a path starting with 0 simply yields a smaller number (0 → 1 → 2 spells 12).
+
+Given the menu as a level-order list \`values\` (\`null\` for a missing branch; \`build_tree\` provided in the starter), return the checksum. An empty menu sums to 0.
+`,
+      examples: [
+        {
+          input: 'values = [1, 2, 3]',
+          output: '25',
+          explanation: 'Two extensions exist: 1 → 2 spells 12 and 1 → 3 spells 13. Their sum is 25.',
+        },
+        {
+          input: 'values = [4, 9, 0, 5, 1]',
+          output: '1026',
+          explanation: 'Three leaves, three extensions: 495, 491, and 40. They sum to 1026.',
+        },
+        {
+          input: 'values = [0, 1, 2]',
+          output: '3',
+          explanation: 'Leading zeros vanish numerically: the paths spell 01 and 02, i.e. the extensions 1 and 2.',
+        },
+      ],
+      constraints: [
+        '0 <= number of prompts <= 10^4',
+        '0 <= digit <= 9',
+        'The menu is at most 12 prompts deep, so every extension fits in a standard integer',
+        'A prompt with exactly one follow-up is NOT a leaf; its extension continues below',
+      ],
+      hints: [
+        'Dial through values = [4, 9, 0, 5, 1] out loud. By the time you stand at the prompt labeled 5, which digits of its extension are already settled — and could anything you find below the 5 ever change them?',
+        'This is information flowing DOWN, not up: a prompt can know the partial number its ancestors spell without ever looking back at them. What single integer should a parent hand each child along with the call?',
+        'Preorder with an accumulator: descend carrying acc = acc * 10 + digit. When a prompt has no follow-ups at all, acc is one finished extension — add it to the total. Otherwise sum the two recursive results; a one-child prompt just forwards through its present side.',
+      ],
+      functionName: 'extension_total',
+      starterCode: `class TreeNode:
+    """One menu prompt: a single digit plus up to two follow-up prompts."""
+    def __init__(self, val: int, left: "TreeNode | None" = None, right: "TreeNode | None" = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build_tree(values: list) -> "TreeNode | None":
+    """Build a binary tree from a level-order list; None marks a missing child."""
+    if not values or values[0] is None:
+        return None
+    root = TreeNode(values[0])
+    queue = [root]
+    head = 0   # next parent to wire up
+    i = 1      # next slot in the level-order list
+    while head < len(queue) and i < len(values):
+        node = queue[head]
+        head += 1
+        if i < len(values):
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.left = TreeNode(v)
+                queue.append(node.left)
+        if i < len(values):
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.right = TreeNode(v)
+                queue.append(node.right)
+    return root
+
+def extension_total(values: list) -> int:
+    # root = build_tree(values), then carry the number-so-far downward
+    pass
+`,
+      solution: {
+        code: `class TreeNode:
+    """One menu prompt: a single digit plus up to two follow-up prompts."""
+    def __init__(self, val: int, left: "TreeNode | None" = None, right: "TreeNode | None" = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build_tree(values: list) -> "TreeNode | None":
+    """Build a binary tree from a level-order list; None marks a missing child."""
+    if not values or values[0] is None:
+        return None
+    root = TreeNode(values[0])
+    queue = [root]
+    head = 0   # next parent to wire up
+    i = 1      # next slot in the level-order list
+    while head < len(queue) and i < len(values):
+        node = queue[head]
+        head += 1
+        if i < len(values):                     # left child slot
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.left = TreeNode(v)
+                queue.append(node.left)
+        if i < len(values):                     # right child slot
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.right = TreeNode(v)
+                queue.append(node.right)
+    return root
+
+def extension_total(values: list) -> int:
+    # Preorder accumulator. acc is the number the ancestors spell BEFORE
+    # this prompt's digit is appended; the value flows DOWN the call tree.
+    def walk(node: "TreeNode | None", acc: int) -> int:
+        if node is None:
+            return 0                       # missing branch: no extensions here
+        acc = acc * 10 + node.val          # append this digit numerically
+        if node.left is None and node.right is None:
+            return acc                     # a true leaf finishes one extension
+        # One present child still means "keep dialing": the absent side
+        # contributes 0 through the base case, so plain addition is safe.
+        return walk(node.left, acc) + walk(node.right, acc)
+
+    return walk(build_tree(values), 0)
+`,
+        commentary: `
+The upward instinct — gather every root-to-leaf path as a list of digits, then convert each to a number at the end — works, but it hauls whole paths around: up to O(n) paths of O(h) digits each. The structure of the question points the other way. By the time you stand on any prompt, the prefix above you is *finished*; nothing discovered below can edit it. Finished-prefix problems are preorder problems: act on the node first, then descend.
+
+The entire trick is one arithmetic identity: appending digit \`d\` to a number \`x\` is \`x * 10 + d\`. Carry that accumulator down as a parameter and every prompt knows, in O(1), the exact number its path spells so far — no lists, no string slicing. Leaves, and only leaves, convert the accumulator into output. That is where the one-child trap bites: a prompt with a single follow-up must NOT bank its accumulator, because dialing continues through it; the absent side safely contributes 0 via the base case, so the unconditional two-call sum stays correct.
+
+Note what makes this immune to the leading-zero worry: \`0 * 10 + 1 = 1\`, so a menu rooted at 0 just produces numerically smaller extensions, with no special casing anywhere.
+
+The shape generalizes well beyond digits: whenever each node needs facts about its **ancestors** — path prefixes, inherited bounds, remaining budgets — pass them down as parameters instead of trying to look upward. Compare this with the module's postorder problems, where the facts needed live *below* instead.
+`,
+        complexity: 'Time O(n), Space O(h) recursion stack (O(n) worst case on a chain)',
+      },
+      testCases: [
+        { input: [[1, 2, 3]], expected: 25, label: 'two short extensions' },
+        { input: [[4, 9, 0, 5, 1]], expected: 1026, label: 'three extensions of mixed length' },
+        { input: [[]], expected: 0, label: 'empty menu' },
+        { input: [[7]], expected: 7, hidden: true, label: 'the greeting is itself an extension' },
+        { input: [[0, 1, 2]], expected: 3, hidden: true, label: 'leading zeros vanish numerically' },
+        { input: [[1, null, 2]], expected: 12, hidden: true, label: 'one-child prompt is not a leaf' },
+        { input: [[1, 2, 3, 4, 5, 6, 7]], expected: 522, label: 'full three-tier menu' },
+        {
+          input: [[9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9]],
+          expected: 79992,
+          hidden: true,
+          label: 'maximal digits, four tiers',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 129. Sum Root to Leaf Numbers', note: 'the classic statement of this accumulator' },
+        { name: 'LeetCode 257. Binary Tree Paths', note: 'collect the paths themselves instead of summing' },
+        { name: 'LeetCode 112. Path Sum', note: 'pass a shrinking budget down instead of a growing prefix' },
+      ],
+    },
+    {
+      id: 'race-kth-fastest',
+      title: 'Podium Call at Mistbow Ridge',
+      difficulty: 'medium',
+      statement: `
+The Mistbow Ridge trail marathon clocks every finisher with an ankle chip. As runners cross the line, the timing rig files each **chip time** (whole seconds, all distinct) into a binary search tree: at any node, every time in the left subtree is faster (smaller) and every time in the right subtree is slower (larger). The tree reaches you as a level-order list with \`null\` for missing children; the starter's \`build_tree\` rebuilds it.
+
+The podium ceremony works down the rankings one place at a time, and the announcer keeps asking the same question with a different number: *what is the k-th fastest chip time?* The 1st fastest is the smallest time in the tree, the 2nd fastest the next smallest, and so on.
+
+Given \`values\` and \`k\` (always between 1 and the number of finishers), return the k-th fastest chip time. Aim to answer without visiting every node when \`k\` is small.
+`,
+      examples: [
+        {
+          input: 'values = [240, 180, 300, 150, 200], k = 2',
+          output: '180',
+          explanation: 'Ascending, the times read 150, 180, 200, 240, 300; the 2nd fastest is 180.',
+        },
+        {
+          input: 'values = [240, 180, 300, 150, 200], k = 5',
+          output: '300',
+          explanation: 'The 5th fastest of five finishers is the slowest time of all.',
+        },
+        {
+          input: 'values = [97], k = 1',
+          output: '97',
+          explanation: 'A one-runner race: that runner holds every rank at once.',
+        },
+      ],
+      constraints: [
+        '1 <= number of finishers <= 10^4',
+        '1 <= chip time <= 10^9; all chip times are distinct',
+        'The tree is a valid binary search tree keyed on chip time',
+        '1 <= k <= number of finishers',
+      ],
+      hints: [
+        'For values = [240, 180, 300, 150, 200] and k = 2, you can find the answer without ever glancing at the 300 side of the tree. What does the BST invariant promise about where the fastest times live?',
+        'One of the three DFS orders visits a BST in exactly ascending order. Name it — and notice that once you have it, "k-th fastest" stops being a search problem and becomes a counting problem.',
+        'Iterative inorder with an explicit stack: slide left pushing every node, pop (each pop is the smallest time not yet seen), then step into the popped node’s right subtree. Count the pops and return on the k-th — stopping early is what makes the cost O(h + k) instead of O(n).',
+      ],
+      functionName: 'kth_fastest',
+      starterCode: `class TreeNode:
+    """One finisher: a chip time, with faster times left and slower times right."""
+    def __init__(self, val: int, left: "TreeNode | None" = None, right: "TreeNode | None" = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build_tree(values: list) -> "TreeNode | None":
+    """Build a binary tree from a level-order list; None marks a missing child."""
+    if not values or values[0] is None:
+        return None
+    root = TreeNode(values[0])
+    queue = [root]
+    head = 0   # next parent to wire up
+    i = 1      # next slot in the level-order list
+    while head < len(queue) and i < len(values):
+        node = queue[head]
+        head += 1
+        if i < len(values):
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.left = TreeNode(v)
+                queue.append(node.left)
+        if i < len(values):
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.right = TreeNode(v)
+                queue.append(node.right)
+    return root
+
+def kth_fastest(values: list, k: int) -> int:
+    # root = build_tree(values), then visit times in ascending order
+    pass
+`,
+      solution: {
+        code: `class TreeNode:
+    """One finisher: a chip time, with faster times left and slower times right."""
+    def __init__(self, val: int, left: "TreeNode | None" = None, right: "TreeNode | None" = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build_tree(values: list) -> "TreeNode | None":
+    """Build a binary tree from a level-order list; None marks a missing child."""
+    if not values or values[0] is None:
+        return None
+    root = TreeNode(values[0])
+    queue = [root]
+    head = 0   # next parent to wire up
+    i = 1      # next slot in the level-order list
+    while head < len(queue) and i < len(values):
+        node = queue[head]
+        head += 1
+        if i < len(values):                     # left child slot
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.left = TreeNode(v)
+                queue.append(node.left)
+        if i < len(values):                     # right child slot
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.right = TreeNode(v)
+                queue.append(node.right)
+    return root
+
+def kth_fastest(values: list, k: int) -> int:
+    node = build_tree(values)
+    stack = []
+    # Iterative inorder. Invariant: the stack holds the chain of nodes whose
+    # left side is still being explored, so pops come off in strictly
+    # ascending chip-time order.
+    while True:
+        while node is not None:
+            stack.append(node)      # park this time; faster ones may lie left
+            node = node.left
+        node = stack.pop()          # the smallest time not yet counted
+        k -= 1
+        if k == 0:
+            return node.val         # k-th pop = k-th fastest: stop right here
+        node = node.right           # the next-larger times live to the right
+`,
+        commentary: `
+The honest baseline is to flatten the tree — collect every time, sort, index. Correct, O(n log n), and it throws away the only interesting thing about the input: the tree IS already sorted, just not in a flat layout. A full inorder traversal into a list improves that to O(n), but still walks ten thousand nodes to answer a question about the 2nd one.
+
+Inorder is the load-bearing property: on a BST, visiting left subtree → node → right subtree yields values in strictly ascending order, because everything parked on the way down-left is smaller and everything to the right is larger. That converts "k-th fastest" from a search into a **count** — visit in ascending order and stop on visit number k.
+
+The reference goes iterative rather than recursive because of the early exit. A recursive inorder can be aborted with a sentinel value or an exception, but both are clumsy; with an explicit stack, \`return\` simply works mid-walk. The cost is worth stating precisely: the initial left slide costs O(h), and across the whole run each node is pushed and popped at most once, so reaching the k-th pop touches O(h + k) nodes. For the podium question — k = 1, 2, 3 on a balanced tree of ten thousand finishers — that is a few dozen visits instead of ten thousand. The guarantee \`1 <= k <= n\` is what lets the loop run bare, with no empty-stack check.
+
+If the announcer asked for ranks repeatedly while finishers were still streaming in, you would augment each node with its left-subtree size and descend numerically — an interview-worthy remark, but overkill for a single ceremony.
+`,
+        complexity: 'Time O(h + k) — O(log n + k) balanced, O(n) worst case — Space O(h) for the stack',
+      },
+      testCases: [
+        { input: [[240, 180, 300, 150, 200], 2], expected: 180, label: '2nd fastest' },
+        { input: [[240, 180, 300, 150, 200], 5], expected: 300, label: 'k equals the field size' },
+        { input: [[97], 1], expected: 97, label: 'one-runner race' },
+        { input: [[240, 180, 300, 150, 200], 1], expected: 150, hidden: true, label: 'winner: pure left slide' },
+        { input: [[500, 400, null, 300, null, 200], 3], expected: 400, hidden: true, label: 'degenerate left chain' },
+        { input: [[20, 10, 30, 5, 15, 25, 35], 4], expected: 20, hidden: true, label: 'median lands on the root' },
+        { input: [[20, 10, 30, 5, 15, 25, 35], 7], expected: 35, hidden: true, label: 'slowest finisher' },
+        {
+          input: [[100, 50, 150, 25, 75, 125, 175, 10, 30], 3],
+          expected: 30,
+          label: '3rd fastest needs a right step',
+        },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 230. Kth Smallest Element in a BST', note: 'the classic form' },
+        { name: 'LeetCode 173. Binary Search Tree Iterator', note: 'package the early-stopping walk as an object' },
+        { name: 'LeetCode 94. Binary Tree Inorder Traversal', note: 'drill the explicit-stack walk on its own' },
+      ],
+    },
+    {
+      id: 'canopy-scenic-walk',
+      title: 'Featured Walk on the Canopy Line',
+      difficulty: 'hard',
+      statement: `
+Hollyfern National Park runs a treetop walkway: wooden platforms joined by rope bridges. The entrance tower is the root platform, and from every platform at most two bridges continue outward to further platforms, so the network is a binary tree (handed to you level-order, \`null\` for a missing bridge; \`build_tree\` is in the starter). Each platform has a **scenic rating** — an integer that can be negative, since platforms wrapped in repair scaffolding actively spoil the view.
+
+The park wants to advertise one **featured walk**: a route that follows bridges and never revisits a platform. A walk may start and end anywhere — it does not have to touch the entrance tower — and a single platform on its own counts as a (very short) walk. A walk's score is the sum of the scenic ratings of every platform on it.
+
+Given \`values\` (at least one platform), return the **maximum score over all possible walks**.
+`,
+      examples: [
+        {
+          input: 'values = [4, 2, 6]',
+          output: '12',
+          explanation: 'The walk 2 → 4 → 6 crosses both bridges and collects every rating: 2 + 4 + 6 = 12.',
+        },
+        {
+          input: 'values = [-10, 9, 20, null, null, 15, 7]',
+          output: '42',
+          explanation:
+            'The best walk is 15 → 20 → 7, scoring 42. Climbing on through the entrance tower (-10) could only connect it to the 9, for 42 - 10 + 9 = 41 — worse.',
+        },
+        {
+          input: 'values = [-3]',
+          output: '-3',
+          explanation: 'A walk must contain at least one platform, so with a single scaffolded platform the best score is its own negative rating.',
+        },
+        {
+          input: 'values = [2, -1, -2]',
+          output: '2',
+          explanation: 'Both neighbors of the 2 would drag the total down; the best walk is the single platform 2.',
+        },
+      ],
+      constraints: [
+        '1 <= number of platforms <= 10^4',
+        '-1000 <= scenic rating <= 1000',
+        'A walk never revisits a platform, so it bends through at most one highest platform',
+        'A single platform is a valid walk; an empty walk is not',
+      ],
+      hints: [
+        'In values = [-10, 9, 20, null, null, 15, 7] the best walk never touches the entrance tower. Trace it on paper: which platform is the HIGHEST one it visits, and what shape do its two halves make below that platform?',
+        'Every walk has exactly one highest platform, where it bends: one straight arm dropping into that platform’s left side and one into its right (either arm may be empty). If each subtree could report the best single downward arm starting at its own root, scoring a bend would be one addition.',
+        'Postorder with a nonlocal best. At each platform: left = max(arm(left_child), 0) and right = max(arm(right_child), 0); record val + left + right as a candidate full walk; but return only val + max(left, right) upward — a parent can extend one arm, never a bent walk. The clamp at 0 is how you walk away from a toxic arm.',
+      ],
+      functionName: 'best_scenic_walk',
+      starterCode: `class TreeNode:
+    """One platform: a scenic rating plus up to two outgoing rope bridges."""
+    def __init__(self, val: int, left: "TreeNode | None" = None, right: "TreeNode | None" = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build_tree(values: list) -> "TreeNode | None":
+    """Build a binary tree from a level-order list; None marks a missing child."""
+    if not values or values[0] is None:
+        return None
+    root = TreeNode(values[0])
+    queue = [root]
+    head = 0   # next parent to wire up
+    i = 1      # next slot in the level-order list
+    while head < len(queue) and i < len(values):
+        node = queue[head]
+        head += 1
+        if i < len(values):
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.left = TreeNode(v)
+                queue.append(node.left)
+        if i < len(values):
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.right = TreeNode(v)
+                queue.append(node.right)
+    return root
+
+def best_scenic_walk(values: list) -> int:
+    # root = build_tree(values), then audit bottom-up
+    pass
+`,
+      solution: {
+        code: `class TreeNode:
+    """One platform: a scenic rating plus up to two outgoing rope bridges."""
+    def __init__(self, val: int, left: "TreeNode | None" = None, right: "TreeNode | None" = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build_tree(values: list) -> "TreeNode | None":
+    """Build a binary tree from a level-order list; None marks a missing child."""
+    if not values or values[0] is None:
+        return None
+    root = TreeNode(values[0])
+    queue = [root]
+    head = 0   # next parent to wire up
+    i = 1      # next slot in the level-order list
+    while head < len(queue) and i < len(values):
+        node = queue[head]
+        head += 1
+        if i < len(values):                     # left child slot
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.left = TreeNode(v)
+                queue.append(node.left)
+        if i < len(values):                     # right child slot
+            v = values[i]
+            i += 1
+            if v is not None:
+                node.right = TreeNode(v)
+                queue.append(node.right)
+    return root
+
+def best_scenic_walk(values: list) -> int:
+    best = float("-inf")   # score of the best full (possibly bent) walk seen
+
+    # Arm contract: the best score of a walk that STARTS at this platform
+    # and heads straight DOWN one side. That is the only shape a parent can
+    # extend without revisiting a platform.
+    def arm(node: "TreeNode | None") -> int:
+        nonlocal best
+        if node is None:
+            return 0                         # no platform, no contribution
+        left = max(arm(node.left), 0)        # a negative arm is worth skipping
+        right = max(arm(node.right), 0)
+        # Candidate ANSWER: the walk that bends here, using both arms.
+        best = max(best, node.val + left + right)
+        # Value passed UP: one arm only — a bent walk cannot be extended.
+        return node.val + max(left, right)
+
+    arm(build_tree(values))
+    return best
+`,
+        commentary: `
+Two distinct quantities live in this problem, and conflating them is *the* classic mistake. The answer the park wants is a **bent walk**: up one arm, through a bending platform, down the other arm. But the value a subtree can usefully hand its parent is narrower — a **straight arm** starting at the subtree's root — because a parent receiving a bent walk could not attach to it without revisiting the bend. The solution keeps both channels: the recursive return value carries arms, while a nonlocal \`best\` records bent-walk candidates as a side effect at every platform. Returning the bent score upward is the bug to watch for; it silently builds Y-shaped "walks" that cross the bend twice.
+
+The other load-bearing idea is the clamp. \`max(arm, 0)\` says a walk is never obligated to enter a subtree: an arm with a negative total is replaced by the empty arm, score 0. The clamp is also why the final answer cannot be assembled from return values alone — when every rating is negative, every clamped arm reads 0, yet the true answer is the least-negative single platform. The nonlocal \`best\`, fed \`node.val + left + right\` (which degenerates to just \`node.val\` when both arms clamp away), handles that case with no special code, as the \`[-3]\` example shows.
+
+Why does scoring only bends cover every walk? Each walk in a tree has a unique highest platform; classifying walks by that platform partitions the whole search space, and the postorder sweep visits every platform — so every walk is accounted for exactly once, in one O(n) pass.
+
+Set every rating to 1 and the same skeleton computes the tree's diameter measured in platforms; the weighting, and especially the negative ratings, are what push this version to the hard tier.
+`,
+        complexity: 'Time O(n), Space O(h) recursion stack (O(n) worst case on a chain)',
+      },
+      testCases: [
+        { input: [[4, 2, 6]], expected: 12, label: 'walk through the tower' },
+        { input: [[-10, 9, 20, null, null, 15, 7]], expected: 42, label: 'best walk skips the tower' },
+        { input: [[-3]], expected: -3, label: 'single scaffolded platform' },
+        { input: [[2, -1, -2]], expected: 2, hidden: true, label: 'both arms worth abandoning' },
+        { input: [[-2, -1]], expected: -1, hidden: true, label: 'all negative: best single platform' },
+        {
+          input: [[1, 2, 3, 4, 5, 6, 7]],
+          expected: 18,
+          hidden: true,
+          label: 'bend at the tower with two deep arms',
+        },
+        {
+          input: [[5, 4, 8, 11, null, 13, 4, 7, 2, null, null, null, 1]],
+          expected: 48,
+          hidden: true,
+          label: 'long bent walk across both wings',
+        },
+        { input: [[-1, -2, -3, -4]], expected: -1, hidden: true, label: 'all negative: the tower is least bad' },
+        { input: [[9, -4, -4, 3, 3, 3, 3]], expected: 9, label: 'arms turn toxic above healthy leaves' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 124. Binary Tree Maximum Path Sum', note: 'the classic statement of the weighted version' },
+        { name: 'LeetCode 543. Diameter of Binary Tree', note: 'every rating set to 1: same skeleton, count edges' },
+        { name: 'LeetCode 687. Longest Univalue Path', note: 'arms may only extend while values match' },
+      ],
+    },
   ],
   quiz: [
     {

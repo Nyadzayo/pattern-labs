@@ -556,6 +556,632 @@ Two adaptations from the pointer version are easy to fumble. States are *values*
         { name: 'LeetCode 287. Find the Duplicate Number', note: 'the same rho geometry hiding in an array' },
       ],
     },
+    {
+      id: 'freight-wagon-spotcheck',
+      title: 'Freight Wagon Spot-Check',
+      difficulty: 'easy',
+      statement: `
+A rail yard receives freight trains as chains of coupled wagons: each wagon carries a numeric cargo code and a coupling to the wagon behind it; the last wagon's coupling is empty. Safety regulations require sampling the cargo code of the \`k\`-th wagon **counting from the rear** — \`k = 1\` means the very last wagon.
+
+The catch: the manifest listing the train's length was lost, couplings can only be walked front-to-back, and the inspector refuses to walk the train twice. Given the cargo codes \`cargo_codes\` in front-to-back order (the starter code builds the chain — treat the chain, not the Python list, as your input) and the offset \`k\`, return the sampled cargo code after a **single forward pass** using \`O(1)\` extra space.
+`,
+      examples: [
+        {
+          input: 'cargo_codes = [12, 7, 33, 9, 18], k = 2',
+          output: '9',
+          explanation: 'Counting from the rear: 18 is wagon 1, 9 is wagon 2 — return 9.',
+        },
+        {
+          input: 'cargo_codes = [5], k = 1',
+          output: '5',
+          explanation: 'A one-wagon train: the last wagon is also the first.',
+        },
+        {
+          input: 'cargo_codes = [4, 4, 4, 8], k = 4',
+          output: '4',
+          explanation:
+            'k equals the train length, so the sample is the front wagon. Repeated codes are irrelevant — position is what matters.',
+        },
+      ],
+      constraints: [
+        '1 <= len(cargo_codes) <= 100_000',
+        '1 <= k <= len(cargo_codes)',
+        '-10^9 <= cargo_codes[i] <= 10^9',
+        'Single forward pass over the couplings; O(1) extra space',
+        'Do not index into the cargo_codes list or call len() on it — walk the chain',
+      ],
+      hints: [
+        'Walking to the rear to count wagons and then walking again is two passes. Is there something you could arrange early in a single walk so that reaching the rear instantly tells you where the answer is?',
+        'Send a lead cursor exactly k couplings ahead, then advance a trailing cursor and the lead together, one wagon per tick. The gap between them never changes — what does that mean when the lead runs out of train?',
+        'Advance lead k times from the head. Then loop while lead is not None, stepping both cursors once per tick. When lead falls off the rear, the trailer sits exactly k wagons from the end — return trailer.val.',
+      ],
+      functionName: 'wagon_from_rear',
+      starterCode: `class ListNode:
+    def __init__(self, val: int, next: 'ListNode | None' = None):
+        self.val = val
+        self.next = next
+
+def _build_chain(values: list[int]) -> 'ListNode | None':
+    """Build the wagon chain in order. Treat the chain as your input."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def wagon_from_rear(cargo_codes: list[int], k: int) -> int:
+    head = _build_chain(cargo_codes)
+    # One forward pass, O(1) extra space. Do not use cargo_codes below.
+    pass
+`,
+      solution: {
+        code: `class ListNode:
+    def __init__(self, val: int, next: 'ListNode | None' = None):
+        self.val = val
+        self.next = next
+
+def _build_chain(values: list[int]) -> 'ListNode | None':
+    # Build front-to-back by prepending in reverse, so values[0] is the head.
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def wagon_from_rear(cargo_codes: list[int], k: int) -> int:
+    head = _build_chain(cargo_codes)
+    # Give a lead cursor a head start of exactly k couplings.
+    lead = head
+    for _ in range(k):            # k <= train length, so this never falls off
+        lead = lead.next          # after the loop, lead is k wagons ahead
+    # Now march a trailing cursor and the lead in lockstep. The k-wagon gap
+    # is frozen: when lead steps past the rear, trail is k from the end.
+    trail = head
+    while lead:
+        lead = lead.next
+        trail = trail.next
+    return trail.val
+`,
+        commentary: `
+This is the fast/slow family with the speeds equal and the **gap** doing the work. The middle-finding trick encodes "half the distance" in a 2:1 speed ratio; here the requirement is an *absolute* offset from the rear, so instead of different speeds we use identical speeds and a fixed head start of \`k\` links. An invariant makes it correct: after the setup loop, \`lead\` is always exactly \`k\` wagons ahead of \`trail\`, and lockstep stepping preserves that gap forever. The rear is unobservable until you hit it — but the instant \`lead\` becomes \`None\` (one step past the last wagon), the frozen gap converts that event into "\`trail\` is exactly \`k\` from the end."
+
+The boundary that decides correctness is the head-start count. Advancing the lead \`k\` times (not \`k - 1\`, not \`k + 1\`) makes \`k = 1\` land the trailer on the final wagon and \`k = len\` leave the trailer parked on the head — both verified by the tests. Since the problem guarantees \`1 <= k <= len\`, the setup loop needs no null guard; in an interview, say that assumption out loud, because dropping the guarantee is the most common follow-up.
+
+One pass, two references, and the train's length is never computed — it is implied, exactly as in the midpoint problem, by where the lead cursor dies.
+`,
+        complexity: 'Time O(n), Space O(1)',
+      },
+      testCases: [
+        { input: [[12, 7, 33, 9, 18], 2], expected: 9, label: 'second from the rear' },
+        { input: [[5], 1], expected: 5, label: 'single wagon' },
+        { input: [[4, 4, 4, 8], 4], expected: 4, label: 'k equals length: front wagon' },
+        { input: [[1, 2], 1], expected: 2, hidden: true, label: 'two wagons, last one' },
+        { input: [[10, 20, 30, 40, 50, 60, 70], 7], expected: 10, hidden: true, label: 'k equals length on a longer train' },
+        { input: [[10, 20, 30, 40, 50, 60, 70], 1], expected: 70, hidden: true, label: 'rear wagon of a longer train' },
+        { input: [[-3, -1, -4, -1, -5, -9], 3], expected: -1, hidden: true, label: 'negative codes, mid-train' },
+        { input: [[9, 9, 9, 9, 9], 5], expected: 9, hidden: true, label: 'all-equal codes' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 19. Remove Nth Node From End of List', note: 'the classic: same gap trick plus a deletion' },
+        { name: 'LeetCode 1721. Swapping Nodes in a Linked List', note: 'front offset and rear offset in one pass' },
+      ],
+    },
+    {
+      id: 'meal-route-split',
+      title: 'Two-Driver Route Split',
+      difficulty: 'medium',
+      statement: `
+A community kitchen plans its evening meal run as a chain of delivery stops: each stop is a node holding a house number and a link to the next stop. Tonight a second volunteer driver showed up, so dispatch wants the route cut into a **front route** and a **back route** of as-equal-as-possible size — and when the stop count is odd, the **front** route takes the extra stop.
+
+Given the house numbers \`house_numbers\` in route order (the starter builds the chain; treat the chain, not the Python list, as your input), return \`[front, back]\`: two lists of house numbers, each in original route order. The dispatcher's radio protocol allows only **one pass** to locate the cut point and \`O(1)\` extra space beyond the two output lists — counting the stops first is not an option.
+`,
+      examples: [
+        {
+          input: 'house_numbers = [101, 105, 110, 112, 120]',
+          output: '[[101, 105, 110], [112, 120]]',
+          explanation: 'Five stops: the front route takes the extra one (3 stops), the back route takes 2.',
+        },
+        {
+          input: 'house_numbers = [8, 6, 4, 2]',
+          output: '[[8, 6], [4, 2]]',
+          explanation: 'An even count splits cleanly into 2 and 2.',
+        },
+        {
+          input: 'house_numbers = [77]',
+          output: '[[77], []]',
+          explanation: 'One stop: the front driver takes it, the back driver gets the night off.',
+        },
+      ],
+      constraints: [
+        '1 <= len(house_numbers) <= 100_000',
+        '-10^9 <= house_numbers[i] <= 10^9',
+        'When the count is odd, the front route receives the extra stop',
+        'One pass to find the cut point; O(1) extra space beyond the output lists',
+        'Do not index into house_numbers or call len() on it — traverse the chain',
+      ],
+      hints: [
+        'The obvious plan — count the stops, then walk count // 2 links and cut — is two passes. Before optimizing, pin down the parity rule: with 7 stops, exactly which node must be the LAST stop of the front route?',
+        'Reuse the 2:1 speed ratio, but notice the standard guard (while fast and fast.next) parks the slow cursor on the SECOND middle for even counts. You need the node just before the cut. How can the guard stop the fast cursor one step earlier?',
+        "Loop while fast.next and fast.next.next, stepping slow once and fast twice. Slow halts on the front route's last stop; record back = slow.next, sever with slow.next = None, then walk each half collecting values.",
+      ],
+      functionName: 'split_delivery_route',
+      starterCode: `class ListNode:
+    def __init__(self, val: int, next: 'ListNode | None' = None):
+        self.val = val
+        self.next = next
+
+def _build_chain(values: list[int]) -> 'ListNode | None':
+    """Build the stop chain in order. Treat the chain as your input."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def split_delivery_route(house_numbers: list[int]) -> list[list[int]]:
+    head = _build_chain(house_numbers)
+    # One pass to find the cut, O(1) extra space beyond the output.
+    # Do not use house_numbers below.
+    pass
+`,
+      solution: {
+        code: `class ListNode:
+    def __init__(self, val: int, next: 'ListNode | None' = None):
+        self.val = val
+        self.next = next
+
+def _build_chain(values: list[int]) -> 'ListNode | None':
+    # Build front-to-back by prepending in reverse, so values[0] is the head.
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def split_delivery_route(house_numbers: list[int]) -> list[list[int]]:
+    head = _build_chain(house_numbers)
+    # Find the LAST node of the front half. The tightened guard
+    # (fast.next and fast.next.next) stops fast one step earlier than the
+    # classic template, which parks slow on the first middle — so the front
+    # route keeps the extra stop when the count is odd.
+    slow = fast = head
+    while fast.next and fast.next.next:
+        slow = slow.next
+        fast = fast.next.next
+    # Sever the chain right after slow.
+    back_head = slow.next
+    slow.next = None
+    # Read off both halves (the only allocation is the answer itself).
+    front: list[int] = []
+    node = head
+    while node:
+        front.append(node.val)
+        node = node.next
+    back: list[int] = []
+    node = back_head
+    while node:
+        back.append(node.val)
+        node = node.next
+    return [front, back]
+`,
+        commentary: `
+The midpoint problem earlier in this module needed the middle *node*; a split needs the node **just before the cut**, and that shifts which template variant is correct. The classic guard \`while fast and fast.next\` lands slow on the second middle — cutting there would hand the extra stop to the *back* route on odd counts and, worse, leave you without a handle on the node preceding the cut (singly linked chains cannot step backwards). Tightening the guard to \`fast.next and fast.next.next\` stops the fast cursor one step sooner, parking \`slow\` on the **first** middle: the final stop of the front route, with \`slow.next\` as the back route's head.
+
+Walk the parities to trust it. Five stops: fast visits 1 → 3 → 5 and stops (no \`fast.next.next\`); slow moved twice, to stop 3; front = 3 stops, back = 2 — the odd rule satisfied. Four stops: fast visits 1 → 3 and stops (\`fast.next.next\` missing); slow is on stop 2; the split is 2 and 2. One stop: the guard fails immediately, \`slow.next\` is already \`None\`, and the back route is empty — no special case needed.
+
+The single mutation \`slow.next = None\` is what makes this a true split rather than two overlapping views of one chain: after it, the two halves are independent chains, each readable in route order. Choosing the guard variant *deliberately* — rather than memorizing one template — is the skill this problem isolates.
+`,
+        complexity: 'Time O(n), Space O(1) beyond the output lists',
+      },
+      testCases: [
+        { input: [[101, 105, 110, 112, 120]], expected: [[101, 105, 110], [112, 120]], label: 'odd count: front takes extra' },
+        { input: [[8, 6, 4, 2]], expected: [[8, 6], [4, 2]], label: 'even count: clean split' },
+        { input: [[77]], expected: [[77], []], label: 'single stop' },
+        { input: [[1, 2]], expected: [[1], [2]], hidden: true, label: 'two stops' },
+        { input: [[5, 5, 5, 5, 5, 5]], expected: [[5, 5, 5], [5, 5, 5]], hidden: true, label: 'all-equal house numbers' },
+        { input: [[9, 8, 7]], expected: [[9, 8], [7]], hidden: true, label: 'three stops' },
+        { input: [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], expected: [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]], hidden: true, label: 'ten stops' },
+        { input: [[-1, 0, 1, 2, 3, 4, 5]], expected: [[-1, 0, 1, 2], [3, 4, 5]], hidden: true, label: 'seven stops, negatives' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 876. Middle of the Linked List', note: 'the other parity variant of the same walk' },
+        { name: 'LeetCode 725. Split Linked List in Parts', note: 'generalizes the cut to k pieces' },
+      ],
+    },
+    {
+      id: 'river-confluence',
+      title: 'Gauge Stations at the Confluence',
+      difficulty: 'medium',
+      statement: `
+A hydrology service instruments two mountain streams. Each stream is a chain of gauge stations — a node holding a station ID and a link to the next station downstream. The streams may **merge**: from the confluence onward they flow through the *same physical stations* (the same node objects), sharing one downstream chain. Or they may drain into separate basins and never meet.
+
+You are given three lists: \`a_ids\` and \`b_ids\` — the stations belonging only to stream A and only to stream B — and \`shared_ids\`, the common downstream section (empty when the streams never meet). The starter's \`_build_rivers\` wires these into two chains that physically share their tail; your logic receives only the two heads and must walk links alone. Station IDs **repeat across streams**, so matching IDs proves nothing — only node identity does.
+
+Return the **ID of the first shared station**, or \`-1\` if the streams never meet. \`O(1)\` extra space: no set of visited stations.
+`,
+      examples: [
+        {
+          input: 'a_ids = [4, 1], b_ids = [5, 6, 1], shared_ids = [8, 4, 5]',
+          output: '8',
+          explanation:
+            'Stream A runs 4 → 1 → 8 → 4 → 5; stream B runs 5 → 6 → 1 → 8 → 4 → 5. The first physically shared station is the one with ID 8. Note the decoy repeats: both streams pass an ID-1 station upstream, but those are different objects.',
+        },
+        {
+          input: 'a_ids = [2, 6, 4], b_ids = [1, 5], shared_ids = []',
+          output: '-1',
+          explanation: 'No shared section — the streams drain into different basins.',
+        },
+        {
+          input: 'a_ids = [], b_ids = [3], shared_ids = [7, 9]',
+          output: '7',
+          explanation: 'Stream A begins at the confluence itself: its head is already a shared station.',
+        },
+      ],
+      constraints: [
+        '0 <= len(a_ids), len(b_ids), len(shared_ids) <= 100_000',
+        '-10^9 <= every station ID <= 10^9',
+        'IDs may repeat within and across streams — compare nodes by identity, not by ID',
+        'O(1) extra space; no set/dict of visited stations; do not read the input lists in your logic',
+      ],
+      hints: [
+        'Walking both streams from their sources in lockstep and comparing nodes fails. Why? Think about what is true at the confluence for each stream separately — and what is NOT necessarily true for both at the same tick.',
+        'Every shared station sits at the same distance from the END of both chains. So the misalignment between the two walks is exactly the difference of the chain lengths — a number you can compute cheaply.',
+        'Measure both lengths, advance the cursor of the longer chain by the difference, then step both cursors together comparing with "is". The first identical node is the confluence; if both reach None together, return -1.',
+      ],
+      functionName: 'confluence_station_id',
+      starterCode: `class ListNode:
+    def __init__(self, val: int, next: 'ListNode | None' = None):
+        self.val = val
+        self.next = next
+
+def _build_rivers(
+    a_ids: list[int], b_ids: list[int], shared_ids: list[int]
+) -> 'tuple[ListNode | None, ListNode | None]':
+    """Build both streams; they physically share the shared_ids tail."""
+    shared = None
+    for v in reversed(shared_ids):
+        shared = ListNode(v, shared)
+    a_head = shared
+    for v in reversed(a_ids):
+        a_head = ListNode(v, a_head)
+    b_head = shared
+    for v in reversed(b_ids):
+        b_head = ListNode(v, b_head)
+    return a_head, b_head
+
+def confluence_station_id(a_ids: list[int], b_ids: list[int], shared_ids: list[int]) -> int:
+    a_head, b_head = _build_rivers(a_ids, b_ids, shared_ids)
+    # Walk the chains from a_head and b_head only. Do not use the lists below.
+    pass
+`,
+      solution: {
+        code: `class ListNode:
+    def __init__(self, val: int, next: 'ListNode | None' = None):
+        self.val = val
+        self.next = next
+
+def _build_rivers(
+    a_ids: list[int], b_ids: list[int], shared_ids: list[int]
+) -> 'tuple[ListNode | None, ListNode | None]':
+    # The shared tail is built ONCE; both upstream sections link into the
+    # same node objects — that physical sharing is what we must detect.
+    shared = None
+    for v in reversed(shared_ids):
+        shared = ListNode(v, shared)
+    a_head = shared
+    for v in reversed(a_ids):
+        a_head = ListNode(v, a_head)
+    b_head = shared
+    for v in reversed(b_ids):
+        b_head = ListNode(v, b_head)
+    return a_head, b_head
+
+def confluence_station_id(a_ids: list[int], b_ids: list[int], shared_ids: list[int]) -> int:
+    a_head, b_head = _build_rivers(a_ids, b_ids, shared_ids)
+
+    def _length(node: 'ListNode | None') -> int:
+        # One cheap pass per stream: just count links to the end.
+        n = 0
+        while node:
+            n += 1
+            node = node.next
+        return n
+
+    len_a = _length(a_head)
+    len_b = _length(b_head)
+
+    # Burn off the longer stream's surplus so both cursors stand at the
+    # same distance from the end — and therefore from any shared station.
+    a, b = a_head, b_head
+    for _ in range(len_a - len_b):      # empty range when len_a <= len_b
+        a = a.next
+    for _ in range(len_b - len_a):
+        b = b.next
+
+    # In lockstep now: once aligned, the cursors hit the confluence on the
+    # same tick. Identity comparison — equal IDs on distinct nodes must NOT
+    # match. Both reaching None together means the streams never meet.
+    while a is not b:
+        a = a.next
+        b = b.next
+    return a.val if a is not None else -1
+`,
+        commentary: `
+The naive lockstep walk from both sources fails for one precise reason: the confluence sits at some distance \`d_a\` from A's source and \`d_b\` from B's, and nothing makes \`d_a = d_b\`. The repair comes from changing the reference point. Every shared station is at the **same distance from the end** of both chains, because past the confluence the chains *are* the same nodes. So if both cursors start at equal distance from their ends, they stay aligned forever and must arrive at the first shared node on the same tick.
+
+Equalizing "distance from the end" costs two counting passes and one head start: the longer chain's cursor pre-walks \`|len_a - len_b|\` links. After that, the lockstep loop needs no length bookkeeping at all — the first \`a is b\` is the answer. The no-confluence case falls out with zero special-casing: aligned cursors on disjoint chains run off their ends on the same tick, \`None is None\` terminates the loop, and the final expression maps that to \`-1\`.
+
+Two traps are planted in the tests. The all-ones case puts equal IDs on *distinct* upstream nodes, so any solution comparing \`a.val == b.val\` reports a confluence one tick early — identity (\`is\`) is non-negotiable. And the empty-upstream case makes one head itself a shared node, which the alignment handles naturally since a zero or negative range simply doesn't advance. A neat variant replaces measuring with pointer-switching (each cursor restarts on the other stream after its first end), but the length-difference form is the one that generalizes to "how far upstream of the confluence is each source?" follow-ups.
+`,
+        complexity: 'Time O(m + n), Space O(1)',
+      },
+      testCases: [
+        { input: [[4, 1], [5, 6, 1], [8, 4, 5]], expected: 8, label: 'merge with decoy repeated IDs' },
+        { input: [[2, 6, 4], [1, 5], []], expected: -1, label: 'separate basins' },
+        { input: [[], [3], [7, 9]], expected: 7, label: 'stream A starts at the confluence' },
+        { input: [[], [], []], expected: -1, hidden: true, label: 'both streams empty' },
+        { input: [[1, 1, 1], [1, 1], [1]], expected: 1, hidden: true, label: 'all-equal IDs: identity only' },
+        { input: [[10, 20, 30, 40, 50], [60], [99]], expected: 99, hidden: true, label: 'very unequal lengths' },
+        { input: [[], [], [5, 6]], expected: 5, hidden: true, label: 'both heads are the confluence' },
+        { input: [[7], [8], []], expected: -1, hidden: true, label: 'short disjoint streams' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 160. Intersection of Two Linked Lists', note: 'the classic; try the pointer-switching variant too' },
+      ],
+    },
+    {
+      id: 'redirect-ring-size',
+      title: 'Redirect Ring Audit',
+      difficulty: 'medium',
+      statement: `
+A legacy CMS models its pages as nodes: each page holds a numeric page ID and a redirect pointer to one other page; a landing page redirects nowhere and ends the trail. A botched migration can bend some page's redirect back to an earlier page on its own trail, trapping every visitor in a **ring** of redirects. Before scheduling the cleanup, operations needs to know **how many pages the ring contains**, to budget the rewiring.
+
+You are given the page IDs \`page_ids\` in trail order plus a build parameter \`pos\` — the index the final page redirects back to, or \`-1\` for a clean trail. As elsewhere in this module, \`pos\` feeds **only** the chain builder in the starter code; your audit must discover everything by following redirects.
+
+Return the number of pages in the ring, or \`0\` if the trail terminates at a landing page. The audit container is tiny: \`O(1)\` extra space, no visited-set.
+`,
+      examples: [
+        {
+          input: 'page_ids = [100, 200, 300, 400, 500], pos = 2',
+          output: '3',
+          explanation:
+            'The last page redirects back to index 2, so pages at indices 2, 3, 4 form the ring — three pages. The two pages before the ring do not count.',
+        },
+        {
+          input: 'page_ids = [10, 20, 30], pos = -1',
+          output: '0',
+          explanation: 'The trail reaches a landing page; there is no ring.',
+        },
+        {
+          input: 'page_ids = [55], pos = 0',
+          output: '1',
+          explanation: 'A single page redirecting to itself is the smallest possible ring.',
+        },
+      ],
+      constraints: [
+        '0 <= len(page_ids) <= 100_000',
+        '-10^9 <= page_ids[i] <= 10^9',
+        'pos == -1 or 0 <= pos < len(page_ids)',
+        'O(1) extra space; no visited-set; do not read pos in your logic',
+      ],
+      hints: [
+        'You cannot measure a ring you have not proven exists, and you cannot store visited pages. What event — observable with constant memory — would leave you provably STANDING ON a page inside the ring?',
+        'Two cursors at speeds 1 and 2 must collide inside the ring if there is one. At the moment they collide, you do not know where the ring begins — but do you need to, for THIS question?',
+        'After slow and fast collide, freeze one as an anchor and send the other stepping around: count steps until it returns to the anchor (identity comparison). If fast falls off the end instead, return 0.',
+      ],
+      functionName: 'redirect_ring_size',
+      starterCode: `class ListNode:
+    def __init__(self, val: int, next: 'ListNode | None' = None):
+        self.val = val
+        self.next = next
+
+def _build_loop(values: list[int], pos: int) -> 'ListNode | None':
+    """Build the redirect trail; the last node links back to index pos (-1 = none)."""
+    nodes = [ListNode(v) for v in values]
+    for i in range(len(nodes) - 1):
+        nodes[i].next = nodes[i + 1]
+    if nodes and pos != -1:
+        nodes[-1].next = nodes[pos]
+    return nodes[0] if nodes else None
+
+def redirect_ring_size(page_ids: list[int], pos: int) -> int:
+    head = _build_loop(page_ids, pos)
+    # Follow redirects from head. Do not use pos below this line.
+    pass
+`,
+      solution: {
+        code: `class ListNode:
+    def __init__(self, val: int, next: 'ListNode | None' = None):
+        self.val = val
+        self.next = next
+
+def _build_loop(values: list[int], pos: int) -> 'ListNode | None':
+    # Straight trail of pages; the final redirect optionally bends back.
+    nodes = [ListNode(v) for v in values]
+    for i in range(len(nodes) - 1):
+        nodes[i].next = nodes[i + 1]
+    if nodes and pos != -1:
+        nodes[-1].next = nodes[pos]
+    return nodes[0] if nodes else None
+
+def redirect_ring_size(page_ids: list[int], pos: int) -> int:
+    head = _build_loop(page_ids, pos)
+    slow = fast = head
+    # ---- Phase 1: standard two-speed collision proves a ring exists AND
+    # leaves slow parked on a page that is definitely inside it.
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if slow is fast:
+            # ---- Phase 2: anchor-and-lap. From any page inside the ring,
+            # one full lap returns to that page in exactly ring-size steps.
+            size = 1
+            probe = slow.next       # one step already taken, hence size = 1
+            while probe is not slow:
+                probe = probe.next
+                size += 1
+            return size
+    # fast reached a landing page: the trail terminates, no ring.
+    return 0
+`,
+        commentary: `
+The collision in phase 1 is usually treated as a yes/no signal, but it delivers something stronger: a **guaranteed position inside the ring**. Both cursors can only meet after both have entered the ring (outside it, fast is strictly ahead and pulling away), so the meeting page — wherever it is — is a valid base camp for measurement. That is the whole insight this problem isolates: you do *not* need to know where the ring begins to know how big it is.
+
+Phase 2 is then the simplest loop in the module: pin one cursor as an anchor, send a probe forward, and count steps until the probe comes home. Because every page in the ring has exactly one successor inside the ring, the probe's walk is a single clean lap — no page is skipped, none repeats early — so the counter reads the ring size exactly. Starting the probe at \`slow.next\` with \`size = 1\` keeps the self-redirect case honest: a one-page ring sends the probe straight back to the anchor and the loop body never runs.
+
+Contrast this with the daisy-chain entry problem: finding *where* the orbit begins needs the full phase-2 head-reset argument, while finding *how big* it is needs only an odometer. Knowing which question is being asked — entry point, size, or mere existence — and spending only the machinery that question requires is the practical skill. Identity comparison and the \`fast and fast.next\` guard carry over unchanged, and the empty trail returns 0 by never entering the loop.
+`,
+        complexity: 'Time O(n), Space O(1)',
+      },
+      testCases: [
+        { input: [[100, 200, 300, 400, 500], 2], expected: 3, label: 'three-page ring after a tail' },
+        { input: [[10, 20, 30], -1], expected: 0, label: 'clean trail' },
+        { input: [[55], 0], expected: 1, label: 'single page self-redirect' },
+        { input: [[], -1], expected: 0, hidden: true, label: 'no pages at all' },
+        { input: [[1, 2, 3, 4, 5, 6], 0], expected: 6, hidden: true, label: 'entire trail is the ring' },
+        { input: [[7, 7, 7, 7], 3], expected: 1, hidden: true, label: 'tail self-redirect, equal IDs' },
+        { input: [[1, 2, 3, 4, 5, 6, 7, 8, 9], 4], expected: 5, hidden: true, label: 'five-page ring, four-page tail' },
+        { input: [[9, 8], 1], expected: 1, hidden: true, label: 'last page redirects to itself' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 142. Linked List Cycle II', note: 'locates the entry; this problem measures the lap instead' },
+        { name: 'LeetCode 457. Circular Array Loop', note: 'ring-hunting over an implicit array chain' },
+      ],
+    },
+    {
+      id: 'setlist-weave',
+      title: 'Ends-Inward Setlist',
+      difficulty: 'hard',
+      statement: `
+A festival promoter stores the night's draft setlist as a chain: each node holds a song ID and a link to the next song. The headliner wants the energy to **alternate between openers and closers**: the final running order takes the first song, then the last, then the second, then the second-to-last — weaving the two ends inward until every song is placed.
+
+Given \`song_ids\` in draft order (the starter builds the chain; treat the chain, not the Python list, as your input), return the woven running order as a list of song IDs. House rule: the rearrangement must be performed by **re-linking nodes** in \`O(1)\` auxiliary space — copying the IDs into an array and indexing from both ends is forbidden; only the final read-off of the finished chain may allocate the answer list.
+`,
+      examples: [
+        {
+          input: 'song_ids = [11, 22, 33, 44, 55]',
+          output: '[11, 55, 22, 44, 33]',
+          explanation:
+            'First, last, second, second-to-last, and the lone middle song 33 closes the night.',
+        },
+        {
+          input: 'song_ids = [1, 2, 3, 4]',
+          output: '[1, 4, 2, 3]',
+          explanation: 'Even count: the weave consumes both ends until the two streams meet.',
+        },
+        {
+          input: 'song_ids = [40]',
+          output: '[40]',
+          explanation: 'A single song is already woven.',
+        },
+      ],
+      constraints: [
+        '1 <= len(song_ids) <= 100_000',
+        '-10^9 <= song_ids[i] <= 10^9',
+        'Rearrange by re-linking nodes in O(1) auxiliary space',
+        'Do not copy song_ids (or the node values) into an array to index from both ends; only the final read-off may allocate',
+      ],
+      hints: [
+        "Write out the target order's draft indices for n = 6: 0, 5, 1, 4, 2, 3. The output alternates between two streams of songs. What are those two streams — and what is awkward about producing the second one from a singly linked chain?",
+        'Cut the chain at its midpoint; the back half must then be read back-to-front. A singly linked chain can be reversed in place with three pointers and zero allocation. That leaves two forward-walkable chains to combine.',
+        'Three phases: find the middle with fast/slow (stop fast early — guard on fast.next and fast.next.next — so the FRONT half keeps the extra node when n is odd), reverse the back half in place, then splice alternately: one node from the front, one from the back. Read off the values last.',
+      ],
+      functionName: 'weave_setlist',
+      starterCode: `class ListNode:
+    def __init__(self, val: int, next: 'ListNode | None' = None):
+        self.val = val
+        self.next = next
+
+def _build_chain(values: list[int]) -> 'ListNode | None':
+    """Build the setlist chain in order. Treat the chain as your input."""
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def weave_setlist(song_ids: list[int]) -> list[int]:
+    head = _build_chain(song_ids)
+    # Re-link nodes in O(1) auxiliary space; allocate only the final answer.
+    # Do not use song_ids below.
+    pass
+`,
+      solution: {
+        code: `class ListNode:
+    def __init__(self, val: int, next: 'ListNode | None' = None):
+        self.val = val
+        self.next = next
+
+def _build_chain(values: list[int]) -> 'ListNode | None':
+    # Build front-to-back by prepending in reverse, so values[0] is the head.
+    head = None
+    for v in reversed(values):
+        head = ListNode(v, head)
+    return head
+
+def weave_setlist(song_ids: list[int]) -> list[int]:
+    head = _build_chain(song_ids)
+
+    # ---- Phase 1: find the cut point. The tightened guard parks slow on
+    # the FIRST middle, so the front half keeps the extra song when n is
+    # odd — the lone middle song must end the night, not lead the back half.
+    slow = fast = head
+    while fast.next and fast.next.next:
+        slow = slow.next
+        fast = fast.next.next
+    back = slow.next                # head of the back half (may be None)
+    slow.next = None                # sever: two independent chains now
+
+    # ---- Phase 2: reverse the back half in place. Three pointers, no
+    # allocation: peel each node off the front, push it onto 'prev'.
+    prev = None
+    node = back
+    while node:
+        nxt = node.next             # save the rest before rewiring
+        node.next = prev            # flip this node's link backwards
+        prev = node                 # reversed chain grows by one
+        node = nxt                  # advance into the unreversed remainder
+    back = prev                     # 'prev' is the old tail: new back head
+
+    # ---- Phase 3: splice alternately. The front half is never shorter
+    # than the back half, so the back cursor is the one that runs out.
+    first = head
+    second = back
+    while second:
+        f_next = first.next         # save both continuations first --
+        s_next = second.next        # -- the splice destroys them
+        first.next = second         # opener -> closer
+        second.next = f_next        # closer -> next opener
+        first = f_next
+        second = s_next
+
+    # ---- Read-off: the only allocation in the whole routine.
+    order: list[int] = []
+    node = head
+    while node:
+        order.append(node.val)
+        node = node.next
+    return order
+`,
+        commentary: `
+The weave looks like one exotic operation, but writing the target indices (0, n-1, 1, n-2, ...) exposes it as two interleaved streams: the front half forwards and the back half **backwards**. A singly linked chain cannot be walked backwards — that is the real obstacle — so the play is to make the backward stream forward: cut the chain in half and physically reverse the back half. After that, the problem collapses to zipping two forward chains, and every phase is a tool this module (or the linked-lists module) has already built in isolation. Recognizing that a hard problem is three rehearsed moves in a trench coat is the actual lesson.
+
+Each phase hides one decision. The cut must leave the *front* half longer on odd counts — the lone middle song belongs at the very end of the weave, which only happens if it ends the front stream after the back stream is exhausted; hence the \`fast.next and fast.next.next\` guard rather than the classic one. The reversal must capture \`node.next\` *before* overwriting it, the eternal three-pointer dance. And the splice must save **both** continuations before rewiring, because \`first.next = second\` destroys the front chain's path forward; the loop condition \`while second\` works precisely because the front half is never the shorter one, so the back cursor exhausts first (or simultaneously).
+
+Edge behavior falls out rather than being patched in: one song means the guard fails instantly, the back half is empty, the splice never runs. Two songs splice once and stop. Everything is \`O(n)\` with three small constant-space loops, and the only allocation is the answer the caller asked for.
+`,
+        complexity: 'Time O(n), Space O(1) beyond the output list',
+      },
+      testCases: [
+        { input: [[11, 22, 33, 44, 55]], expected: [11, 55, 22, 44, 33], label: 'odd count, middle song last' },
+        { input: [[1, 2, 3, 4]], expected: [1, 4, 2, 3], label: 'even count' },
+        { input: [[40]], expected: [40], label: 'single song' },
+        { input: [[7, 8]], expected: [7, 8], hidden: true, label: 'two songs' },
+        { input: [[1, 2, 3, 4, 5, 6]], expected: [1, 6, 2, 5, 3, 4], hidden: true, label: 'six songs' },
+        { input: [[5, 5, 5, 5, 5]], expected: [5, 5, 5, 5, 5], hidden: true, label: 'all-equal IDs' },
+        { input: [[9, 1, 8, 2, 7, 3, 6]], expected: [9, 6, 1, 3, 8, 7, 2], hidden: true, label: 'seven songs' },
+        { input: [[-1, -2, -3]], expected: [-1, -3, -2], hidden: true, label: 'three songs, negative IDs' },
+      ],
+      furtherPractice: [
+        { name: 'LeetCode 143. Reorder List', note: 'the classic formulation' },
+        { name: 'LeetCode 234. Palindrome Linked List', note: 'same split-and-reverse machinery, different final check' },
+      ],
+    },
   ],
   quiz: [
     {
