@@ -10,6 +10,9 @@ import { gradeDrill } from '@/lib/sm2'
 import type { CheckResult } from '@/lib/drillCheckers'
 import { PredictRungView } from './PredictRungView'
 import { OrderRungView } from './OrderRungView'
+import { FadeRungView } from './FadeRungView'
+import { ClozeRungView } from './ClozeRungView'
+import { RolesRungView } from './RolesRungView'
 import { stringSeed, type RungViewProps } from './rungProps'
 
 const RUNG_LABELS = ['Predict', 'Order', 'Fade', 'Cloze', 'Roles', 'Write']
@@ -178,6 +181,12 @@ function RungBody({ viewProps, onSkipRung }: { viewProps: RungViewProps; onSkipR
       return <PredictRungView {...viewProps} rung={rung} />
     case 'order':
       return <OrderRungView {...viewProps} rung={rung} />
+    case 'fade':
+      return <FadeRungView {...viewProps} rung={rung} />
+    case 'cloze':
+      return <ClozeRungView {...viewProps} rung={rung} />
+    case 'roles':
+      return <RolesRungView {...viewProps} rung={rung} />
     default:
       return (
         <div className="py-6 text-center">
