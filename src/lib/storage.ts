@@ -67,6 +67,33 @@ export interface DrillProgress {
   mastered: boolean
 }
 
+/** One Code-Kata attempt, kept (trimmed) for the per-kata WPM/accuracy sparkline. */
+export interface KataAttempt {
+  at: string // ISO datetime
+  mode: 'guided' | 'fading' | 'blank'
+  seconds: number
+  accuracy: number // 0..1
+  wpm: number // code WPM (chars/5 per minute)
+}
+
+/** Mastery & Recall progress for one Code Kata (keyed by primitive id). */
+export interface KataProgress {
+  /** Best blank-page recall time in seconds (null until first clean blank-page pass). */
+  bestSeconds: number | null
+  /** Recent attempts, oldest first (trimmed to the last ~20). */
+  attempts: KataAttempt[]
+  /** Distinct ISO dates with a blank-page pass under par at 100% accuracy. */
+  automaticDates: string[]
+  /** True once `automaticDates` has ≥2 distinct days. */
+  automatic: boolean
+}
+
+/** Pattern-Sprint high scores (shared across sessions). */
+export interface SprintStats {
+  bestSprint: number
+  bestSuddenDeath: number
+}
+
 export interface AppState {
   version: 1
   theme: Theme
@@ -85,6 +112,12 @@ export interface AppState {
   mockReports: MockReport[]
   /** primitiveId → Primitives-Lab progress. No entry until first drilled. */
   drills: Record<string, DrillProgress>
+  /** stemId → SM-2 schedule for Pattern Sprint. No entry until first seen. */
+  sprint: Record<string, CardSchedule>
+  /** Pattern-Sprint high scores. */
+  sprintStats: SprintStats
+  /** primitiveId → Code-Kata progress. No entry until first typed. */
+  katas: Record<string, KataProgress>
 }
 
 export function defaultState(): AppState {
@@ -100,6 +133,9 @@ export function defaultState(): AppState {
     streak: { lastActive: '', count: 0 },
     mockReports: [],
     drills: {},
+    sprint: {},
+    sprintStats: { bestSprint: 0, bestSuddenDeath: 0 },
+    katas: {},
   }
 }
 
@@ -116,7 +152,16 @@ export function sanitizeState(raw: unknown): AppState {
   const base = defaultState()
   if (!isObject(raw)) return base
   if (raw.theme === 'light' || raw.theme === 'dark') base.theme = raw.theme
-  for (const key of ['conceptRead', 'problems', 'quizAttempts', 'cards', 'drafts', 'drills'] as const) {
+  for (const key of [
+    'conceptRead',
+    'problems',
+    'quizAttempts',
+    'cards',
+    'drafts',
+    'drills',
+    'sprint',
+    'katas',
+  ] as const) {
     if (isObject(raw[key])) base[key] = raw[key] as never
   }
   if (isObject(raw.lastVisited) && typeof raw.lastVisited.moduleId === 'string') {
@@ -133,6 +178,16 @@ export function sanitizeState(raw: unknown): AppState {
     base.streak = { lastActive: raw.streak.lastActive, count: raw.streak.count }
   }
   if (Array.isArray(raw.mockReports)) base.mockReports = raw.mockReports as MockReport[]
+  if (
+    isObject(raw.sprintStats) &&
+    typeof raw.sprintStats.bestSprint === 'number' &&
+    typeof raw.sprintStats.bestSuddenDeath === 'number'
+  ) {
+    base.sprintStats = {
+      bestSprint: raw.sprintStats.bestSprint,
+      bestSuddenDeath: raw.sprintStats.bestSuddenDeath,
+    }
+  }
   return base
 }
 

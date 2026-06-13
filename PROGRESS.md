@@ -16,6 +16,7 @@
 | 6 | Full content: all 19 modules | ✅ committed |
 | — | Expand every module to **9 problems** (was 4) | ✅ committed (this checkpoint) |
 | **5.5** | **Primitives Lab** (40 primitives, 6-rung ladder) | ✅ **committed** |
+| **5.6** | **Mastery & Recall** (Code Katas + Pattern Sprint + Daily Warm-up) | 🚧 **in progress** |
 | 7 | Polish & package (cheat sheets, decision tree, shortcuts, Tauri) | ✅ done |
 
 Content now: 19 modules × **9 problems** (171 total), 8 quiz Qs each, 10 flashcards each.
@@ -47,6 +48,29 @@ authoring contract is the `write-primitive` skill.
   mock tells `src/lib/primitiveTells.ts`. State key `drills` in `storage.ts` (whitelisted).
 - UI `src/components/drills/*` (one view per rung + `DrillSession`) · page `src/pages/DrillsPage.tsx`.
 - Validator `scripts/validate-primitives.ts` (`--full` enforces coverage).
+
+## IN PROGRESS: Mastery & Recall (Phase 5.6)
+
+Two trainers for the skills the rest of the app under-trains — motor memory and pattern recognition —
+plus a mixed Daily Warm-up. Design: `docs/MASTERY_RECALL_PLAN.md`.
+
+- **Code Katas** — type the 40 primitive **write-rung solutions** from memory. Three modes: guided
+  (reference shown, char-level diff), fading (5s reveal then hidden), blank-page (name+intent only,
+  judged via the existing Pyodide `runJudge` against the primitive's `testCases`). Hesitation map from
+  timestamped keystrokes, WPM/accuracy sparkline, "automatic" badge (blank-page under par @100% on 2
+  distinct days). Paste disabled. Catalog `src/content/katas/index.ts`; resolver `src/lib/katas.ts`;
+  pure diff `src/lib/kataDiff.ts`.
+- **Pattern Sprint** — ~80 original problem-stem cards, each tagged with its correct pattern + 2–3
+  look-alikes. Warmup / Sprint / Sudden-Death rounds; 6-option discriminator grid (correct + look-alikes
+  + fillers, deterministically shuffled); "the tell was…" feedback; SM-2 per stem with adaptive
+  resurfacing. Content `src/content/sprint/`; scoring `src/lib/sprintScore.ts`; selectors `src/lib/sprint.ts`.
+- **Integration** — Dashboard Daily Warm-up (`src/lib/warmup.ts`, one of each type, capped/day),
+  shared streak, mock-report links to katas + confused-pair Sprint cards.
+
+Build steps (commit per step): 0 docs/scaffolding → 1 Sprint MVP → 2 Sudden-Death+SM-2+stems →
+3 Katas guided → 4 fading+blank-page → 5 metrics+warm-up+mock-links. New state keys `sprint`,
+`sprintStats`, `katas` (whitelisted in `sanitizeState`). New validators `validate-sprint`,
+`validate-katas`. Stem-authoring contract: the `write-sprint-card` skill.
 
 ## Resilient-workflow conventions (learned the hard way — quota walls killed mid-runs)
 
