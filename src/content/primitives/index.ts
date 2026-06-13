@@ -26,7 +26,13 @@ import swLengthMath from './items/sw-length-math'
 import swFreqMap from './items/sw-freq-map'
 import hashCountDefault from './items/hash-count-default'
 import hashSeenSet from './items/hash-seen-set'
+import hashComplementLookup from './items/hash-complement-lookup'
+import trieDescendChildren from './items/trie-descend-children'
+import bsLoHiInit from './items/bs-lo-hi-init'
 import bsMidOverflowSafe from './items/bs-mid-overflow-safe'
+import bsBoundaryCondition from './items/bs-boundary-condition'
+import bsInsertionPoint from './items/bs-insertion-point'
+import stackPushPopMatch from './items/stack-push-pop-match'
 import arrPrefixSumBuild from './items/arr-prefix-sum-build'
 
 export * from './types'
@@ -54,5 +60,11 @@ registerPrimitive(swLengthMath)
 registerPrimitive(swFreqMap)
 registerPrimitive(hashCountDefault)
 registerPrimitive(hashSeenSet)
+registerPrimitive(hashComplementLookup)
+registerPrimitive(trieDescendChildren)
+registerPrimitive(bsLoHiInit)
 registerPrimitive(bsMidOverflowSafe)
+registerPrimitive(bsBoundaryCondition)
+registerPrimitive(bsInsertionPoint)
+registerPrimitive(stackPushPopMatch)
 registerPrimitive(arrPrefixSumBuild)
