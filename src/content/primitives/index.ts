@@ -33,6 +33,12 @@ import bsMidOverflowSafe from './items/bs-mid-overflow-safe'
 import bsBoundaryCondition from './items/bs-boundary-condition'
 import bsInsertionPoint from './items/bs-insertion-point'
 import stackPushPopMatch from './items/stack-push-pop-match'
+import stackMonotonicPop from './items/stack-monotonic-pop'
+import queueBfsLevelSize from './items/queue-bfs-level-size'
+import heapPushPopK from './items/heap-push-pop-k'
+import recDfsCombine from './items/rec-dfs-combine'
+import recBacktrackChoose from './items/rec-backtrack-choose'
+import dpTableInit from './items/dp-table-init'
 import arrPrefixSumBuild from './items/arr-prefix-sum-build'
 
 export * from './types'
@@ -67,4 +73,10 @@ registerPrimitive(bsMidOverflowSafe)
 registerPrimitive(bsBoundaryCondition)
 registerPrimitive(bsInsertionPoint)
 registerPrimitive(stackPushPopMatch)
+registerPrimitive(stackMonotonicPop)
+registerPrimitive(queueBfsLevelSize)
+registerPrimitive(heapPushPopK)
+registerPrimitive(recDfsCombine)
+registerPrimitive(recBacktrackChoose)
+registerPrimitive(dpTableInit)
 registerPrimitive(arrPrefixSumBuild)
