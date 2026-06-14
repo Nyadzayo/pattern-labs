@@ -13,10 +13,20 @@ import { OrderRungView } from './OrderRungView'
 import { FadeRungView } from './FadeRungView'
 import { ClozeRungView } from './ClozeRungView'
 import { RolesRungView } from './RolesRungView'
+import { LabelRungView } from './LabelRungView'
 import { WriteRungView } from './WriteRungView'
 import { stringSeed, type RungViewProps } from './rungProps'
+import type { RungKind } from '@/content/primitives/types'
 
-const RUNG_LABELS = ['Predict', 'Order', 'Fade', 'Cloze', 'Roles', 'Write']
+const KIND_LABEL: Record<RungKind, string> = {
+  predict: 'Predict',
+  order: 'Order',
+  fade: 'Fade',
+  cloze: 'Cloze',
+  roles: 'Roles',
+  label: 'Label',
+  write: 'Write',
+}
 
 export function DrillSession({
   initialItems,
@@ -35,7 +45,10 @@ export function DrillSession({
   function handleSubmit(result: CheckResult) {
     if (state.current) {
       const { resolved, passed } = resolutionForSubmit(state, result)
-      if (resolved) gradeDrill(state.current.primitiveId, passed, state.current.rung)
+      if (resolved) {
+        const maxRung = getPrimitive(state.current.primitiveId)?.rungs.length ?? 6
+        gradeDrill(state.current.primitiveId, passed, state.current.rung, maxRung)
+      }
     }
     dispatch({ type: 'submit', result })
   }
@@ -44,7 +57,8 @@ export function DrillSession({
     setRound((r) => r + 1)
   }
   function handleSkipUp() {
-    dispatch({ type: 'skipUp' })
+    const maxRung = state.current ? getPrimitive(state.current.primitiveId)?.rungs.length ?? 6 : 6
+    dispatch({ type: 'skipUp', maxRung })
     setRound((r) => r + 1)
   }
   function handleSkipRung() {
@@ -111,7 +125,7 @@ export function DrillSession({
         </div>
         <div className="text-right">
           <span className="rounded-full border border-edge bg-surface-sunken px-2.5 py-1 text-[11px] font-medium text-ink-muted">
-            Rung {rungNumber} · {RUNG_LABELS[rungNumber - 1]}
+            Rung {rungNumber} · {KIND_LABEL[rung.kind]}
           </span>
           {state.streak > 1 && (
             <span className="ml-2 text-[11px] font-medium text-amber-600 dark:text-amber-400">
@@ -188,6 +202,8 @@ function RungBody({ viewProps, onSkipRung }: { viewProps: RungViewProps; onSkipR
       return <ClozeRungView {...viewProps} rung={rung} />
     case 'roles':
       return <RolesRungView {...viewProps} rung={rung} />
+    case 'label':
+      return <LabelRungView {...viewProps} rung={rung} />
     case 'write':
       return <WriteRungView {...viewProps} rung={rung} />
     default:

@@ -15,6 +15,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { MODULE_IDS, VISUALIZER_IDS } from '../src/content/types'
 import type { ModuleContent } from '../src/content/types'
+import { checkSubgoals } from './validateSubgoals'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const MODULES_DIR = join(ROOT, 'src', 'content', 'modules')
@@ -73,6 +74,7 @@ function validateSchema(mod: ModuleContent, expectedId: string) {
     if (!p.solution.commentary.trim()) err(pid, 'solution commentary is empty')
     if (!p.solution.complexity.trim()) err(pid, 'solution complexity is empty')
     if (wordCount(p.statement) < 40) warn(pid, 'statement seems very short')
+    checkSubgoals(p.solution.code, p.solution.subgoals, (m) => err(pid, m), (m) => warn(pid, m), 'subgoals')
   }
 
   if (mod.quiz.length !== 8) err(id, `quiz has ${mod.quiz.length} questions; expected exactly 8`)

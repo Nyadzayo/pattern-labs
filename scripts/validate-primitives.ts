@@ -25,13 +25,17 @@ import { CLOZE_BLANK } from '../src/content/primitives/types'
 import type {
   ClozeRung,
   FadeRung,
+  LabelRung,
   OrderRung,
   Primitive,
   PredictRung,
   RolesRung,
+  Rung,
   RungKind,
+  WriteRung,
 } from '../src/content/primitives/types'
 import { PRIMITIVE_MANIFEST, MANIFEST_IDS } from '../src/content/primitives/manifest'
+import { checkSubgoals } from './validateSubgoals'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const ITEMS_DIR = join(ROOT, 'src', 'content', 'primitives', 'items')
@@ -42,6 +46,7 @@ const err = (id: string, msg: string) => errors.push(`[${id}] ${msg}`)
 const warn = (id: string, msg: string) => warnings.push(`[${id}] ${msg}`)
 
 const RUNG_ORDER: RungKind[] = ['predict', 'order', 'fade', 'cloze', 'roles', 'write']
+const RUNG_ORDER_LABELED: RungKind[] = ['predict', 'order', 'fade', 'cloze', 'roles', 'label', 'write']
 
 /** trim trailing whitespace per line + drop blank lines; leading indent preserved. */
 function norm(code: string): string {
@@ -190,10 +195,14 @@ function validatePrimitive(p: Primitive, expectedId: string): void {
     if (!(MODULE_IDS as readonly string[]).includes(t)) err(id, `unknown moduleTag "${t}"`)
   }
 
-  // 6 rungs in order.
-  if (p.rungs.length !== 6) err(id, `has ${p.rungs.length} rungs; expected exactly 6`)
-  p.rungs.forEach((r, i) => {
-    if (r.kind !== RUNG_ORDER[i]) err(id, `rung ${i} is "${r.kind}"; expected "${RUNG_ORDER[i]}"`)
+  // 6 core rungs, optionally a 7th "label" rung before write — in canonical order.
+  const rungs = p.rungs as Rung[]
+  const rungCount = rungs.length
+  const expectedOrder = rungCount === 7 ? RUNG_ORDER_LABELED : RUNG_ORDER
+  if (rungCount !== 6 && rungCount !== 7)
+    err(id, `has ${rungCount} rungs; expected 6 (or 7 with a label rung)`)
+  rungs.forEach((r, i) => {
+    if (r.kind !== expectedOrder[i]) err(id, `rung ${i} is "${r.kind}"; expected "${expectedOrder[i]}"`)
   })
 
   const snippetLines = p.snippet.split('\n')
@@ -275,9 +284,11 @@ function validatePrimitive(p: Primitive, expectedId: string): void {
     if (!referencedIds.has(m.id)) err(id, `misconception "${m.id}" is declared but never referenced by a rung`)
   }
 
-  // Write rung shape.
-  const write = p.rungs[5]
-  if (write.kind === 'write') {
+  // Write rung shape (always the last rung; resolve by kind).
+  const write = rungs.find((r): r is WriteRung => r.kind === 'write')
+  if (!write) {
+    err(id, `has no write rung`)
+  } else {
     if (!write.solution.includes(`def ${write.functionName}(`))
       err(id, `write solution does not define "def ${write.functionName}("`)
     if (!write.starterCode.includes(`def ${write.functionName}(`))
@@ -288,8 +299,15 @@ function validatePrimitive(p: Primitive, expectedId: string): void {
     if (hidden < 2) err(id, `write rung: only ${hidden} hidden test cases; need ≥2`)
   }
 
+  // Label rung (optional): subgoal chunks must cover the write solution
+  // contiguously, non-overlapping, in-bounds, each with a label + keywords.
+  const label = rungs.find((r): r is LabelRung => r.kind === 'label')
+  if (label) {
+    checkSubgoals(write ? write.solution : '', label.subgoals, (m) => err(id, m), (m) => warn(id, m), 'label rung')
+  }
+
   // ── Execution (python) ──
-  const writeRung = p.rungs[5]
+  const writeRung = write
   const py = runPython({
     compile: p.snippet,
     predict:
@@ -297,7 +315,7 @@ function validatePrimitive(p: Primitive, expectedId: string): void {
         ? { setup: predict.verify.setup ?? '', snippet: p.snippet, mode: predict.verify.mode }
         : null,
     write:
-      writeRung.kind === 'write'
+      writeRung && writeRung.kind === 'write'
         ? { code: writeRung.solution, functionName: writeRung.functionName, cases: writeRung.testCases as TestCase[] }
         : null,
   })
@@ -314,7 +332,7 @@ function validatePrimitive(p: Primitive, expectedId: string): void {
         err(id, `predict answer key wrong: running snippet gives "${py.predict.value}" but choices[correctIndex]="${want}"`)
     }
   }
-  if (writeRung.kind === 'write' && py.write) {
+  if (writeRung && writeRung.kind === 'write' && py.write) {
     if (py.write.setupError) err(id, `write solution failed to load: ${py.write.setupError}`)
     py.write.results.forEach((r, i) => {
       if (!r.ok) {

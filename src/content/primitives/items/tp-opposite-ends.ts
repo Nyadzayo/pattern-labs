@@ -127,6 +127,46 @@ while left < right:
       roleBank: ['left pointer', 'right pointer', 'running total', 'loop bound'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Anchor a pointer at each end',
+          acceptableKeywords: ['pointer at each end', 'start at the ends', 'initialize pointers', 'left and right start', 'both ends'],
+          hint: 'Where do the two pointers begin?',
+          misconception: 'This only positions where to look from — nothing is compared yet.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Converge until the pointers cross',
+          acceptableKeywords: ['loop until they cross', 'while pointers meet', 'converge inward', 'scan until they meet'],
+          hint: 'What keeps the scan going, and when does it stop?',
+          misconception: 'This bounds the scan; it is not the comparison itself.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Bail out on the first mismatch',
+          acceptableKeywords: ['mismatch returns false', 'first difference fails', 'not equal reject', 'unequal exit early'],
+          hint: 'What happens the instant two compared elements disagree?',
+          misconception: 'This is the early exit, not the normal advance step.',
+        },
+        {
+          lineRange: [7, 8],
+          referenceLabel: 'Step both pointers inward',
+          acceptableKeywords: ['move both inward', 'advance the pointers', 'step inward', 'left up right down'],
+          hint: 'After a successful match, how do the pointers move?',
+          misconception: 'The pointers move only after a pair matches — this is not the check.',
+        },
+        {
+          lineRange: [9, 9],
+          referenceLabel: 'Nothing mismatched, so it is symmetric',
+          acceptableKeywords: ['return true success', 'all pairs matched', 'symmetric result', 'survived the loop'],
+          hint: 'If the loop ends without finding a problem, what does that mean?',
+          misconception: 'Reaching here means no pair ever differed — the success case.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'is_symmetric',
       starterCode: `def is_symmetric(values):

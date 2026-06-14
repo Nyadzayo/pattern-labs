@@ -125,6 +125,46 @@ for i, x in enumerate(nums):
       roleBank: ['value-to-index map', 'needed complement', 'running total', 'loop bound'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Set up a value-to-index memory',
+          acceptableKeywords: ['map value to index', 'dictionary of seen', 'hash table', 'remember seen values', 'store index'],
+          hint: 'Before scanning, what do you need to remember as you go?',
+          misconception: 'This is the lookup table you fill in — not the scan or the match check.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Walk each element with its index',
+          acceptableKeywords: ['iterate with index', 'loop over enumerate', 'scan each element', 'for each value and position'],
+          hint: 'How do you visit every element while keeping track of where it is?',
+          misconception: 'This is just the traversal; the matching logic lives inside it.',
+        },
+        {
+          lineRange: [4, 5],
+          referenceLabel: 'If the complement was seen, return the pair',
+          acceptableKeywords: ['complement already seen', 'target minus x in map', 'found the partner', 'needed value seen before'],
+          hint: 'What previously-seen value would complete the target with the current one?',
+          misconception: 'This checks for the partner already stored — not recording the current element.',
+        },
+        {
+          lineRange: [6, 6],
+          referenceLabel: 'Remember this element for later',
+          acceptableKeywords: ['store current index', 'record this value', 'add to the map', 'remember x at i'],
+          hint: 'If there is no match now, what should you save for a future element to find?',
+          misconception: 'This files the current element away; the match check happened just above.',
+        },
+        {
+          lineRange: [7, 7],
+          referenceLabel: 'No pair found, return empty',
+          acceptableKeywords: ['return empty list', 'no pair exists', 'nothing found', 'exhausted with no match'],
+          hint: 'What do you return if the loop ends with no match?',
+          misconception: 'Reaching here means the whole scan found no complement.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'two_sum_indices',
       starterCode: `def two_sum_indices(nums, target):

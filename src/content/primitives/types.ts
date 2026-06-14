@@ -2,10 +2,13 @@
  * Primitives Lab — content schema.
  *
  * A *primitive* is one recurring micro-pattern (a loop idiom, a pointer setup,
- * a window mechanic …). Each is drilled on a fixed 6-rung fading ladder:
+ * a window mechanic …). Each is drilled on a fading ladder of 6 core rungs,
+ * optionally with a 7th "label" rung inserted before write:
  *
  *   1 predict (MC)  2 order (Parsons)  3 fade (Parsons + blanks)
- *   4 cloze (typed blanks)  5 roles (assign variable roles)  6 write (from scratch)
+ *   4 cloze (typed blanks)  5 roles (assign variable roles)
+ *   [6 label (self-generated subgoal labeling — only when subgoals authored)]
+ *   write (from scratch) — always the last rung
  *
  * `snippet` is the single source of truth. Every Order / Fade / Cloze rung must
  * reconstruct (lines in order, blanks filled with the correct token) to exactly
@@ -13,9 +16,9 @@
  * reconstructing + compiling, so a drill can never teach code that drifts from
  * the primitive it claims to drill.
  */
-import type { ModuleId, TestCase } from '../types'
+import type { ModuleId, Subgoal, TestCase } from '../types'
 
-export type RungKind = 'predict' | 'order' | 'fade' | 'cloze' | 'roles' | 'write'
+export type RungKind = 'predict' | 'order' | 'fade' | 'cloze' | 'roles' | 'label' | 'write'
 
 export type PrimitiveCategory =
   | 'loops'
@@ -116,7 +119,19 @@ export interface RolesRung {
   roleBank: string[]
 }
 
-/** Rung 6 — Write: implement the primitive from scratch; judged by Pyodide against `testCases`. */
+/**
+ * Rung 6 (optional) — Label: self-generated subgoal labeling. The learner types
+ * their own purpose label for each chunk of the write-rung solution, then the
+ * canonical labels are revealed for comparison (generate-then-reveal). Present
+ * only on primitives whose write solution has been subgoal-annotated; its
+ * `subgoals` lineRanges index into the sibling {@link WriteRung.solution}.
+ */
+export interface LabelRung {
+  kind: 'label'
+  subgoals: Subgoal[]
+}
+
+/** Write: implement the primitive from scratch; judged by Pyodide against `testCases`. Always last. */
 export interface WriteRung {
   kind: 'write'
   functionName: string
@@ -126,7 +141,12 @@ export interface WriteRung {
   solution: string
 }
 
-export type Rung = PredictRung | OrderRung | FadeRung | ClozeRung | RolesRung | WriteRung
+export type Rung = PredictRung | OrderRung | FadeRung | ClozeRung | RolesRung | LabelRung | WriteRung
+
+/** The 6 core rungs (predict → write), no subgoal labeling. */
+export type CoreLadder = [PredictRung, OrderRung, FadeRung, ClozeRung, RolesRung, WriteRung]
+/** The 7-rung ladder: a Label rung sits between Roles and Write. */
+export type LabeledLadder = [PredictRung, OrderRung, FadeRung, ClozeRung, RolesRung, LabelRung, WriteRung]
 
 export interface Primitive {
   id: string
@@ -138,6 +158,20 @@ export interface Primitive {
   why: string
   misconceptions: Misconception[]
   moduleTags: ModuleId[]
-  /** Exactly the 6 rungs, in ladder order. */
-  rungs: [PredictRung, OrderRung, FadeRung, ClozeRung, RolesRung, WriteRung]
+  /**
+   * The fading ladder. Either the 6 core rungs, or 7 with a Label rung inserted
+   * before Write. Write is ALWAYS the last element; index lookups for write/label
+   * must be by `kind`, never a fixed position. The validator enforces the order.
+   */
+  rungs: CoreLadder | LabeledLadder
+}
+
+/** Find a primitive's write rung (always present, always last) by kind. */
+export function findWriteRung(p: Primitive): WriteRung {
+  return (p.rungs as Rung[]).find((r): r is WriteRung => r.kind === 'write') as WriteRung
+}
+
+/** Find a primitive's optional label rung by kind (undefined when not authored). */
+export function findLabelRung(p: Primitive): LabelRung | undefined {
+  return (p.rungs as Rung[]).find((r): r is LabelRung => r.kind === 'label')
 }

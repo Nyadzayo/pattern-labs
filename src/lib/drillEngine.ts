@@ -13,7 +13,9 @@
  */
 import type { CheckResult } from './drillCheckers'
 
-export type RungNumber = 1 | 2 | 3 | 4 | 5 | 6
+// 1..7 because a primitive may have a 7th "label" rung between roles and write.
+// A primitive without it simply never produces a rung beyond its ladder length.
+export type RungNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 export interface DrillItem {
   primitiveId: string
@@ -40,7 +42,7 @@ export interface SessionState {
 export type Action =
   | { type: 'submit'; result: CheckResult }
   | { type: 'next' }
-  | { type: 'skipUp' }
+  | { type: 'skipUp'; maxRung?: number }
 
 /** Wrong attempts before the answer is revealed and the item is force-advanced. */
 export const MAX_ATTEMPTS = 3
@@ -149,7 +151,8 @@ export function drillReducer(state: SessionState, action: Action): SessionState 
 
     case 'skipUp': {
       if (!state.current) return state
-      const rung = Math.min(6, state.current.rung + 1) as RungNumber
+      // Cap at the primitive's ladder length (passed in), defaulting to 6.
+      const rung = Math.min(action.maxRung ?? 6, state.current.rung + 1) as RungNumber
       return {
         ...state,
         current: { ...state.current, rung },

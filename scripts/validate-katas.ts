@@ -44,9 +44,10 @@ async function main() {
       errors.push(`[${id}] no registered primitive with this id`)
       continue
     }
-    const w = p.rungs?.[5]
+    // Write is always the LAST rung; the ladder may be 6 or 7 (label rung). Find by kind.
+    const w = p.rungs?.find((r) => r.kind === 'write')
     if (!w || w.kind !== 'write') {
-      errors.push(`[${id}] primitive has no write rung (rung 6)`)
+      errors.push(`[${id}] primitive has no write rung`)
       continue
     }
     if (!w.functionName) errors.push(`[${id}] write rung has no functionName`)

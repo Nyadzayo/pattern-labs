@@ -161,6 +161,50 @@ Start \`left\` at index 0 and \`right\` at the last index. If the current sum is
 The tie-breaking rule in the statement (smallest \`i\`, then largest \`j\`) is exactly what this scan produces naturally: \`right\` never skips a partner for the eventual \`left\` (it only retreats when the sum is provably too big), so the first match found is the canonical one. Empty and single-element rails never enter the loop and fall through to \`[-1, -1]\`.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Place a cursor at each end of the sorted rail',
+            acceptableKeywords: ['pointer at each end', 'left and right start', 'start at both ends', 'cursor at each end'],
+            hint: 'Where do the two cursors start on a sorted list?',
+            misconception: 'This sets up where to scan from — no sum is computed yet.',
+          },
+          {
+            lineRange: [4, 5],
+            referenceLabel: 'Walk inward, summing the two ends',
+            acceptableKeywords: ['loop while left less than right', 'add the two ends', 'sum of both pointers', 'converge computing the total'],
+            hint: 'What do you compute from the two ends each step?',
+            misconception: 'This is the scan and the running sum, not yet the decision.',
+          },
+          {
+            lineRange: [6, 9],
+            referenceLabel: 'On an exact match, return the index pair',
+            acceptableKeywords: ['sum equals target return', 'exact match returns the pair', 'found the indices', 'hit returns left and right'],
+            hint: 'What do you do the moment the two ends hit the target?',
+            misconception: 'This is the success exit, not a pointer move.',
+          },
+          {
+            lineRange: [10, 12],
+            referenceLabel: 'Sum too small, raise it by advancing left',
+            acceptableKeywords: ['sum below target move left', 'too small advance left', 'increase the left pointer', 'raise the total'],
+            hint: 'If the sum is below target, which end can make it bigger?',
+            misconception: 'Only the left (smaller) side can raise the sum — moving right would lower it.',
+          },
+          {
+            lineRange: [13, 15],
+            referenceLabel: 'Sum too big, lower it by retreating right',
+            acceptableKeywords: ['sum above target move right', 'too large retreat right', 'decrease the right pointer', 'lower the total'],
+            hint: 'If the sum is above target, which end can make it smaller?',
+            misconception: 'Only the right (larger) side can lower the sum.',
+          },
+          {
+            lineRange: [16, 17],
+            referenceLabel: 'Pointers met with no match, report none',
+            acceptableKeywords: ['no pair return negative one', 'pointers met no match', 'fall through to none', 'return minus one'],
+            hint: 'If the pointers cross without a match, what is the result?',
+            misconception: 'Reaching here means the whole rail was scanned with no valid pair.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 5, 8, 11], 13], expected: [1, 2], label: 'basic match' },

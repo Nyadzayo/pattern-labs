@@ -9,8 +9,8 @@ import type { AppState } from './storage'
 import { todayISO } from './storage'
 import { interleave, type DrillItem, type RungNumber } from './drillEngine'
 
-export function clampRung(n: number): RungNumber {
-  return Math.min(6, Math.max(1, Math.round(n))) as RungNumber
+export function clampRung(n: number, max = 6): RungNumber {
+  return Math.min(max, Math.max(1, Math.round(n))) as RungNumber
 }
 
 /** Primitives due today (never drilled = due immediately), in manifest order. */
@@ -38,15 +38,16 @@ export function dailyDrillItems(state: AppState, cap = 10): DrillItem[] {
   )
   return ordered.slice(0, cap).map((p) => ({
     primitiveId: p.id,
-    rung: clampRung(state.drills[p.id]?.rung ?? 1),
+    rung: clampRung(state.drills[p.id]?.rung ?? 1, p.rungs.length),
   }))
 }
 
-/** Full 6-rung ladder for one primitive, starting from the learner's current rung. */
+/** Full ladder (6 or 7 rungs) for one primitive, starting from the learner's current rung. */
 export function ladderItems(primitive: Primitive, state: AppState): DrillItem[] {
-  const start = clampRung(state.drills[primitive.id]?.rung ?? 1)
+  const max = primitive.rungs.length
+  const start = clampRung(state.drills[primitive.id]?.rung ?? 1, max)
   const items: DrillItem[] = []
-  for (let r = start; r <= 6; r++) items.push({ primitiveId: primitive.id, rung: r as RungNumber })
+  for (let r = start; r <= max; r++) items.push({ primitiveId: primitive.id, rung: r as RungNumber })
   return items
 }
 

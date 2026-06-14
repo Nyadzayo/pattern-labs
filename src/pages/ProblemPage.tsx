@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { getModuleContent, getModuleMeta, MODULE_IDS } from '@/content'
 import type { Difficulty, ModuleId, Problem, TestCase } from '@/content'
 import { useAppState } from '@/lib/useAppState'
-import { saveDraft, updateProblemProgress } from '@/lib/storage'
+import { saveDraft, updateProblemProgress, recordSubgoalAttempt } from '@/lib/storage'
+import { SubgoalLabeler } from '@/components/subgoals/SubgoalLabeler'
 import { runJudge, warmupJudge, judgeStatus, onJudgeStatus, type RunOutcome } from '@/lib/judge'
 import type { JudgeStatus } from '@/lib/judgeTypes'
 import { Markdown } from '@/components/markdown/Markdown'
@@ -86,6 +87,7 @@ export function ProblemView({
   const [hintGate, setHintGate] = useState(false)
   const [solutionShown, setSolutionShown] = useState(false)
   const [solutionGate, setSolutionGate] = useState(false)
+  const [labelerOpen, setLabelerOpen] = useState(false)
   const [celebrate, setCelebrate] = useState(false)
 
   useEffect(() => onJudgeStatus(setJudge), [])
@@ -316,6 +318,38 @@ export function ProblemView({
               <p className="mt-2 text-sm font-medium">
                 Complexity: <code className="font-mono text-[13px]">{problem.solution.complexity}</code>
               </p>
+              {problem.solution.subgoals && problem.solution.subgoals.length > 0 && (
+                <div className="mt-5 rounded-xl border border-edge bg-surface-raised p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold">Label the subgoals</h3>
+                      <p className="mt-0.5 text-xs text-ink-muted">
+                        Name what each block is for in your own words, then reveal the canonical roles
+                        and compare — this is what makes the structure transfer to new problems.
+                      </p>
+                    </div>
+                    {!labelerOpen && (
+                      <button
+                        onClick={() => setLabelerOpen(true)}
+                        className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                      >
+                        Start
+                      </button>
+                    )}
+                  </div>
+                  {labelerOpen && (
+                    <div className="mt-4">
+                      <SubgoalLabeler
+                        code={problem.solution.code}
+                        subgoals={problem.solution.subgoals}
+                        onSubmit={({ scores, understood }) =>
+                          recordSubgoalAttempt(problemKey, scores, understood)
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : solutionGate ? (
             <div className="rounded-lg border border-edge p-3 text-sm">

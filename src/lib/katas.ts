@@ -4,6 +4,7 @@
  * cases, and par time from the primitives registry. Mirrors `src/lib/drills.ts`.
  */
 import { getPrimitive } from '@/content/primitives/registry'
+import { findWriteRung } from '@/content/primitives/types'
 import type { Primitive, PrimitiveCategory, WriteRung } from '@/content/primitives/types'
 import type { ModuleId, TestCase } from '@/content'
 import { KATA_ENTRIES, type KataEntry } from '@/content/katas'
@@ -27,9 +28,9 @@ export interface ResolvedKata {
   moduleTags: ModuleId[]
 }
 
-/** The write rung is always the 6th (index 5) of a primitive's ladder. */
+/** The write rung is always the LAST rung; resolve it by kind (ladder may be 6 or 7). */
 function writeRung(p: Primitive): WriteRung {
-  return p.rungs[5]
+  return findWriteRung(p)
 }
 
 export function resolveKata(entry: KataEntry): ResolvedKata | null {

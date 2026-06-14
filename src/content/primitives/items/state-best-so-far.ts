@@ -121,6 +121,39 @@ for x in a[1:]:
       roleBank: ['best so far', 'current element', 'running total', 'loop bound'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Seed best with the first element',
+          acceptableKeywords: ['initialize best to first', 'seed with a real element', 'start best as a zero', 'best equals first value'],
+          hint: 'Before comparing, what is a safe initial value for "best"?',
+          misconception: 'Seeding from a real element (a[0]) avoids a bad sentinel like 0 for all-negative input.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Scan the remaining elements',
+          acceptableKeywords: ['loop over the rest', 'for each remaining element', 'iterate from the second', 'scan the tail'],
+          hint: 'Which elements still need checking after the seed?',
+          misconception: 'This walks the rest; the comparison itself is inside it.',
+        },
+        {
+          lineRange: [4, 5],
+          referenceLabel: 'Keep the larger value',
+          acceptableKeywords: ['if greater update best', 'current bigger than best', 'replace best when larger', 'keep the maximum'],
+          hint: 'When should the current "best" change?',
+          misconception: 'This is the update rule — it only fires when a bigger value appears.',
+        },
+        {
+          lineRange: [6, 6],
+          referenceLabel: 'Return the running best',
+          acceptableKeywords: ['return best', 'final maximum', 'the running best result', 'answer is best'],
+          hint: 'After the scan, what holds the answer?',
+          misconception: 'best has tracked the maximum the whole way through.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'max_value',
       starterCode: `def max_value(a):

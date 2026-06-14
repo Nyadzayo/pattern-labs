@@ -127,6 +127,39 @@ while total > target:
       roleBank: ['left edge index', 'window total', 'budget cap', 'right edge index'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Seed the running total and the left edge',
+          acceptableKeywords: ['initialize the total', 'left starts at zero', 'seed the window state', 'starting sum and pointer'],
+          hint: 'What state do you need in place before any shrinking can happen?',
+          misconception: 'This sets the starting state — the shrinking itself happens in the loop.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Shrink while the window is still too big',
+          acceptableKeywords: ['while total exceeds target', 'loop until valid', 'keep going while too large', 'shrink condition'],
+          hint: 'What condition means the window still needs to get smaller?',
+          misconception: 'This is the shrink condition, not the act of dropping an element.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Drop the leftmost element and advance left',
+          acceptableKeywords: ['subtract the left value', 'remove leftmost element', 'advance the left pointer', 'drop from the left'],
+          hint: 'To shrink from the left, what do you remove and what do you update?',
+          misconception: 'This is the actual removal that runs on each shrink iteration.',
+        },
+        {
+          lineRange: [7, 7],
+          referenceLabel: 'Return how many were dropped',
+          acceptableKeywords: ['return the left count', 'number removed', 'how many dropped', 'final left value'],
+          hint: 'What does the left pointer’s final value tell you?',
+          misconception: 'left ends up counting exactly how many elements were dropped.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'shrink_count',
       starterCode: `def shrink_count(a, target):

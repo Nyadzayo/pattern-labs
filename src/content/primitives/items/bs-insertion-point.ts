@@ -149,6 +149,53 @@ while lo < hi:
       ],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Bracket the whole range, zero to n',
+          acceptableKeywords: ['initialize lo and hi', 'set the search bounds', 'half-open interval', 'low zero high length'],
+          hint: 'What range of possible insertion points do you start with?',
+          misconception: 'This sets the bounds; note hi starts at len(a), not len(a) - 1.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Narrow while the bracket is non-empty',
+          acceptableKeywords: ['while lo less than hi', 'loop until they converge', 'shrink the bracket', 'search until they meet'],
+          hint: 'When should the search keep going?',
+          misconception: 'This is the convergence loop, not the midpoint test.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Probe the middle',
+          acceptableKeywords: ['compute the midpoint', 'pick the middle index', 'mid of lo and hi', 'halfway point'],
+          hint: 'Which index do you examine each step?',
+          misconception: 'This only picks the probe point — the decision is on the next lines.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Too small, so discard the left half',
+          acceptableKeywords: ['mid value below target', 'move lo past mid', 'discard the left half', 'lo becomes mid plus one'],
+          hint: 'If the middle value is below the target, which half cannot hold the answer?',
+          misconception: 'Excluding mid here (lo = mid + 1) is what makes this find the leftmost spot.',
+        },
+        {
+          lineRange: [7, 8],
+          referenceLabel: 'Otherwise keep mid as a candidate',
+          acceptableKeywords: ['else hi becomes mid', 'keep mid as candidate', 'shrink right but keep mid', 'high equals mid'],
+          hint: 'If the middle value is not below the target, why keep mid in range?',
+          misconception: 'Setting hi = mid (not mid - 1) preserves mid as a possible insertion point.',
+        },
+        {
+          lineRange: [9, 9],
+          referenceLabel: 'Return the converged boundary',
+          acceptableKeywords: ['return lo', 'the insertion index', 'converged boundary', 'lo equals hi answer'],
+          hint: 'When lo meets hi, what does that index represent?',
+          misconception: 'lo and hi have converged on the leftmost valid insertion index.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'lower_bound',
       starterCode: `def lower_bound(a, target):

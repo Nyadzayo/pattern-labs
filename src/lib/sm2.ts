@@ -100,37 +100,45 @@ export function newDrillProgress(): DrillProgress {
 }
 
 /**
- * Apply one drill outcome (pure). Pass → promote a rung (cap 6) and grade the
- * card 'good'; a rung-6 pass records `today` and mastery flips on after 2
- * distinct days. Fail → demote a rung (floor 1) and grade 'again'. `today` is
- * passed in so this stays deterministic and testable.
+ * Apply one drill outcome (pure). Pass → promote a rung (cap = `maxRung`, the
+ * primitive's ladder length, default 6) and grade the card 'good'; a pass on the
+ * LAST rung (always Write) records `today` and mastery flips on after 2 distinct
+ * days. Fail → demote a rung (floor 1) and grade 'again'. `today` and `maxRung`
+ * are passed in so this stays deterministic and testable. The persisted field is
+ * still named `rung6PassDates` (data compat); it now means "mastery-rung passes".
  */
 export function applyDrillResult(
   prev: DrillProgress | undefined,
-  opts: { passed: boolean; rung: number; today: string },
+  opts: { passed: boolean; rung: number; today: string; maxRung?: number },
 ): DrillProgress {
   const base = prev ?? newDrillProgress()
   const { passed, rung, today } = opts
+  const maxRung = opts.maxRung ?? 6
   const schedule = applyGrade(base.schedule, passed ? 'good' : 'again')
 
   let rung6PassDates = base.rung6PassDates
-  if (passed && rung === 6 && !rung6PassDates.includes(today)) {
+  if (passed && rung >= maxRung && !rung6PassDates.includes(today)) {
     rung6PassDates = [...rung6PassDates, today]
   }
   const mastered = rung6PassDates.length >= 2
-  const nextRung = passed ? Math.min(6, rung + 1) : Math.max(1, rung - 1)
+  const nextRung = passed ? Math.min(maxRung, rung + 1) : Math.max(1, rung - 1)
 
   return { rung: nextRung, schedule, rung6PassDates, mastered }
 }
 
 /** Apply a drill outcome to a primitive and persist it. */
-export function gradeDrill(primitiveId: string, passed: boolean, rung: number): void {
+export function gradeDrill(
+  primitiveId: string,
+  passed: boolean,
+  rung: number,
+  maxRung = 6,
+): void {
   const today = todayISO()
   setState((prev) => ({
     ...prev,
     drills: {
       ...prev.drills,
-      [primitiveId]: applyDrillResult(prev.drills[primitiveId], { passed, rung, today }),
+      [primitiveId]: applyDrillResult(prev.drills[primitiveId], { passed, rung, today, maxRung }),
     },
   }))
 }

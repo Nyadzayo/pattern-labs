@@ -91,6 +91,11 @@ export interface Subgoal {
   acceptableKeywords: string[]
   /** Common confusion for this chunk, surfaced when a label fits the wrong chunk. */
   misconception?: string
+  /**
+   * Optional pre-submission nudge about the chunk's role — context-free, NOT the
+   * answer. Shown only before submitting (hint XOR feedback, never both at once).
+   */
+  hint?: string
 }
 
 export interface ReferenceSolution {
