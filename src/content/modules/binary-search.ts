@@ -158,6 +158,50 @@ The loop condition \`lo <= hi\` matters: the range is inclusive on both ends, so
 An empty catalog never enters the loop (\`hi\` starts at \`-1\`), falling straight through to \`-1\` — no special-casing needed. After at most \`⌈log2(n)⌉ + 1\` probes the range is empty, which is the proof of absence: every discarded half was discarded by a comparison that ruled the target out of it.
 `,
         complexity: 'Time O(log n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Bracket the search with an inclusive live range',
+            acceptableKeywords: ['set lo and hi bounds', 'inclusive search interval', 'low high pointers', 'initialize the window'],
+            hint: 'Before probing, what interval is the answer known to live inside?',
+            misconception: 'This only frames where to look — it does not yet test or shrink anything.',
+          },
+          {
+            lineRange: [4, 5],
+            referenceLabel: 'Loop while live, picking the midpoint to probe',
+            acceptableKeywords: ['loop until range empty', 'compute the midpoint', 'while lo less or equal hi', 'pick middle index'],
+            hint: 'How long do you keep probing, and which index do you test each pass?',
+            misconception: 'Choosing the midpoint is not a decision yet — the comparison that follows makes the call.',
+          },
+          {
+            lineRange: [6, 8],
+            referenceLabel: 'Return on a direct hit at the probe',
+            acceptableKeywords: ['midpoint equals target return', 'exact match found', 'direct hit ends search', 'return the index'],
+            hint: 'What happens the moment the probed value equals what you seek?',
+            misconception: 'This is the success exit, not a step that narrows the range.',
+          },
+          {
+            lineRange: [9, 11],
+            referenceLabel: 'Probe too low, discard the lower half',
+            acceptableKeywords: ['midpoint smaller than target', 'move low past mid', 'search the right half', 'raise the lower bound'],
+            hint: 'If the probed value is below the target, which half can be thrown away?',
+            misconception: 'A too-small probe rules out the left half — confusing it with the too-large case moves the wrong bound.',
+          },
+          {
+            lineRange: [12, 14],
+            referenceLabel: 'Probe too high, discard the upper half',
+            acceptableKeywords: ['midpoint larger than target', 'move high below mid', 'search the left half', 'lower the upper bound'],
+            hint: 'If the probed value is above the target, which half is now hopeless?',
+            misconception: 'A too-large probe rules out the right half — the mirror of the too-small branch.',
+          },
+          {
+            lineRange: [15, 16],
+            referenceLabel: 'Range emptied with no hit, report absence',
+            acceptableKeywords: ['range empty return failure', 'no match found', 'fall through to not found', 'return sentinel'],
+            hint: 'If the loop ends without a hit, what does that prove?',
+            misconception: 'This is the proof-of-absence exit, not another halving step.',
+          },
+        ],
       },
       testCases: [
         { input: [[2, 5, 8, 12, 16], 12], expected: 3, label: 'target in the middle-right' },
@@ -249,6 +293,43 @@ The asymmetric moves are the whole game: when \`mid\` satisfies the predicate it
 Then comes the reuse trick: the last entry for \`target\` is the entry just before the first entry that is \`>= target + 1\`. No second algorithm, no symmetric "upper bound" code to debug — the same helper with a shifted argument. The verification step after the first call is essential: \`lower_bound\` returns where the target *would* start, which is only meaningful if something equal to the target actually lives there. Empty logs fall through naturally because \`lower_bound\` returns 0 and the bounds check fires.
 `,
         complexity: 'Time O(log n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Factor out a reusable first-true boundary finder',
+            acceptableKeywords: ['define helper for boundary', 'lower bound subroutine', 'exclusive upper bound setup', 'reusable predicate search'],
+            hint: 'What single primitive can answer both ends of a run if you call it twice?',
+            misconception: 'This builds the tool — it has not located either occurrence yet.',
+          },
+          {
+            lineRange: [5, 13],
+            referenceLabel: 'Hunt the first index where the predicate flips true',
+            acceptableKeywords: ['first index satisfying predicate', 'keep mid when it qualifies', 'asymmetric halving boundary', 'converge to the flip point'],
+            hint: 'Which branch keeps the midpoint alive versus discards it for a boundary search?',
+            misconception: 'Keeping mid on success and discarding on failure is what distinguishes a boundary hunt from an exact-match search.',
+          },
+          {
+            lineRange: [14, 15],
+            referenceLabel: 'Locate the candidate start of the run',
+            acceptableKeywords: ['call helper for first', 'lower bound of target', 'leftmost possible position', 'candidate first index'],
+            hint: 'What does the first helper call hand you before you trust it?',
+            misconception: 'This is only where the value would begin — it is not yet confirmed to be present.',
+          },
+          {
+            lineRange: [16, 18],
+            referenceLabel: 'Confirm the value is actually present',
+            acceptableKeywords: ['verify candidate matches', 'guard against past the end', 'check value equals target', 'reject when absent'],
+            hint: 'The boundary index is where the value would sit — what must you still check?',
+            misconception: 'A lower-bound index always exists, so skipping this guard reports a missing value as found.',
+          },
+          {
+            lineRange: [19, 21],
+            referenceLabel: 'Derive the run end from the next boundary',
+            acceptableKeywords: ['last occurrence via shifted call', 'boundary of next value', 'step back one index', 'return the span'],
+            hint: 'How can the same boundary tool give the last position without new code?',
+            misconception: 'The end of the run is one before where the next value begins, not a separate symmetric search.',
+          },
+        ],
       },
       testCases: [
         { input: [[1, 2, 2, 2, 3, 5], 2], expected: [1, 3], label: 'block in the middle' },
@@ -335,6 +416,43 @@ The load-bearing decision is **which endpoint to compare against**. Comparing \`
 Comparing against \`serials[lo]\` instead is the classic bug: \`serials[mid] > serials[lo]\` is true *both* when the list isn't rotated (minimum at \`lo\`!) and when the cliff is right of \`mid\` — one comparison, two contradictory conclusions, so no safe discard exists. The asymmetric moves (\`lo = mid + 1\` versus \`hi = mid\`) follow the boundary-template rule: discard \`mid\` only when it's provably not the answer. Since the discarding branch always moves \`lo\` past \`mid\`, the floor midpoint cannot stall the loop.
 `,
         complexity: 'Time O(log n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Bracket the range that must contain the turning point',
+            acceptableKeywords: ['set lo and hi bounds', 'inclusive search interval', 'low high over whole list', 'frame the boundary hunt'],
+            hint: 'What interval is guaranteed to still hold the smallest value?',
+            misconception: 'This frames the hunt — no comparison against an endpoint has happened yet.',
+          },
+          {
+            lineRange: [4, 5],
+            referenceLabel: 'Loop while the range is live and probe the middle',
+            acceptableKeywords: ['loop while lo less than hi', 'compute the midpoint', 'shrink toward one survivor', 'pick middle index'],
+            hint: 'How long do you keep narrowing, and what do you probe each pass?',
+            misconception: 'Selecting the midpoint is setup for the decision, not the decision itself.',
+          },
+          {
+            lineRange: [6, 9],
+            referenceLabel: 'Probe above the right endpoint, search rightward',
+            acceptableKeywords: ['mid greater than right end', 'cliff lies to the right', 'discard mid move low up', 'still on the high run'],
+            hint: 'Compare the midpoint to the right end — what does it mean when mid is larger?',
+            misconception: 'A midpoint above the right end sits on the high run, so the minimum is strictly past it — comparing against the left end here is the classic trap.',
+          },
+          {
+            lineRange: [10, 13],
+            referenceLabel: 'Probe at or below the right endpoint, keep it',
+            acceptableKeywords: ['mid at most right end', 'on the low run', 'keep mid move high down', 'minimum is here or left'],
+            hint: 'When the midpoint is not above the right end, why must it stay a candidate?',
+            misconception: 'On the low run the midpoint could itself be the minimum, so it is kept rather than skipped.',
+          },
+          {
+            lineRange: [14, 15],
+            referenceLabel: 'Return the lone surviving value',
+            acceptableKeywords: ['bounds meet return value', 'single survivor is minimum', 'lo equals hi answer', 'read out the result'],
+            hint: 'When the bounds collide, what does the surviving index hold?',
+            misconception: 'This reads out the converged answer — it is not another halving step.',
+          },
+        ],
       },
       testCases: [
         { input: [[4, 5, 6, 1, 2, 3]], expected: 1, label: 'rotated near the middle' },
@@ -424,6 +542,50 @@ Two details earn the "hard" tag. First, the feasibility check must respect the *
 The upper bound \`max(bins)\` is safe because \`hours >= len(bins)\` guarantees one-hour-per-bin fits, so the search range always contains a feasible rate and the loop's survivor is genuinely the minimum.
 `,
         complexity: 'Time O(n log M) where M = max(bins), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Define the monotone feasibility test for a candidate',
+            acceptableKeywords: ['feasibility predicate helper', 'cost of a candidate rate', 'whole-hour ceiling sum', 'does this candidate fit'],
+            hint: 'Before searching, what yes/no question must you be able to answer for any candidate?',
+            misconception: 'This computes feasibility cost — it does not yet choose or compare candidates, and rounding here must be a per-item ceiling, not a global average.',
+          },
+          {
+            lineRange: [6, 9],
+            referenceLabel: 'Frame the answer values themselves as the search range',
+            acceptableKeywords: ['bracket the candidate answers', 'low and high over answer space', 'range of possible rates', 'bounds on the answer'],
+            hint: 'There is no array to index — what number line are you binary-searching over?',
+            misconception: 'These bounds span possible answers, not array positions; mistaking them for indices misreads the whole approach.',
+          },
+          {
+            lineRange: [10, 11],
+            referenceLabel: 'Loop while live and probe a candidate value',
+            acceptableKeywords: ['loop while range live', 'midpoint candidate to test', 'pick a value to check', 'while lo less than hi'],
+            hint: 'Each pass, which candidate value do you feed to the feasibility test?',
+            misconception: 'The midpoint is a candidate answer to test, not an index into any list.',
+          },
+          {
+            lineRange: [12, 14],
+            referenceLabel: 'Candidate passes, keep it and tighten downward',
+            acceptableKeywords: ['feasible candidate keep it', 'might be the minimum', 'lower the high bound', 'search smaller values'],
+            hint: 'If the candidate is feasible, why not discard it outright?',
+            misconception: 'A feasible candidate could still be the smallest workable one, so it is kept, not skipped.',
+          },
+          {
+            lineRange: [15, 17],
+            referenceLabel: 'Candidate fails, discard it and everything below',
+            acceptableKeywords: ['infeasible candidate discard', 'too slow raise low bound', 'rule out smaller values', 'move past mid'],
+            hint: 'If the candidate is infeasible, which other candidates does that also rule out?',
+            misconception: 'An infeasible candidate drags every smaller candidate down with it — the monotone stripe is what licenses that bulk discard.',
+          },
+          {
+            lineRange: [18, 19],
+            referenceLabel: 'Return the smallest value that still works',
+            acceptableKeywords: ['bounds meet return answer', 'minimum feasible candidate', 'converged survivor', 'report the result'],
+            hint: 'When the bounds collide, what does the survivor represent?',
+            misconception: 'This reports the converged minimum feasible answer, not another probe.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 6, 7, 11], 8], expected: 4, label: 'exact-fit budget' },
@@ -509,6 +671,43 @@ The moves follow the template's golden rule — discard \`mid\` only when it pro
 Two boundary details carry the implementation. \`hi\` starts at \`len(readings) - 1\` rather than \`len(readings)\` because the peak is guaranteed to exist inside the array — there is no "not found" lane to leave room for. And the \`mid + 1\` probe never falls off the end: \`lo < hi\` guarantees \`mid < hi <= n - 1\`. A single-reading log skips the loop entirely and returns index 0.
 `,
         complexity: 'Time O(log n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Bracket the range that must contain the turning point',
+            acceptableKeywords: ['set lo and hi bounds', 'inclusive interval over array', 'low high pointers', 'frame the boundary hunt'],
+            hint: 'What interval is guaranteed to still contain the peak before you probe?',
+            misconception: 'This frames the hunt; the slope comparison that follows is what steers it.',
+          },
+          {
+            lineRange: [4, 5],
+            referenceLabel: 'Loop while live and pick a probe to compare a neighbour',
+            acceptableKeywords: ['loop while lo less than hi', 'compute the midpoint', 'probe to compare against neighbour', 'pick middle index'],
+            hint: 'How long do you narrow, and which index will you compare with its neighbour?',
+            misconception: 'Choosing the midpoint is setup for the slope test, not a decision on its own.',
+          },
+          {
+            lineRange: [6, 9],
+            referenceLabel: 'Slope rising, the answer is strictly to the right',
+            acceptableKeywords: ['midpoint below right neighbour', 'rising slope go right', 'discard mid raise low', 'climb toward the peak'],
+            hint: 'If the next value is higher, can the midpoint itself be the peak?',
+            misconception: 'On a rising slope the midpoint is provably not the peak, so it is discarded rather than kept.',
+          },
+          {
+            lineRange: [10, 12],
+            referenceLabel: 'Slope not rising, keep the probe as a candidate',
+            acceptableKeywords: ['midpoint at least right neighbour', 'falling slope keep mid', 'peak here or to the left', 'lower the high bound'],
+            hint: 'When the slope is falling, why might the midpoint still be the peak?',
+            misconception: 'A non-rising midpoint could be the peak itself, so it stays alive instead of being skipped.',
+          },
+          {
+            lineRange: [13, 14],
+            referenceLabel: 'Return the lone surviving turning point',
+            acceptableKeywords: ['bounds meet return index', 'single survivor is the peak', 'lo equals hi answer', 'report the turnover'],
+            hint: 'When the bounds collide, what does the surviving index mark?',
+            misconception: 'This reads out the converged peak index, not another comparison.',
+          },
+        ],
       },
       testCases: [
         { input: [[110, 230, 480, 950, 700, 420]], expected: 3, label: 'peak mid-log' },
@@ -594,6 +793,43 @@ Duplicates cost nothing. With \`catalog = [7, 7, 7]\` and \`incoming = 7\`, ever
 An empty shelf never enters the loop (\`lo == hi == 0\`) and correctly reports slot 0.
 `,
         complexity: 'Time O(log n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Bracket a range that includes the past-the-end slot',
+            acceptableKeywords: ['set lo and hi bounds', 'allow append position', 'upper bound one past last', 'frame the insertion search'],
+            hint: 'Why must the high bound reach one position beyond the last element?',
+            misconception: 'Appending at the far end is a legal answer, so the range must hold it — clipping the high bound to the last index loses that slot.',
+          },
+          {
+            lineRange: [4, 5],
+            referenceLabel: 'Loop while live and pick a slot to probe',
+            acceptableKeywords: ['loop while lo less than hi', 'compute the midpoint', 'probe a candidate slot', 'pick middle index'],
+            hint: 'How long do you narrow, and which candidate slot do you test each pass?',
+            misconception: 'The midpoint is the slot under test, not yet a chosen answer.',
+          },
+          {
+            lineRange: [6, 9],
+            referenceLabel: 'Probe qualifies, keep it as the leftmost candidate',
+            acceptableKeywords: ['value at least incoming', 'slot works keep mid', 'might be leftmost slot', 'lower the high bound'],
+            hint: 'When the probed value is large enough, why keep that slot in play?',
+            misconception: 'A qualifying slot might be the leftmost workable one, so it is kept — not discarded like in an exact-match search.',
+          },
+          {
+            lineRange: [10, 12],
+            referenceLabel: 'Probe too small, the slot lies further right',
+            acceptableKeywords: ['value below incoming', 'slot is to the right', 'discard mid raise low', 'shift past the smaller value'],
+            hint: 'If the probed value is strictly smaller, where must the slot be?',
+            misconception: 'A too-small probe pushes the slot rightward, the opposite move from the qualifying branch.',
+          },
+          {
+            lineRange: [13, 14],
+            referenceLabel: 'Return the converged insertion slot directly',
+            acceptableKeywords: ['bounds meet return slot', 'leftmost qualifying index', 'exit state is the answer', 'no verification needed'],
+            hint: 'Why is no post-loop check needed before returning here?',
+            misconception: 'For this insertion hunt the converged index is itself the answer, unlike a find-the-target search that must still verify a hit.',
+          },
+        ],
       },
       testCases: [
         { input: [[12, 30, 30, 47], 30], expected: 1, label: 'duplicates present — leftmost slot' },
@@ -680,6 +916,43 @@ Why ban \`math.sqrt\`? Python floats are 64-bit doubles with 53 bits of mantissa
 Setting \`hi = tiles\` is correct because \`s * s <= tiles\` implies \`s <= tiles\` for every non-negative integer, and the degenerate inventories fall out free: \`tiles = 0\` starts with \`lo == hi == 0\`, and \`tiles = 1\` converges to side 1.
 `,
         complexity: 'Time O(log tiles), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Bracket the candidate answers for a last-true hunt',
+            acceptableKeywords: ['range over candidate answers', 'hunt the last qualifying value', 'low and high on answer line', 'frame the integer search'],
+            hint: 'You want the largest value that still qualifies — how does that reframe the bounds?',
+            misconception: 'Searching for the last true value, not the first, flips which branch keeps the midpoint later.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Loop with a midpoint biased upward',
+            acceptableKeywords: ['loop while range live', 'ceiling midpoint rounds up', 'bias mid to avoid stall', 'pick upper middle'],
+            hint: 'When the keeping branch sets low to mid, which way must the midpoint round?',
+            misconception: 'A floor midpoint paired with a keep-mid branch stalls forever on a two-candidate range — the ceiling bias is mandatory here.',
+          },
+          {
+            lineRange: [9, 11],
+            referenceLabel: 'Candidate affordable, keep it without dropping it',
+            acceptableKeywords: ['square within budget', 'affordable keep mid', 'might be largest qualifying', 'set low to mid'],
+            hint: 'If the candidate fits the budget, why hold it rather than discard it?',
+            misconception: 'An affordable candidate may be the largest one, so it is retained as low itself, not stepped past.',
+          },
+          {
+            lineRange: [12, 14],
+            referenceLabel: 'Candidate overdraws, discard it and everything larger',
+            acceptableKeywords: ['square exceeds budget', 'too big drop mid', 'rule out larger values', 'lower high below mid'],
+            hint: 'If the candidate overshoots, which other candidates also fail?',
+            misconception: 'An overdrawing candidate rules out every larger one, so the high bound drops below mid.',
+          },
+          {
+            lineRange: [15, 16],
+            referenceLabel: 'Return the largest qualifying value',
+            acceptableKeywords: ['bounds meet return answer', 'largest affordable side', 'converged survivor', 'report the result'],
+            hint: 'When the bounds collide, what does the survivor represent?',
+            misconception: 'This reports the converged last-true answer, not another probe.',
+          },
+        ],
       },
       testCases: [
         { input: [26], expected: 5, label: 'leftover tile' },
@@ -769,6 +1042,43 @@ A sorted half is the only place a *range test* can be trusted: "is the target be
 This is the exact-match template (\`lo <= hi\`, return on hit, \`-1\` on an empty range) rather than a boundary hunt, because a single probe *can* finish the job and "not on the route" is a legal outcome. The fence-posts in the range tests are where bugs breed: the sorted-left test is \`scans[lo] <= target < scans[mid]\` — the \`<=\` admits the half's left endpoint, while the strict \`<\` is safe because the equality check above already ruled out \`mid\` itself.
 `,
         complexity: 'Time O(log n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Set up the live range and probe its middle',
+            acceptableKeywords: ['set lo and hi bounds', 'loop until range empty', 'compute the midpoint', 'frame the search'],
+            hint: 'What interval and stopping rule does an exact-match search start with?',
+            misconception: 'This frames the search; the half-is-sorted reasoning that follows is what handles the rotation.',
+          },
+          {
+            lineRange: [5, 6],
+            referenceLabel: 'Return immediately on a direct hit',
+            acceptableKeywords: ['midpoint equals target return', 'exact match ends search', 'direct hit', 'return the index'],
+            hint: 'What happens the instant the probe matches the target?',
+            misconception: 'This is the success exit, separate from the side-selection logic.',
+          },
+          {
+            lineRange: [7, 12],
+            referenceLabel: 'When the lower half is sorted, range-test it',
+            acceptableKeywords: ['left half is sorted', 'target within sorted endpoints', 'commit to a half by range', 'discard the unsorted side'],
+            hint: 'If one half is fully ordered, what trustworthy question can you ask about it?',
+            misconception: 'A range test is only valid on the sorted half; applying it to the rotated half gives a false verdict.',
+          },
+          {
+            lineRange: [13, 18],
+            referenceLabel: 'Otherwise the upper half is sorted, range-test that',
+            acceptableKeywords: ['right half is sorted', 'target within sorted endpoints', 'mirror the half selection', 'discard the unsorted side'],
+            hint: 'When the other half is the ordered one, how does the range test mirror?',
+            misconception: 'This is the symmetric case of the sorted-half test, not a different algorithm.',
+          },
+          {
+            lineRange: [19, 19],
+            referenceLabel: 'Range emptied with no hit, report absence',
+            acceptableKeywords: ['range empty return failure', 'target not present', 'fall through to not found', 'return sentinel'],
+            hint: 'If the loop ends without a hit, what does that prove?',
+            misconception: 'This is the proof-of-absence exit, not another halving step.',
+          },
+        ],
       },
       testCases: [
         { input: [[15, 18, 2, 5, 9, 12], 5], expected: 3, label: 'target in the low run' },
@@ -865,6 +1175,50 @@ The feasibility check is where this problem outgrows the simple rate search. Bec
 The search bounds encode two facts about the answer, not guesses: no deadline below \`max(panels)\` can work because some crew must paint the biggest panel whole, and \`sum(panels)\` always works with a single crew. Starting \`lo\` at 1 would still converge — the tighter bound just trims probes. Each probe costs one \`O(n)\` sweep and the range halves \`O(log S)\` times, so \`n = 10^4\` panels with sums near \`10^10\` resolve in a few hundred thousand operations.
 `,
         complexity: 'Time O(n log S) where S = sum(panels), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 13],
+            referenceLabel: 'Define a greedy feasibility test for one candidate',
+            acceptableKeywords: ['feasibility predicate helper', 'greedy contiguous packing', 'count resources for a candidate', 'does this candidate fit'],
+            hint: 'Before searching, what yes/no question must you answer for any candidate deadline?',
+            misconception: 'This greedy sweep measures feasibility; it does not pick the answer, and the contiguity constraint is why a plain division will not do.',
+          },
+          {
+            lineRange: [14, 18],
+            referenceLabel: 'Frame the answer values as the search range',
+            acceptableKeywords: ['bracket the candidate answers', 'low and high on answer line', 'bounds from problem facts', 'range of possible deadlines'],
+            hint: 'There is no wall index to probe — what number line are you searching over?',
+            misconception: 'These bounds span possible answers, not panel positions; the lower bound encodes that one crew must paint the biggest panel whole.',
+          },
+          {
+            lineRange: [19, 20],
+            referenceLabel: 'Loop while live and probe a candidate value',
+            acceptableKeywords: ['loop while range live', 'midpoint candidate to test', 'pick a value to check', 'while lo less than hi'],
+            hint: 'Each pass, which candidate value do you feed to the feasibility test?',
+            misconception: 'The midpoint is a candidate answer to test, not an index into the panels.',
+          },
+          {
+            lineRange: [21, 22],
+            referenceLabel: 'Candidate achievable, keep it and tighten downward',
+            acceptableKeywords: ['feasible candidate keep it', 'might be the minimum', 'lower the high bound', 'search smaller deadlines'],
+            hint: 'If the candidate is achievable, why not discard it outright?',
+            misconception: 'An achievable candidate could still be the earliest workable one, so it is kept, not skipped.',
+          },
+          {
+            lineRange: [23, 24],
+            referenceLabel: 'Candidate unachievable, discard it and everything below',
+            acceptableKeywords: ['infeasible candidate discard', 'too ambitious raise low', 'rule out smaller deadlines', 'move past mid'],
+            hint: 'If the candidate is unachievable, which other candidates does that also rule out?',
+            misconception: 'An unachievable candidate drags every smaller candidate down with it — the monotone stripe licenses that bulk discard.',
+          },
+          {
+            lineRange: [25, 25],
+            referenceLabel: 'Return the earliest achievable value',
+            acceptableKeywords: ['bounds meet return answer', 'minimum feasible candidate', 'converged survivor', 'report the result'],
+            hint: 'When the bounds collide, what does the survivor represent?',
+            misconception: 'This reports the converged minimum feasible answer, not another probe.',
+          },
+        ],
       },
       testCases: [
         { input: [[4, 1, 3, 2, 6], 2], expected: 8, label: 'two crews, perfectly balanced cut' },

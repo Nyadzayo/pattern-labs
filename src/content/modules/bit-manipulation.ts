@@ -139,6 +139,29 @@ XOR turns that guarantee into cancellation. Because XOR is commutative and assoc
 Note the precondition does real work here: if two different badges were still inside, the fold would return their XOR — a number that may not be any badge in the log. The trick is only as good as the "everyone else appears exactly twice" guarantee.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Open a neutral accumulator for the running fold',
+            acceptableKeywords: ['initialize accumulator to zero', 'start running total', 'identity element', 'seed the fold'],
+            hint: 'What starting value leaves the first combined element unchanged?',
+            misconception: 'This only prepares state; no cancellation has happened yet.',
+          },
+          {
+            lineRange: [4, 7],
+            referenceLabel: 'Fold every element with a self-cancelling operation',
+            acceptableKeywords: ['xor each element', 'combine all values', 'self-inverse fold', 'accumulate over the input'],
+            hint: 'Which operation makes a value combined with itself vanish?',
+            misconception: 'This is the cancelling sweep, not a counting or lookup step.',
+          },
+          {
+            lineRange: [8, 9],
+            referenceLabel: 'Return the lone survivor of the cancellation',
+            acceptableKeywords: ['return the accumulator', 'remaining value', 'unpaired result', 'final survivor'],
+            hint: 'After everything paired cancels out, what is left to return?',
+            misconception: 'This reports the residue of the fold, not a freshly computed value.',
+          },
+        ],
       },
       testCases: [
         { input: [[2, 2, 5]], expected: 5, label: 'basic pair plus lone' },
@@ -224,6 +247,29 @@ Because \`i >> 1 < i\`, a single left-to-right pass always finds the needed sub-
 The alternative recurrence \`weights[i] = weights[i & (i - 1)] + 1\` leans on the module's signature trick instead: \`i & (i - 1)\` is \`i\` with its lowest set bit erased, so it has exactly one fewer 1, and it is also strictly smaller than \`i\`. Both recurrences make every entry an \`O(1)\` lookup-plus-add, replacing the naive \`O(n log n)\` (an \`O(log i)\` count per entry) with \`O(n)\` total — the difference between a noticeable boot stall and a blink at \`n = 100{,}000\`.
 `,
         complexity: 'Time O(n), Space O(n) for the output table',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Allocate the answer table and seed the base case',
+            acceptableKeywords: ['preallocate result array', 'initialize the table', 'base case zero', 'size the output'],
+            hint: 'How big is the table, and what is the answer for the very first index?',
+            misconception: 'This reserves storage and the trivial case; the recurrence comes later.',
+          },
+          {
+            lineRange: [4, 8],
+            referenceLabel: 'Fill each entry from an already-solved smaller one',
+            acceptableKeywords: ['reuse a smaller subproblem', 'build on previous entry', 'dynamic programming recurrence', 'add the lowest bit'],
+            hint: 'How can a strictly smaller index that you already solved give this one in one step?',
+            misconception: 'This is the per-entry reuse, not a from-scratch recount of each number.',
+          },
+          {
+            lineRange: [9, 9],
+            referenceLabel: 'Hand back the completed table',
+            acceptableKeywords: ['return the table', 'return the filled array', 'output all answers', 'return result'],
+            hint: 'Once every index is filled, what gets returned?',
+            misconception: 'This returns the whole precomputed array, not a single count.',
+          },
+        ],
       },
       testCases: [
         { input: [0], expected: [0], label: 'minimal: n = 0' },
@@ -320,6 +366,29 @@ A power of four is two facts stacked together, and each fact has a constant-time
 Because Python short-circuits \`and\`, invalid inputs exit at the first failing fact. Three comparisons, two bitwise ops, zero iterations — exactly the budget the reviewer demanded. (Loop-based repeated division by 4 is also correct, but costs \`O(log n)\` and was ruled out.)
 `,
         complexity: 'Time O(1), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Prepare a positional stencil to test bit placement',
+            acceptableKeywords: ['define a mask constant', 'even-position stencil', 'precompute the bit pattern', 'select alternating positions'],
+            hint: 'What fixed bit pattern lets you later ask "is the set bit at an allowed slot?"',
+            misconception: 'This is a constant for later filtering, not yet any check on the input.',
+          },
+          {
+            lineRange: [5, 7],
+            referenceLabel: 'Require a positive value with a single set bit',
+            acceptableKeywords: ['positive and one bit set', 'power of two test', 'reject zero and negatives', 'exactly one bit'],
+            hint: 'Before checking placement, what two facts make a number a power of two at all?',
+            misconception: 'This is the necessary precondition, not the full power-of-four verdict.',
+          },
+          {
+            lineRange: [8, 9],
+            referenceLabel: 'Confirm the lone bit sits at an allowed position',
+            acceptableKeywords: ['mask against the stencil', 'bit at even index', 'and with the pattern', 'check the position'],
+            hint: 'How do you confirm the single set bit landed at one of the permitted slots?',
+            misconception: 'This narrows powers of two down to the target subset; it is not the single-bit test.',
+          },
+        ],
       },
       testCases: [
         { input: [16], expected: true, label: '4^2' },
@@ -413,6 +482,29 @@ Each constant is a stencil selecting the low block of every pair at that level: 
 A Python-specific check: left shifts can normally grow past bit 31 because Python ints are unbounded, but here every \`<< s\` operates on a value already stenciled by \`m\`, whose highest set bit plus \`s\` never exceeds 31. The structure itself keeps the word 32 bits wide — and is why bit k provably lands at \`31 - k\`: its offset within every block gets mirrored exactly once per level.
 `,
         complexity: 'Time O(log w) stages = O(1) for w = 32, Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'State the parallel block-swap template',
+            acceptableKeywords: ['describe the swap formula', 'mask and shift template', 'low and high block roles', 'setup the swap pattern'],
+            hint: 'What single mask-and-shift shape will every stage reuse to swap paired blocks?',
+            misconception: 'This frames the reusable swap idea; it does not yet move any bits.',
+          },
+          {
+            lineRange: [8, 12],
+            referenceLabel: 'Cascade halving block swaps down to single bits',
+            acceptableKeywords: ['swap halves then bytes', 'divide and conquer reversal', 'repeated mask-shift stages', 'shrink the block size'],
+            hint: 'Apply the same swap at each block size, halving until you reach single bits.',
+            misconception: 'This is the staged reversal cascade, not a one-bit-at-a-time loop.',
+          },
+          {
+            lineRange: [13, 15],
+            referenceLabel: 'Return the fully mirrored word',
+            acceptableKeywords: ['return the reversed value', 'no final mask needed', 'output the result', 'return v'],
+            hint: 'After the last stage, what do you hand back?',
+            misconception: 'The masks already kept the word 32 bits wide; no extra cleanup is performed here.',
+          },
+        ],
       },
       testCases: [
         { input: [1], expected: 2147483648, label: 'lone low bit crosses the word' },
@@ -527,6 +619,36 @@ That disagreement bit is a perfect partition key. Split the fleet into "bit set"
 \`x & -x\` isolates the lowest set bit because two's-complement negation flips all bits above the lowest 1 and leaves the lowest 1 and the zeros below it intact — so \`x\` and \`-x\` agree only at that single position. Any set bit of \`x\` would work as the splitter; the lowest is simply the cheapest to extract. The final \`sorted\` costs O(1) (two elements) and makes the output deterministic.
 `,
         complexity: 'Time O(n) (two passes), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Fold the whole input to the combined difference',
+            acceptableKeywords: ['xor everything together', 'cancel the paired values', 'combined fingerprint', 'first pass fold'],
+            hint: 'What does folding all values with the cancelling operation leave when most appear twice?',
+            misconception: 'This yields the XOR of the two unknowns, not either unknown directly.',
+          },
+          {
+            lineRange: [8, 10],
+            referenceLabel: 'Extract one bit where the two unknowns differ',
+            acceptableKeywords: ['isolate lowest set bit', 'pick a distinguishing bit', 'and with negation', 'splitter bit'],
+            hint: 'You need a single bit position where the two answers are guaranteed to disagree.',
+            misconception: 'This chooses a partition key, not the answer itself.',
+          },
+          {
+            lineRange: [11, 18],
+            referenceLabel: 'Fold only the group carrying that bit to recover one unknown',
+            acceptableKeywords: ['second pass on one side', 'filter by the splitter bit', 'xor the matching subset', 'recover one value'],
+            hint: 'Restrict the fold to elements having that bit so one unknown survives alone.',
+            misconception: 'This isolates only one of the two answers; the partner is derived elsewhere.',
+          },
+          {
+            lineRange: [19, 22],
+            referenceLabel: 'Derive the partner and return in deterministic order',
+            acceptableKeywords: ['recover the other value', 'xor out the known one', 'sort the pair', 'return both answers'],
+            hint: 'Given the combined difference and one unknown, how do you get the second, and how is output ordered?',
+            misconception: 'The partner falls out of the earlier combined fold; it is not folded a third time.',
+          },
+        ],
       },
       testCases: [
         { input: [[7, 3, 7, 12]], expected: [3, 12], label: 'one finisher, two retirees' },
@@ -636,6 +758,29 @@ The loop's invariant is that \`a + b\` (as register patterns, modulo \`2^32\`) n
 Two Python-specific traps make this problem more than transcription. First, Python has no register: without \`& MASK\` the carry of a negative operand would grow forever and the loop would never end. Second, the result of the loop is a *pattern*, not a value — \`0xFFFFFFFE\` means \`-2\`. The branchless-looking finisher \`~(a ^ MASK)\` converts pattern to value using only bitwise ops: flipping the low 32 bits and applying \`~\` (which maps \`v\` to \`-v - 1\`) lands precisely on \`a - 2^32\`.
 `,
         complexity: 'Time O(w) = O(32) iterations worst case, Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Confine the operands to a fixed-width register',
+            acceptableKeywords: ['mask to thirty-two bits', 'simulate a register', 'clamp the operands', 'wrap to fixed width'],
+            hint: 'Python ints are unbounded — what must you do so carries behave like hardware?',
+            misconception: 'This bounds the working width; it does not yet perform any addition.',
+          },
+          {
+            lineRange: [8, 15],
+            referenceLabel: 'Repeatedly separate partial sum from propagated carry',
+            acceptableKeywords: ['xor for sum without carry', 'and-shift for carry', 'loop until carry is zero', 'shift carries left'],
+            hint: 'Which op gives the carry-free sum, and which produces the carries to feed back?',
+            misconception: 'This is the iterative carry resolution, not the final value extraction.',
+          },
+          {
+            lineRange: [16, 20],
+            referenceLabel: 'Reinterpret the bit pattern as a signed result',
+            acceptableKeywords: ['convert pattern to signed', 'handle the sign bit', 'reinterpret twos complement', 'return signed value'],
+            hint: 'The loop leaves a raw pattern — how do you read it back as a possibly-negative number?',
+            misconception: 'This maps the register pattern to a value; it is not part of the carry loop.',
+          },
+        ],
       },
       testCases: [
         { input: [2, 3], expected: 5, label: 'small positives' },
@@ -721,6 +866,29 @@ The delightful part is that this recursive mirror collapses to one XOR: \`label(
 Either implementation is fine; the closed form is preferred here because it is \`O(1)\` per label, allocation-free beyond the output, and impossible to get the seams wrong. The reflection builder is the better mental model; the formula is the better program.
 `,
         complexity: 'Time O(2^n) to emit the list, Space O(2^n) for the output',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Name the closed-form mapping from index to label',
+            acceptableKeywords: ['index xor shifted index', 'closed form formula', 'position to code mapping', 'gray code rule'],
+            hint: 'What single expression turns a counting index into its adjacent-differs label?',
+            misconception: 'This declares the per-index rule, replacing the recursive reflect-and-prefix build.',
+          },
+          {
+            lineRange: [5, 11],
+            referenceLabel: 'Justify the single-bit-change property',
+            acceptableKeywords: ['only one bit changes', 'contiguous carry suffix', 'adjacent bits xor', 'why one step differs'],
+            hint: 'Why does incrementing the index flip exactly one output bit under this formula?',
+            misconception: 'This is the correctness argument for the formula, not a separate computation.',
+          },
+          {
+            lineRange: [12, 12],
+            referenceLabel: 'Emit the full sequence over the index range',
+            acceptableKeywords: ['comprehension over the range', 'build the whole list', 'map the formula across indices', 'return the sequence'],
+            hint: 'How do you apply the per-index rule across every position to produce the list?',
+            misconception: 'This materializes the entire ordering, not a single label.',
+          },
+        ],
       },
       testCases: [
         { input: [2], expected: [0, 1, 3, 2], label: 'two-bit disk' },
@@ -820,6 +988,36 @@ That question has a closed-form answer because bit \`b\` of \`x & y\` depends on
 The complexity collapse is the point: \`n = 100{,}000\` means about five billion pairs — hopeless — but only \`20 x 100{,}000 = 2\` million bit reads. This "transpose the aggregation, then count per bit position" move is a workhorse for pairwise bitwise aggregates (the same idea computes total pairwise Hamming distance with \`c * (n - c)\` instead of \`c\` choose 2), and it works precisely because bitwise operators treat every position independently.
 `,
         complexity: 'Time O(B * n) with B = 20 bits, Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Reframe the total as a per-position accounting',
+            acceptableKeywords: ['accumulate per bit position', 'transpose pairs to bits', 'sum feature by feature', 'initialize running total'],
+            hint: 'Instead of looping over pairs, what should the outer loop range over to avoid the quadratic blowup?',
+            misconception: 'This reorganizes the summation order; no pair contribution is computed yet.',
+          },
+          {
+            lineRange: [7, 10],
+            referenceLabel: 'Count how many inputs carry the current position',
+            acceptableKeywords: ['count nodes with the bit', 'tally carriers of the feature', 'how many have bit set', 'population for this bit'],
+            hint: 'For the bit in focus, what single number summarizes everything you need about the inputs?',
+            misconception: 'This only tallies carriers; it does not yet form any pairs.',
+          },
+          {
+            lineRange: [11, 13],
+            referenceLabel: 'Convert the count into this position\'s contribution',
+            acceptableKeywords: ['choose two of the carriers', 'pairs times bit value', 'closed-form pair count', 'add weighted contribution'],
+            hint: 'Given how many carry the bit, how many surviving pairs are there and what does each contribute?',
+            misconception: 'This is the per-position closed form, not an enumeration of actual pairs.',
+          },
+          {
+            lineRange: [14, 14],
+            referenceLabel: 'Return the accumulated grand total',
+            acceptableKeywords: ['return the total', 'sum across all positions', 'final accumulated score', 'output the result'],
+            hint: 'After every position is accounted for, what is returned?',
+            misconception: 'This returns the combined total over all bit positions, not one position\'s share.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 5, 6]], expected: 7, label: 'three nodes, mixed overlap' },
@@ -912,6 +1110,43 @@ The per-bit test is where XOR's algebra earns its keep. Restricted to the bits s
 One subtlety: the candidate always extends the *committed* \`best\`, never a hypothetical, so witnesses for later bits are automatically consistent with earlier decisions — different rounds may rely on different witness pairs, and that is fine, because the final \`best\` is validated bitwise: some pair achieves a XOR with all of \`best\`'s set bits at or above each decision point, and the greedy argument guarantees the maximum equals \`best\`. Total cost: 31 rounds of an \`O(n)\` set build plus probes, versus five billion pairs at \`n = 100{,}000\`.
 `,
         complexity: 'Time O(n * 31), Space O(n) for the prefix set',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Set up a top-down greedy build over bit positions',
+            acceptableKeywords: ['greedy from the top bit', 'initialize answer and view', 'most significant first loop', 'build bit by bit'],
+            hint: 'Why decide the answer one bit at a time starting from the most significant?',
+            misconception: 'This frames the greedy sweep; no bit has been committed yet.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Truncate every input to the bits decided so far',
+            acceptableKeywords: ['widen the prefix mask', 'collect truncated prefixes', 'restrict to current bits', 'build the prefix set'],
+            hint: 'To test the current bit, what view of each input do you need in a fast-lookup structure?',
+            misconception: 'This narrows inputs to their leading bits; it does not yet test any pair.',
+          },
+          {
+            lineRange: [9, 13],
+            referenceLabel: 'Propose the answer with this bit optimistically set',
+            acceptableKeywords: ['candidate with the bit on', 'hope to set this bit', 'derive the needed partner', 'witness existence question'],
+            hint: 'Optimistically assume the bit is achievable — what target value and what partner must exist?',
+            misconception: 'This sets up the feasibility question; it has not yet confirmed the bit.',
+          },
+          {
+            lineRange: [14, 16],
+            referenceLabel: 'Commit the bit only when a witness pair exists',
+            acceptableKeywords: ['membership probe for partner', 'accept if pair found', 'keep the bit on success', 'confirm achievable'],
+            hint: 'How do you check, in near-linear time, whether some pair realizes the optimistic candidate?',
+            misconception: 'This locks in or rejects the current bit; it does not revisit earlier decisions.',
+          },
+          {
+            lineRange: [17, 17],
+            referenceLabel: 'Return the greedily assembled maximum',
+            acceptableKeywords: ['return the best answer', 'final committed value', 'output the maximum', 'return best'],
+            hint: 'After all positions are decided, what holds the answer?',
+            misconception: 'This returns the accumulated optimum, not a per-bit candidate.',
+          },
+        ],
       },
       testCases: [
         { input: [[9, 14, 3, 21]], expected: 28, label: 'four-code catalog' },

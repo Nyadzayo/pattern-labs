@@ -170,6 +170,43 @@ The flood itself is plain BFS over the implicit grid graph — a cell's neighbor
 Each cell is enqueued at most once and examined at most five times (once by the scan, up to four times as someone's neighbor), so the whole thing is linear in the panel area. A DFS with an explicit stack works identically; recursion would risk Python's depth limit on a 300×300 all-dead panel.
 `,
         complexity: 'Time O(R·C), Space O(R·C) for the seen matrix and queue',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Pull in the frontier container',
+            acceptableKeywords: ['import queue type', 'bring in the deque', 'queue data structure', 'frontier import'],
+            hint: 'A flood needs a structure to hold cells waiting to be processed.',
+            misconception: 'This only makes the tool available; it does no traversal yet.',
+          },
+          {
+            lineRange: [4, 10],
+            referenceLabel: 'Guard empty input and prepare the bookkeeping',
+            acceptableKeywords: ['handle empty grid', 'measure dimensions', 'allocate visited tracker', 'initialise the counter'],
+            hint: 'Before scanning, what trivial inputs return early and what state do you need to track?',
+            misconception: 'This is setup and the degenerate exit, not the counting logic itself.',
+          },
+          {
+            lineRange: [11, 21],
+            referenceLabel: 'Scan for an untouched marked cell and start a new group',
+            acceptableKeywords: ['sweep every cell', 'first sighting of a region', 'increment the group count', 'seed the flood'],
+            hint: 'When is standing on a cell proof that you have found a brand-new group?',
+            misconception: 'The count rises once per region here — not once per cell in the region.',
+          },
+          {
+            lineRange: [22, 34],
+            referenceLabel: 'Flood the whole region from the seed',
+            acceptableKeywords: ['drain the queue', 'visit four neighbours', 'absorb connected cells', 'mark at enqueue time'],
+            hint: 'How do you make sure no other cell in this same region starts its own count?',
+            misconception: 'This expansion claims the region but never adds to the group total.',
+          },
+          {
+            lineRange: [35, 35],
+            referenceLabel: 'Report the number of groups found',
+            acceptableKeywords: ['return the count', 'final group total', 'hand back the tally', 'output cluster count'],
+            hint: 'After the whole grid is swept, what value is the answer?',
+            misconception: 'This is the final result, reached only after every region was flooded.',
+          },
+        ],
       },
       testCases: [
         {
@@ -277,6 +314,43 @@ The question "how many groups remain after all these pairwise merges?" is Union-
 The BFS/DFS alternative — build an adjacency list, sweep all \`n\` machines, launch a traversal from each unvisited one, count launches — is the same \`O(n + m)\` and equally correct. Union-Find wins here on memory locality and on never materializing the adjacency list; BFS wins when you also need to *list* each segment's members in traversal order.
 `,
         complexity: 'Time O(n + m·α(n)) ≈ O(n + m), Space O(n) for the parent array',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Start every element as its own singleton group',
+            acceptableKeywords: ['each item its own root', 'initialise parent pointers', 'identity parent array', 'singleton sets'],
+            hint: 'Before any merging, how many groups exist and how is each represented?',
+            misconception: 'This is the starting partition, not yet any joining of groups.',
+          },
+          {
+            lineRange: [5, 12],
+            referenceLabel: 'Climb to a group representative, flattening the path',
+            acceptableKeywords: ['find the root', 'walk up to representative', 'path compression', 'collapse the chain'],
+            hint: 'How do you discover which group an element belongs to, and keep future lookups cheap?',
+            misconception: 'This locates and flattens — it never decides whether two groups merge.',
+          },
+          {
+            lineRange: [13, 15],
+            referenceLabel: 'Seed the running group count',
+            acceptableKeywords: ['count starts at n', 'one group per element', 'initial tally', 'group counter'],
+            hint: 'With nothing merged yet, what is the group total you will decrement from?',
+            misconception: 'This counter only drops on a real merge, not on every edge.',
+          },
+          {
+            lineRange: [16, 24],
+            referenceLabel: 'Merge endpoints of each edge, decrementing on a real union',
+            acceptableKeywords: ['union two groups', 'join distinct roots', 'merge per edge', 'decrement on merge'],
+            hint: 'For each connection, when does the group count actually go down?',
+            misconception: 'Edges inside one group or duplicates change nothing — only distinct-root pairs merge.',
+          },
+          {
+            lineRange: [25, 25],
+            referenceLabel: 'Report how many groups survived',
+            acceptableKeywords: ['return remaining count', 'surviving groups', 'final segment total', 'hand back the count'],
+            hint: 'After all edges are processed, what is the answer?',
+            misconception: 'This is the final survivor count after every union completed.',
+          },
+        ],
       },
       testCases: [
         { input: [5, [[0, 1], [1, 2], [3, 4]]], expected: 2, label: 'two segments' },
@@ -404,6 +478,43 @@ Two details earn the "passes hidden tests" badge. First, *visited at enqueue tim
 Returning at discovery (rather than at pop) shaves up to one full ring of work; either choice is correct as long as distances are assigned at enqueue time.
 `,
         complexity: 'Time O(R·C), Space O(R·C) for the seen matrix and queue',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Bring in the frontier and read the grid size',
+            acceptableKeywords: ['import the queue', 'measure dimensions', 'set up the function', 'grid bounds'],
+            hint: 'What tooling and measurements do you need before any search?',
+            misconception: 'This is preamble; the shortest-path work has not begun.',
+          },
+          {
+            lineRange: [6, 12],
+            referenceLabel: 'Settle the trivial start and goal cases up front',
+            acceptableKeywords: ['blocked endpoint returns', 'start equals goal', 'handle degenerate cases', 'guard the boundaries'],
+            hint: 'Which inputs are decidable without searching, and why must they be handled before the loop?',
+            misconception: 'These early returns exist because the loop only reports on discovering the goal, never on the start.',
+          },
+          {
+            lineRange: [13, 16],
+            referenceLabel: 'Initialise the visited tracker and the distance frontier',
+            acceptableKeywords: ['mark the source seen', 'seed the queue', 'distance zero at start', 'init traversal state'],
+            hint: 'What state does the wave need before its first expansion?',
+            misconception: 'This primes the search from the source; no cell has been explored yet.',
+          },
+          {
+            lineRange: [17, 34],
+            referenceLabel: 'Expand the wave ring by ring, returning on first reach of the goal',
+            acceptableKeywords: ['drain the frontier', 'explore neighbours', 'first arrival is shortest', 'return on reaching goal'],
+            hint: 'Why is the very first time the frontier touches the goal guaranteed minimal?',
+            misconception: 'The early return is the success exit; the distance is final because BFS reaches in nondecreasing order.',
+          },
+          {
+            lineRange: [35, 37],
+            referenceLabel: 'Report unreachable when the frontier empties',
+            acceptableKeywords: ['return negative one', 'no route exists', 'frontier exhausted', 'goal unreachable'],
+            hint: 'If the search runs dry without reaching the goal, what is the answer?',
+            misconception: 'Reaching here means every reachable open cell was explored and the goal was never among them.',
+          },
+        ],
       },
       testCases: [
         { input: [[[0, 0, 0], [1, 1, 0], [0, 0, 0]]], expected: 4, label: 'detour around a wall' },
@@ -531,6 +642,43 @@ Two robustness details: duplicates are harmless because each duplicate entry bum
 The DFS alternative — three-color marking, where finding an edge into a "gray" (in-progress) node proves a cycle — is equally valid, but on 100k-job manifests the iterative queue version dodges Python's recursion limit for free.
 `,
         complexity: 'Time O(n + m), Space O(n + m) for the adjacency lists and indegree array',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Pull in the frontier and open the routine',
+            acceptableKeywords: ['import the queue', 'declare the function', 'bring in deque', 'set up signature'],
+            hint: 'What tool does a level-by-level scheduler need before building anything?',
+            misconception: 'This is preamble, not the dependency bookkeeping.',
+          },
+          {
+            lineRange: [5, 15],
+            referenceLabel: 'Build the dependents map and count each item prerequisites',
+            acceptableKeywords: ['adjacency of dependents', 'tally incoming requirements', 'build indegree array', 'record what waits on what'],
+            hint: 'For each constraint, what two pieces of bookkeeping must you update?',
+            misconception: 'This records the structure; nothing has been scheduled or run yet.',
+          },
+          {
+            lineRange: [16, 20],
+            referenceLabel: 'Seed the queue with anything having no prerequisites',
+            acceptableKeywords: ['enqueue zero-indegree items', 'ready to run first', 'initialise processed counter', 'sources have no requirements'],
+            hint: 'Which items can be started immediately, and what counter tracks progress?',
+            misconception: 'This picks the initial runnable set; it does not yet relax any dependents.',
+          },
+          {
+            lineRange: [21, 29],
+            referenceLabel: 'Run a ready item and unblock its dependents',
+            acceptableKeywords: ['process the queue', 'decrement dependents', 'enqueue newly unblocked', 'count completed items'],
+            hint: 'When an item finishes, how do the items waiting on it become eligible?',
+            misconception: 'A dependent is enqueued only once its last prerequisite clears, not on the first.',
+          },
+          {
+            lineRange: [30, 33],
+            referenceLabel: 'Declare feasible only if every item ran',
+            acceptableKeywords: ['all items completed', 'compare count to total', 'leftover means a cycle', 'return feasibility'],
+            hint: 'If some items were never scheduled, what does that prove about the graph?',
+            misconception: 'A shortfall here signals a cycle, not merely an unlucky processing order.',
+          },
+        ],
       },
       testCases: [
         { input: [3, [[1, 0], [2, 1]]], expected: true, label: 'simple chain' },
@@ -654,6 +802,43 @@ Once the count is right, only one question remains: connected or not? With exact
 Union-Find is an equally clean implementation — perform the unions and fail fast if any cable joins two platforms that already share a root (that cable would close a loop). Both versions are linear; BFS is shown because the sweep-from-one-start shape is the module's bread and butter.
 `,
         complexity: 'Time O(n + m), Space O(n + m) for the adjacency list and seen set',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Pull in the frontier and open the routine',
+            acceptableKeywords: ['import the queue', 'declare the function', 'bring in deque', 'set up signature'],
+            hint: 'What container does the upcoming sweep rely on?',
+            misconception: 'This is preamble, not part of the structural check.',
+          },
+          {
+            lineRange: [5, 10],
+            referenceLabel: 'Reject on the wrong edge count before any traversal',
+            acceptableKeywords: ['exactly n minus one edges', 'count check up front', 'fail fast on edge total', 'tree edge identity'],
+            hint: 'What single O(1) count must hold for the structure to even be possible?',
+            misconception: 'This count rule alone rejects most bad inputs, including duplicate edges, before walking anything.',
+          },
+          {
+            lineRange: [11, 18],
+            referenceLabel: 'Assemble the undirected neighbour lists',
+            acceptableKeywords: ['build adjacency list', 'record both directions', 'symmetric edges', 'map node to neighbours'],
+            hint: 'How are the edge pairs turned into something a walk can follow?',
+            misconception: 'Each edge is stored both ways because the relationship is undirected.',
+          },
+          {
+            lineRange: [19, 27],
+            referenceLabel: 'Sweep reachability from a single start',
+            acceptableKeywords: ['traverse from node zero', 'mark visited nodes', 'drain the frontier', 'explore neighbours'],
+            hint: 'With the edge count already correct, what single property still needs checking?',
+            misconception: 'This only checks reach — with the right edge count, full reach already rules out a cycle.',
+          },
+          {
+            lineRange: [28, 30],
+            referenceLabel: 'Certify only if the sweep reached everyone',
+            acceptableKeywords: ['all nodes reached', 'compare visited to total', 'return connectivity verdict', 'everyone reachable'],
+            hint: 'After the walk, what comparison decides the verdict?',
+            misconception: 'Full reach here certifies a tree precisely because the edge count was already pinned to n minus one.',
+          },
+        ],
       },
       testCases: [
         {
@@ -795,6 +980,43 @@ That equivalence is also why the simulation reading and the shortest-path readin
 Bookkeeping does the rest. Counting sound containers up front and decrementing on each conversion answers "did everything corrode?" without a final sweep, and recording \`day + 1\` at enqueue time means the last recorded value is the day the final container turned. Two ordering traps carry the hidden tests: the no-sound-containers case must return 0 — not -1 — even when there are no sources at all, and \`last_day\` must only advance when a *sound* container converts; popping the seeds themselves proves nothing.
 `,
         complexity: 'Time O(R·C), Space O(R·C) for the reached set and queue',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Bring in the frontier and read the grid size',
+            acceptableKeywords: ['import the queue', 'measure dimensions', 'set up the function', 'grid bounds'],
+            hint: 'What tooling and measurements come before any spreading?',
+            misconception: 'This is preamble; nothing has been seeded into the search yet.',
+          },
+          {
+            lineRange: [6, 19],
+            referenceLabel: 'Seed every source at time zero and tally the susceptible cells',
+            acceptableKeywords: ['enqueue all sources', 'multi-source start', 'count remaining targets', 'initialise the frontier'],
+            hint: 'How do many simultaneous origins become one search, and what running total tracks the goal?',
+            misconception: 'All sources enter at distance zero together — this is not a single-source start.',
+          },
+          {
+            lineRange: [20, 24],
+            referenceLabel: 'Short-circuit when nothing can spread',
+            acceptableKeywords: ['no susceptible cells', 'early return zero', 'nothing to convert', 'trivial case guard'],
+            hint: 'If there is nothing left to affect, what is the answer regardless of sources?',
+            misconception: 'This guard returns immediately and never enters the spread loop.',
+          },
+          {
+            lineRange: [25, 41],
+            referenceLabel: 'Spread outward, recording the latest conversion time',
+            acceptableKeywords: ['drain the frontier', 'spread to neighbours', 'track the last time', 'decrement remaining count'],
+            hint: 'As the wave advances, which value tells you when the final cell converts?',
+            misconception: 'Each susceptible cell converts at its distance to the nearest source, and the max of those is the answer.',
+          },
+          {
+            lineRange: [42, 44],
+            referenceLabel: 'Report the finish time or failure if any cell was unreachable',
+            acceptableKeywords: ['return last day', 'unreached means failure', 'negative one if stalled', 'final verdict'],
+            hint: 'After the spread, how do you tell a complete conversion from one that stalled?',
+            misconception: 'A leftover susceptible cell means the spread could not reach it, not that timing was wrong.',
+          },
+        ],
       },
       testCases: [
         {
@@ -919,6 +1141,43 @@ The propagation fails only when some edge joins two same-colored species. Tracin
 Two implementation points carry the hidden tests. Clusters are independent, so the outer loop must restart the coloring from every still-unassigned species; a single BFS from species 0 would silently pass a graph whose *other* component hides the odd cycle. And duplicate conflict entries are harmless: the second copy just re-checks an edge whose endpoints already disagree.
 `,
         complexity: 'Time O(n + m), Space O(n + m) for the adjacency list and tank array',
+        subgoals: [
+          {
+            lineRange: [1, 9],
+            referenceLabel: 'Bring in the frontier and build the symmetric neighbour lists',
+            acceptableKeywords: ['import the queue', 'build adjacency list', 'record both directions', 'mutual relationships'],
+            hint: 'How are the pairwise constraints turned into something a walk can follow both ways?',
+            misconception: 'This stores the constraint graph; no assignment has happened yet.',
+          },
+          {
+            lineRange: [10, 12],
+            referenceLabel: 'Allocate the per-node side assignment, all unset',
+            acceptableKeywords: ['initialise the labels', 'unassigned sentinel', 'two-way partition array', 'track each side'],
+            hint: 'What state records which of two sides each node landed on, and its starting value?',
+            misconception: 'This only reserves the labels; the sentinel marks not-yet-visited.',
+          },
+          {
+            lineRange: [13, 20],
+            referenceLabel: 'Visit each untouched cluster and fix its first side freely',
+            acceptableKeywords: ['loop over components', 'skip already assigned', 'free first choice', 'seed a new cluster'],
+            hint: 'Why must every disconnected cluster get its own fresh start, and why is the first pick arbitrary?',
+            misconception: 'The first placement in a cluster is free; everything after is forced.',
+          },
+          {
+            lineRange: [21, 31],
+            referenceLabel: 'Propagate opposite sides and fail on a same-side conflict',
+            acceptableKeywords: ['assign opposite side', 'two coloring', 'detect odd cycle', 'reject same-side neighbours'],
+            hint: 'A discovered neighbour is forced where, and what collision proves no split exists?',
+            misconception: 'A same-side edge signals an odd cycle, not a fixable ordering mistake.',
+          },
+          {
+            lineRange: [32, 33],
+            referenceLabel: 'Declare success when no conflict ever appeared',
+            acceptableKeywords: ['return true', 'splittable confirmed', 'no collision found', 'bipartite verdict'],
+            hint: 'If the whole graph colored without collision, what is the result?',
+            misconception: 'Reaching here means every cluster colored cleanly, so a valid two-way split exists.',
+          },
+        ],
       },
       testCases: [
         {
@@ -1041,6 +1300,36 @@ Directedness is the detail separating this from the module's component-counting 
 The \`opened\` set quietly absorbs the messy input cases: a duplicate keycard fails the \`not in opened\` test on its second appearance, and a self-keycard is rejected immediately because every vault enters \`opened\` before (or as) its tray is processed. An explicit stack gives DFS order here; a deque would give BFS order and open the same set — only shortest distances would care about the difference, and this problem never asks for them.
 `,
         complexity: 'Time O(n + k) where k is the total keycard count, Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 2],
+            referenceLabel: 'Open the routine and read the node count',
+            acceptableKeywords: ['declare the function', 'measure the size', 'count the nodes', 'set up signature'],
+            hint: 'What single measurement does the final coverage test need?',
+            misconception: 'This is setup; no traversal has begun.',
+          },
+          {
+            lineRange: [3, 7],
+            referenceLabel: 'Seed reachability from the single source',
+            acceptableKeywords: ['start from node zero', 'visited set with source', 'initialise the stack', 'single source reachability'],
+            hint: 'Which node is reachable for free, and what two structures track the walk?',
+            misconception: 'Only one source matters here — this is reachability from it, not component counting.',
+          },
+          {
+            lineRange: [8, 17],
+            referenceLabel: 'Follow directed edges, collecting every reachable node',
+            acceptableKeywords: ['drain the stack', 'follow directed edges', 'mark newly reached', 'expand reachable set'],
+            hint: 'Why does visit order not matter for which nodes end up reachable?',
+            misconception: 'Edges are one-way; an edge back to an unreached node does not help you get there.',
+          },
+          {
+            lineRange: [18, 20],
+            referenceLabel: 'Succeed only if the reachable set covers everything',
+            acceptableKeywords: ['compare reached to total', 'all nodes covered', 'return coverage verdict', 'everything reachable'],
+            hint: 'After the cascade, what comparison decides the answer?',
+            misconception: 'This checks coverage of one reachable set, not how many separate groups exist.',
+          },
+        ],
       },
       testCases: [
         { input: [[[1], [2], [3], []]], expected: true, label: 'chain of keycards' },
@@ -1177,6 +1466,43 @@ Three boundary rules come straight from the story and dominate the hidden tests:
 `,
         complexity:
           'Time O(W·L²) to build and consume the buckets (W words, length L), Space O(W·L) for the buckets, seen set, and queue',
+        subgoals: [
+          {
+            lineRange: [1, 8],
+            referenceLabel: 'Open the routine and short-circuit the no-move case',
+            acceptableKeywords: ['import the tools', 'start equals goal', 'zero moves early', 'declare the function'],
+            hint: 'What trivial input needs no search and no validation at all?',
+            misconception: 'When start already matches the goal the rest of the machinery never runs.',
+          },
+          {
+            lineRange: [9, 16],
+            referenceLabel: 'Validate the destination and record the item length',
+            acceptableKeywords: ['target must be allowed', 'reject missing goal', 'set of allowed words', 'measure the length'],
+            hint: 'Why must the final state itself be a member of the allowed set before searching?',
+            misconception: 'A goal outside the allowed set is hopeless no matter what chains exist.',
+          },
+          {
+            lineRange: [17, 25],
+            referenceLabel: 'Precompute the implicit adjacency via wildcard buckets',
+            acceptableKeywords: ['blank one position', 'group by wildcard pattern', 'build neighbour buckets', 'one-character-apart filing'],
+            hint: 'How do you find one-edit neighbours without comparing every pair of words?',
+            misconception: 'Sharing a wildcard bucket is exactly the one-difference edge — this is the graph, built implicitly.',
+          },
+          {
+            lineRange: [26, 42],
+            referenceLabel: 'Search ring by ring, returning the first reach of the goal',
+            acceptableKeywords: ['breadth-first frontier', 'first arrival is shortest', 'return on reaching target', 'clear consumed buckets'],
+            hint: 'Why is the first time the frontier touches the goal the minimum number of moves?',
+            misconception: 'This counts edges between words, which is one fewer than the number of words on the chain.',
+          },
+          {
+            lineRange: [43, 45],
+            referenceLabel: 'Report unreachable when no chain connects',
+            acceptableKeywords: ['return negative one', 'no chain exists', 'frontier exhausted', 'goal unreachable'],
+            hint: 'If the search drains without reaching the goal, what is the answer?',
+            misconception: 'Reaching here means no sequence of allowed one-edit steps connects start to goal.',
+          },
+        ],
       },
       testCases: [
         {

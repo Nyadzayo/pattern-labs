@@ -175,6 +175,43 @@ The two-speed trick converts "infinite looping" into a finite, observable event.
 Two details carry the correctness. First, the comparison is \`slow is fast\` — object identity — because distinct carts can share a label (see the all-sevens test). Second, the comparison happens *after* moving: both trackers begin on the head, and comparing before the first move would report a loop on every non-empty chain. The empty chain never enters the loop (\`fast\` is \`None\`) and correctly returns \`False\`.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define the chained-record node type',
+            acceptableKeywords: ['node class with value and next', 'linked node definition', 'declare the list node', 'val and pointer fields'],
+            hint: 'What data type holds a value plus a link to its successor?',
+            misconception: 'This only declares the building block — it does no traversal or detection itself.',
+          },
+          {
+            lineRange: [5, 14],
+            referenceLabel: 'Construct the chain, optionally bending the tail back',
+            acceptableKeywords: ['build the linked structure', 'wire nodes in sequence', 'connect last node to an earlier one', 'assemble chain from values'],
+            hint: 'How do raw values become a chain whose end may point back inward?',
+            misconception: 'This is test scaffolding that shapes the input — it is not the cycle test.',
+          },
+          {
+            lineRange: [15, 21],
+            referenceLabel: 'Anchor both cursors at the start before stepping',
+            acceptableKeywords: ['place both pointers at head', 'slow and fast start together', 'initialize the two cursors', 'set up before the loop'],
+            hint: 'Where do the two differently-paced cursors begin?',
+            misconception: 'Comparing the cursors here, before any move, would falsely report a cycle on every nonempty chain.',
+          },
+          {
+            lineRange: [22, 26],
+            referenceLabel: 'Advance at two speeds and test for a collision',
+            acceptableKeywords: ['move slow one fast two', 'check identity after stepping', 'detect the cursors meeting', 'two-speed advance and compare'],
+            hint: 'How does a faster cursor reveal a loop without recording visited nodes?',
+            misconception: 'Equal payloads do not mean a meeting — only the same object identity proves the lap.',
+          },
+          {
+            lineRange: [27, 28],
+            referenceLabel: 'Falling off the end means no loop',
+            acceptableKeywords: ['reached the end no cycle', 'fast hit null return false', 'chain terminates', 'exit without a meeting'],
+            hint: 'If the fast cursor runs off the end, what does that prove?',
+            misconception: 'Reaching here is the acyclic verdict, not an unfinished search.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 1, 4, 1], 1], expected: true, label: 'loop back to index 1' },
@@ -282,6 +319,43 @@ The only delicate point is parity. With an odd number of jobs (say 5), fast stop
 The guard order matters too: \`fast and fast.next\` short-circuits, so we never dereference \`None\` on either parity. One pass, two references, no arithmetic on lengths.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define the chained-record node type',
+            acceptableKeywords: ['node class with value and next', 'linked node definition', 'declare the list node', 'val and pointer fields'],
+            hint: 'What data type holds a value plus a link to its successor?',
+            misconception: 'This is just the element definition — it computes no midpoint on its own.',
+          },
+          {
+            lineRange: [5, 11],
+            referenceLabel: 'Materialize the values into a forward chain',
+            acceptableKeywords: ['build the linked structure', 'turn list into chain', 'prepend to keep head first', 'assemble chain from values'],
+            hint: 'How do the input values become a chain whose first value is the head?',
+            misconception: 'This setup prepares the input; the one-pass scan happens afterward.',
+          },
+          {
+            lineRange: [12, 16],
+            referenceLabel: 'Anchor both cursors at the front',
+            acceptableKeywords: ['place both pointers at head', 'slow and fast start together', 'initialize the two cursors', 'set up before the loop'],
+            hint: 'Before measuring, where do the two cursors both begin?',
+            misconception: 'No distance is measured here yet — this only positions the cursors.',
+          },
+          {
+            lineRange: [17, 21],
+            referenceLabel: 'Drive the fast cursor to the end at double pace',
+            acceptableKeywords: ['move slow one fast two', 'advance until fast exhausts', 'two-speed walk to the end', 'guard before double step'],
+            hint: 'What loop makes one cursor reach the end while the other covers half?',
+            misconception: 'The length is never counted — it is implied by where the fast cursor stops.',
+          },
+          {
+            lineRange: [22, 24],
+            referenceLabel: 'Read the half-distance cursor as the answer',
+            acceptableKeywords: ['return the slow cursor value', 'slow sits at the middle', 'report the midpoint', 'half-distance node value'],
+            hint: 'When the fast cursor finishes, what does the slow cursor now point at?',
+            misconception: 'This reports the midpoint position, not a per-step decision inside the walk.',
+          },
+        ],
       },
       testCases: [
         { input: [[10, 20, 30]], expected: 20, label: 'odd length' },
@@ -409,6 +483,43 @@ Read that as: starting at the collision point (which sits \`s\` steps past the e
 Identity comparison (\`is\`) matters again: the all-sevens hidden case has five equal IDs, and only object identity distinguishes the orbit entry from its lookalikes. The empty chain and terminating chains never collide and fall through to \`-1\`.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define the chained-record node type',
+            acceptableKeywords: ['node class with value and next', 'linked node definition', 'declare the list node', 'val and pointer fields'],
+            hint: 'What data type holds a value plus a link to its successor?',
+            misconception: 'This declares the element only — locating the loop start happens later.',
+          },
+          {
+            lineRange: [5, 13],
+            referenceLabel: 'Construct the chain, optionally bending the tail back',
+            acceptableKeywords: ['build the linked structure', 'wire nodes in sequence', 'connect last node to an earlier one', 'assemble chain from values'],
+            hint: 'How do raw values become a chain whose end may loop inward?',
+            misconception: 'This input scaffolding shapes the test case; it is not the entry search.',
+          },
+          {
+            lineRange: [14, 17],
+            referenceLabel: 'Anchor both cursors at the start',
+            acceptableKeywords: ['place both pointers at head', 'slow and fast start together', 'initialize the two cursors', 'set up before the loop'],
+            hint: 'Where do the two differently-paced cursors begin?',
+            misconception: 'No detection happens here; this only positions the cursors for phase one.',
+          },
+          {
+            lineRange: [18, 32],
+            referenceLabel: 'Collide inside the loop, then re-walk to its start',
+            acceptableKeywords: ['two-speed collision then reset', 'restart one cursor at head', 'walk single speed to the entry', 'find where the loop begins'],
+            hint: 'After the cursors meet, how does a head-reset cursor reveal the loop entrance?',
+            misconception: 'The first meeting point is somewhere inside the loop, not the loop start — a second equal-speed phase is required.',
+          },
+          {
+            lineRange: [33, 34],
+            referenceLabel: 'A terminating chain has no entry',
+            acceptableKeywords: ['no loop return negative one', 'fast reached the end', 'chain terminates', 'fall through to none'],
+            hint: 'If the fast cursor exits the loop, what entry index can exist?',
+            misconception: 'Reaching here is the acyclic verdict, not an incomplete traversal.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 2, 0, -4], 1], expected: 1, label: 'orbit entry mid-chain' },
@@ -540,6 +651,43 @@ The hash-set solution (record values until one repeats, then read both numbers o
 Two adaptations from the pointer version are easy to fumble. States are *values*, so the comparison is \`==\`, not \`is\`. And there is no \`None\` to guard against — the chain cannot end — but \`fast\` must still apply the scramble **twice** per step, or the two cursors degenerate to the same speed and the phase-1 loop never exits. Note also that phase 1 must take one step *before* comparing (here, by initializing \`slow\` and \`fast\` one and two ticks in), or a start value already in the orbit would be compared against itself at distance zero in a misleading way.
 `,
         complexity: 'Time O((warmup + period) * log n) — each scramble costs O(log n) digit work, Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 9],
+            referenceLabel: 'Define the deterministic successor function',
+            acceptableKeywords: ['the step rule on a value', 'next state transform', 'one transition function', 'how a value maps to its successor'],
+            hint: 'On an implicit chain, what plays the role that a next-pointer plays on a real list?',
+            misconception: 'This is the edge of the implicit graph, not yet any cycle search.',
+          },
+          {
+            lineRange: [10, 21],
+            referenceLabel: 'Race two paces until the states coincide',
+            acceptableKeywords: ['advance one and two transforms', 'collide somewhere in the orbit', 'compare states by value equality', 'two-speed walk over states'],
+            hint: 'How do two cursors over an implicit chain detect that it eventually repeats?',
+            misconception: 'On value-states the comparison is equality, not object identity; and the fast cursor must apply the step twice or it degenerates to the same pace.',
+          },
+          {
+            lineRange: [22, 32],
+            referenceLabel: 'Re-walk from the origin to find the loop entry',
+            acceptableKeywords: ['restart one cursor at the start', 'count steps to the entry', 'single-speed walk to first repeat point', 'measure the lead-in length'],
+            hint: 'After collision, how do you locate the first state that lies on the cycle?',
+            misconception: 'This measures where the loop begins, distinct from how long the loop is.',
+          },
+          {
+            lineRange: [33, 39],
+            referenceLabel: 'Lap the cycle once to size its period',
+            acceptableKeywords: ['step around the loop once', 'count until returning to the entry', 'measure the cycle length', 'one full lap of the orbit'],
+            hint: 'Starting from a state on the cycle, how do you measure its length?',
+            misconception: 'This counts the loop length, not where the loop starts.',
+          },
+          {
+            lineRange: [40, 41],
+            referenceLabel: 'Report the two measured quantities',
+            acceptableKeywords: ['return warmup and period', 'emit both measurements', 'package the result pair', 'output lead-in and cycle length'],
+            hint: 'What final pair of numbers does the routine hand back?',
+            misconception: 'This is the result hand-off, not any further computation.',
+          },
+        ],
       },
       testCases: [
         { input: [42], expected: [0, 8], label: 'starts inside the 8-orbit' },
@@ -648,6 +796,43 @@ The boundary that decides correctness is the head-start count. Advancing the lea
 One pass, two references, and the train's length is never computed — it is implied, exactly as in the midpoint problem, by where the lead cursor dies.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define the chained-record node type',
+            acceptableKeywords: ['node class with value and next', 'linked node definition', 'declare the list node', 'val and pointer fields'],
+            hint: 'What data type holds a value plus a link to its successor?',
+            misconception: 'This declares the element only — no offset counting happens here.',
+          },
+          {
+            lineRange: [5, 11],
+            referenceLabel: 'Materialize the values into a forward chain',
+            acceptableKeywords: ['build the linked structure', 'turn list into chain', 'prepend to keep head first', 'assemble chain from values'],
+            hint: 'How do the input values become a chain whose first value is the head?',
+            misconception: 'This is input setup; the offset walk comes afterward.',
+          },
+          {
+            lineRange: [12, 18],
+            referenceLabel: 'Advance one cursor a fixed offset ahead',
+            acceptableKeywords: ['give the lead a head start', 'move one pointer k steps', 'open a fixed gap', 'pre-advance the front cursor'],
+            hint: 'How do you create a frozen gap of exactly k between the two cursors?',
+            misconception: 'Moving k steps (not k-1 or k+1) is what makes the offset exact — an off-by-one here misplaces the answer.',
+          },
+          {
+            lineRange: [19, 24],
+            referenceLabel: 'March both in lockstep until the lead exits',
+            acceptableKeywords: ['advance both at equal pace', 'preserve the gap stepping together', 'walk until the lead falls off', 'keep the fixed distance'],
+            hint: 'With the gap frozen, what event signals the trailing cursor has reached its target?',
+            misconception: 'Equal speeds here, not a 2:1 ratio — the gap, not the pace difference, does the work.',
+          },
+          {
+            lineRange: [25, 25],
+            referenceLabel: 'Read the trailing cursor as the answer',
+            acceptableKeywords: ['return the trailing value', 'report the k-from-end node', 'output the lagging cursor', 'the trailer holds the result'],
+            hint: 'When the lead runs off the end, what does the trailing cursor point at?',
+            misconception: 'This reports the located node, not part of the stepping loop.',
+          },
+        ],
       },
       testCases: [
         { input: [[12, 7, 33, 9, 18], 2], expected: 9, label: 'second from the rear' },
@@ -768,6 +953,43 @@ Walk the parities to trust it. Five stops: fast visits 1 → 3 → 5 and stops (
 The single mutation \`slow.next = None\` is what makes this a true split rather than two overlapping views of one chain: after it, the two halves are independent chains, each readable in route order. Choosing the guard variant *deliberately* — rather than memorizing one template — is the skill this problem isolates.
 `,
         complexity: 'Time O(n), Space O(1) beyond the output lists',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define the chained-record node type',
+            acceptableKeywords: ['node class with value and next', 'linked node definition', 'declare the list node', 'val and pointer fields'],
+            hint: 'What data type holds a value plus a link to its successor?',
+            misconception: 'This declares the element only — it performs no splitting.',
+          },
+          {
+            lineRange: [5, 11],
+            referenceLabel: 'Materialize the values into a forward chain',
+            acceptableKeywords: ['build the linked structure', 'turn list into chain', 'prepend to keep head first', 'assemble chain from values'],
+            hint: 'How do the input values become a chain whose first value is the head?',
+            misconception: 'This is input setup; finding the split point comes next.',
+          },
+          {
+            lineRange: [12, 22],
+            referenceLabel: 'Walk a two-speed scan to the node before the cut',
+            acceptableKeywords: ['tightened guard stops one early', 'park slow on the first middle', 'find the last front-half node', 'two-speed to the pre-cut point'],
+            hint: 'Which guard variant lands the slow cursor on the FINAL node of the front half?',
+            misconception: 'The classic midpoint guard lands on the second middle; the tighter guard is needed so the front half keeps the extra element and you hold the node before the cut.',
+          },
+          {
+            lineRange: [23, 25],
+            referenceLabel: 'Detach the tail to make two independent chains',
+            acceptableKeywords: ['cut the link after slow', 'set next to none', 'sever into two halves', 'capture the back head then break'],
+            hint: 'What single mutation turns one chain into two separate ones?',
+            misconception: 'Without nulling the link the halves still overlap — this physical cut is what separates them.',
+          },
+          {
+            lineRange: [26, 37],
+            referenceLabel: 'Serialize each half into the answer',
+            acceptableKeywords: ['collect values of both halves', 'walk each chain into a list', 'read off the two routes', 'flatten halves to arrays'],
+            hint: 'How do the two detached chains become the returned pair of lists?',
+            misconception: 'This is just the read-out; the split decision already happened above.',
+          },
+        ],
       },
       testCases: [
         { input: [[101, 105, 110, 112, 120]], expected: [[101, 105, 110], [112, 120]], label: 'odd count: front takes extra' },
@@ -910,6 +1132,43 @@ Equalizing "distance from the end" costs two counting passes and one head start:
 Two traps are planted in the tests. The all-ones case puts equal IDs on *distinct* upstream nodes, so any solution comparing \`a.val == b.val\` reports a confluence one tick early — identity (\`is\`) is non-negotiable. And the empty-upstream case makes one head itself a shared node, which the alignment handles naturally since a zero or negative range simply doesn't advance. A neat variant replaces measuring with pointer-switching (each cursor restarts on the other stream after its first end), but the length-difference form is the one that generalizes to "how far upstream of the confluence is each source?" follow-ups.
 `,
         complexity: 'Time O(m + n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define the chained-record node type',
+            acceptableKeywords: ['node class with value and next', 'linked node definition', 'declare the list node', 'val and pointer fields'],
+            hint: 'What data type holds a value plus a link to its successor?',
+            misconception: 'This declares the element only — no intersection logic lives here.',
+          },
+          {
+            lineRange: [5, 20],
+            referenceLabel: 'Build two chains that physically share a tail',
+            acceptableKeywords: ['shared suffix built once', 'two heads into the same nodes', 'wire both streams to a common tail', 'construct the merging inputs'],
+            hint: 'How are two chains arranged so they truly share the same node objects past a join?',
+            misconception: 'The sharing is by object identity, not by equal values — this scaffolding is what makes that real.',
+          },
+          {
+            lineRange: [21, 34],
+            referenceLabel: 'Measure each chain length to the end',
+            acceptableKeywords: ['count nodes in each chain', 'compute both lengths', 'walk to the end counting', 'measure the two stream sizes'],
+            hint: 'What quantity must you know about each chain before aligning the cursors?',
+            misconception: 'This measurement enables the alignment; it is not the meeting search itself.',
+          },
+          {
+            lineRange: [35, 42],
+            referenceLabel: 'Advance the longer chain to equalize the remaining distance',
+            acceptableKeywords: ['skip the length difference', 'advance the longer cursor', 'align distances from the end', 'burn off the surplus prefix'],
+            hint: 'How do you make both cursors stand the same number of steps from the end?',
+            misconception: 'Aligning by distance-from-end (not from start) is the key — the shared nodes sit at equal distance from the end of both chains.',
+          },
+          {
+            lineRange: [43, 50],
+            referenceLabel: 'March in lockstep to the first common node',
+            acceptableKeywords: ['advance both until identical', 'meet at the shared node', 'lockstep identity comparison', 'find the convergence point'],
+            hint: 'Once aligned, what loop lands both cursors on the join simultaneously?',
+            misconception: 'Equal IDs on distinct nodes must not count as a meeting — only object identity, and reaching the end together means no shared tail.',
+          },
+        ],
       },
       testCases: [
         { input: [[4, 1], [5, 6, 1], [8, 4, 5]], expected: 8, label: 'merge with decoy repeated IDs' },
@@ -1028,6 +1287,43 @@ Phase 2 is then the simplest loop in the module: pin one cursor as an anchor, se
 Contrast this with the daisy-chain entry problem: finding *where* the orbit begins needs the full phase-2 head-reset argument, while finding *how big* it is needs only an odometer. Knowing which question is being asked — entry point, size, or mere existence — and spending only the machinery that question requires is the practical skill. Identity comparison and the \`fast and fast.next\` guard carry over unchanged, and the empty trail returns 0 by never entering the loop.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define the chained-record node type',
+            acceptableKeywords: ['node class with value and next', 'linked node definition', 'declare the list node', 'val and pointer fields'],
+            hint: 'What data type holds a value plus a link to its successor?',
+            misconception: 'This declares the element only — it measures no loop length.',
+          },
+          {
+            lineRange: [5, 13],
+            referenceLabel: 'Construct the chain, optionally bending the tail back',
+            acceptableKeywords: ['build the linked structure', 'wire nodes in sequence', 'connect last node to an earlier one', 'assemble chain from values'],
+            hint: 'How do raw values become a chain whose end may loop inward?',
+            misconception: 'This input scaffolding shapes the test case; it is not the sizing step.',
+          },
+          {
+            lineRange: [14, 17],
+            referenceLabel: 'Anchor both cursors at the start',
+            acceptableKeywords: ['place both pointers at head', 'slow and fast start together', 'initialize the two cursors', 'set up before the loop'],
+            hint: 'Where do the two differently-paced cursors begin?',
+            misconception: 'No measurement happens here; this only positions the cursors for phase one.',
+          },
+          {
+            lineRange: [18, 31],
+            referenceLabel: 'Collide inside the loop, then lap it to count its size',
+            acceptableKeywords: ['two-speed collision proves a loop', 'anchor a node and circle once', 'count steps for one full lap', 'measure the cycle length'],
+            hint: 'After the cursors meet inside the loop, how do you measure how many nodes it holds?',
+            misconception: 'The meeting point need not be the loop start — but any in-loop node is a fine anchor to lap once and count size, no entry-finding required.',
+          },
+          {
+            lineRange: [32, 33],
+            referenceLabel: 'A terminating chain has size zero',
+            acceptableKeywords: ['no loop return zero', 'fast reached the end', 'chain terminates', 'fall through with no ring'],
+            hint: 'If the fast cursor exits the chain, what loop size can there be?',
+            misconception: 'Reaching here is the no-loop verdict, not an incomplete count.',
+          },
+        ],
       },
       testCases: [
         { input: [[100, 200, 300, 400, 500], 2], expected: 3, label: 'three-page ring after a tail' },
@@ -1166,6 +1462,50 @@ Each phase hides one decision. The cut must leave the *front* half longer on odd
 Edge behavior falls out rather than being patched in: one song means the guard fails instantly, the back half is empty, the splice never runs. Two songs splice once and stop. Everything is \`O(n)\` with three small constant-space loops, and the only allocation is the answer the caller asked for.
 `,
         complexity: 'Time O(n), Space O(1) beyond the output list',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define the chained-record node type',
+            acceptableKeywords: ['node class with value and next', 'linked node definition', 'declare the list node', 'val and pointer fields'],
+            hint: 'What data type holds a value plus a link to its successor?',
+            misconception: 'This declares the element only — none of the weaving happens here.',
+          },
+          {
+            lineRange: [5, 11],
+            referenceLabel: 'Materialize the values into a forward chain',
+            acceptableKeywords: ['build the linked structure', 'turn list into chain', 'prepend to keep head first', 'assemble chain from values'],
+            hint: 'How do the input values become a chain whose first value is the head?',
+            misconception: 'This is input setup; the three weaving phases follow.',
+          },
+          {
+            lineRange: [12, 24],
+            referenceLabel: 'Locate the midpoint and detach the back half',
+            acceptableKeywords: ['two-speed scan to the middle', 'tightened guard keeps front longer', 'cut into two independent halves', 'split at the pre-cut node'],
+            hint: 'How do you halve the chain so the front keeps the extra element on odd counts?',
+            misconception: 'This is the locate-and-sever step; the back half is not yet reversed or interleaved.',
+          },
+          {
+            lineRange: [25, 35],
+            referenceLabel: 'Reverse the second half in place',
+            acceptableKeywords: ['flip the back half links', 'three-pointer reversal', 'reverse without allocation', 'turn the tail backward'],
+            hint: 'A singly linked chain cannot be walked backward — what transforms it so it can be read in reverse forward?',
+            misconception: 'You must save the successor before rewiring each link, or the reversal loses the rest of the chain.',
+          },
+          {
+            lineRange: [36, 47],
+            referenceLabel: 'Interleave the two halves node by node',
+            acceptableKeywords: ['splice front and back alternately', 'zip the two chains', 'weave one from each side', 'interleave the halves'],
+            hint: 'How do you merge a forward and a reversed half into the alternating order?',
+            misconception: 'Both continuations must be saved before rewiring, or the splice destroys the path forward; the shorter back half is what exhausts the loop.',
+          },
+          {
+            lineRange: [48, 55],
+            referenceLabel: 'Serialize the woven chain into the answer',
+            acceptableKeywords: ['collect values into a list', 'walk the result chain', 'read off the final order', 'flatten to the output array'],
+            hint: 'How does the rewired chain become the returned list?',
+            misconception: 'This is just the read-out; all the weaving was done in the prior phases.',
+          },
+        ],
       },
       testCases: [
         { input: [[11, 22, 33, 44, 55]], expected: [11, 55, 22, 44, 33], label: 'odd count, middle song last' },

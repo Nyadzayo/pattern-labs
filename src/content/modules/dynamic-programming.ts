@@ -159,6 +159,43 @@ The state is just the rung number, because nothing about *how* the technician re
 This is tabulation in its most compressed form. The full table \`dp[0..n]\` would work, but each cell reads only the two cells before it, so the table collapses to two rolling variables. The \`rungs == 0\` short-circuit honors the "empty routine" convention the statement pins down.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Name the per-position count and pin its trivial values',
+            acceptableKeywords: ['define the subproblem', 'count per position', 'base cases', 'state meaning'],
+            hint: 'Before any loop, what does one table entry stand for, and which entries are known outright?',
+            misconception: 'This declares what is being counted and the seeds — it is not yet any arithmetic.',
+          },
+          {
+            lineRange: [4, 5],
+            referenceLabel: 'Short-circuit the degenerate input',
+            acceptableKeywords: ['handle the empty case', 'guard the trivial input', 'return early', 'edge case'],
+            hint: 'One input is small enough that the recurrence has nothing to build on — what then?',
+            misconception: 'This guards the smallest case so the loop can safely assume two prior values exist.',
+          },
+          {
+            lineRange: [6, 6],
+            referenceLabel: 'Seed the two rolling carriers from the base cases',
+            acceptableKeywords: ['initialize the rolling values', 'seed two variables', 'start from base cases', 'prime the recurrence'],
+            hint: 'The loop will look back two steps — what two values must already be in hand?',
+            misconception: 'This primes the two trailing counts; it is setup, not the iterative step.',
+          },
+          {
+            lineRange: [7, 10],
+            referenceLabel: 'Fold each new position from its two predecessors',
+            acceptableKeywords: ['add the two prior counts', 'roll the recurrence forward', 'combine previous two', 'advance the window'],
+            hint: 'Each position is reached from exactly which earlier positions, and how do their counts combine?',
+            misconception: 'This is the transition that sums two disjoint arrival groups, not the base case or the final read.',
+          },
+          {
+            lineRange: [11, 11],
+            referenceLabel: 'Hand back the count at the final position',
+            acceptableKeywords: ['return the last count', 'answer at the target', 'final table cell', 'report the result'],
+            hint: 'After the sweep, which carrier holds the answer for the requested position?',
+            misconception: 'This reads the finished value; it does no counting of its own.',
+          },
+        ],
       },
       testCases: [
         { input: [3], expected: 3, label: 'small case from the example' },
@@ -240,6 +277,36 @@ The greedy instinct — sort the yields, grab the biggest available hive, repeat
 Since the recurrence looks back exactly two states, the table compresses to two rolling variables, giving one linear pass over up to 100,000 hives in constant extra space. Zero-yield hives need no special casing: \`max\` simply never favors them.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Seed two running optima for adjacent and skipped prefixes',
+            acceptableKeywords: ['initialize two best totals', 'seed the rolling optima', 'start both at zero', 'define the two states'],
+            hint: 'Two carriers stand in for two prefix answers — what do they mean and what do they start as?',
+            misconception: 'This declares and seeds the pair of best-so-far values; no element has been weighed yet.',
+          },
+          {
+            lineRange: [5, 5],
+            referenceLabel: 'Walk the row one element at a time',
+            acceptableKeywords: ['iterate over each item', 'single forward pass', 'visit every element', 'scan the sequence'],
+            hint: 'How do you reach each position so its take-or-skip choice can be resolved in order?',
+            misconception: 'This is the traversal that surfaces each value, not the decision rule itself.',
+          },
+          {
+            lineRange: [6, 8],
+            referenceLabel: 'Pick the better of skipping versus taking-with-gap',
+            acceptableKeywords: ['max of skip or take', 'choose include or exclude', 'best of two branches', 'reach back to avoid neighbor'],
+            hint: 'At each element, which two mutually exclusive plans compete, and how does the take-branch dodge its neighbor?',
+            misconception: 'This is the core transition comparing two options, not the setup or the final read.',
+          },
+          {
+            lineRange: [9, 10],
+            referenceLabel: 'Return the best total over the whole prefix',
+            acceptableKeywords: ['return the running best', 'final optimum', 'answer over all elements', 'report the maximum'],
+            hint: 'After the pass, which carrier already holds the answer for the entire row?',
+            misconception: 'This reads the finished optimum and also covers the empty-row case; it makes no new choice.',
+          },
+        ],
       },
       testCases: [
         { input: [[2, 9, 2, 9]], expected: 18, label: 'alternating rich hives' },
@@ -327,6 +394,36 @@ Greedy fails because token systems are not always "canonical": with faces \`[1, 
 The fill order is simply increasing amount, since every transition reads a strictly smaller amount. The sentinel \`cost + 1\` is safe because any reachable amount uses at most \`cost\` tokens (faces are >= 1); it also propagates harmlessly through \`min\` without infecting reachable states. Duplicate faces cost a little wasted work but no wrong answers.
 `,
         complexity: 'Time O(cost * k) for k denominations, Space O(cost)',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Define the per-amount cost and an unreachable marker',
+            acceptableKeywords: ['define the subproblem', 'cost per amount', 'sentinel for impossible', 'unreachable marker'],
+            hint: 'What does one table slot mean here, and what stand-in flags a slot that cannot be reached?',
+            misconception: 'This fixes the meaning of a cell and the impossibility sentinel; it is not yet the table or the loop.',
+          },
+          {
+            lineRange: [6, 6],
+            referenceLabel: 'Allocate the table and seed the trivial amount',
+            acceptableKeywords: ['build the dp array', 'seed amount zero', 'base case at zero', 'fill with sentinel'],
+            hint: 'Which single amount has a known answer, and what should every other slot start as?',
+            misconception: 'This lays out storage with one true base case; no real amount has been solved yet.',
+          },
+          {
+            lineRange: [7, 11],
+            referenceLabel: 'Relax every amount against each candidate last choice',
+            acceptableKeywords: ['try each denomination', 'relax from smaller amount', 'minimize over last token', 'fill increasing amounts'],
+            hint: 'For each amount, conditioning on the last piece used reduces it to which strictly smaller amount?',
+            misconception: 'This is the transition that minimizes over last choices, not the setup or the final translation.',
+          },
+          {
+            lineRange: [12, 13],
+            referenceLabel: 'Read the target slot, mapping the sentinel to the failure value',
+            acceptableKeywords: ['return the target amount', 'translate sentinel to minus one', 'report impossibility', 'final answer cell'],
+            hint: 'After filling, how do you turn the unreachable marker into the answer the contract demands?',
+            misconception: 'This only reads and translates the finished cell; it performs no further relaxation.',
+          },
+        ],
       },
       testCases: [
         { input: [[1, 4, 5], 8], expected: 2, label: 'greedy overpays; DP finds 4+4' },
@@ -427,6 +524,36 @@ The transition conditions on how the script handles the last characters of the t
 Tabulation beats memoization here for a practical reason: 500×500 = 250,000 states is fine, but a memoized recursion can chain ~1,000 frames deep and flirt with Python's stack limit. The row-by-row fill also exposes the space optimization — each row reads only the previous row, so two rows of length \`min(m, n) + 1\` suffice when memory matters. The transposition example (\`BRG-77\` → \`BGR-77\`) lands naturally at 2: with no swap operation, the table simply finds two substitutions.
 `,
         complexity: 'Time O(m * n), Space O(m * n) (reducible to O(min(m, n)) with rolling rows)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Lay out a grid keyed by a pair of prefix lengths',
+            acceptableKeywords: ['two dimensional table', 'state is a prefix pair', 'allocate the grid', 'define cell meaning'],
+            hint: 'What two pieces of progress together form one cell, and how big is the grid that holds them?',
+            misconception: 'This defines the prefix-pair state and allocates storage; no cost has been computed yet.',
+          },
+          {
+            lineRange: [5, 10],
+            referenceLabel: 'Fill the degenerate edges where one prefix is empty',
+            acceptableKeywords: ['seed first row and column', 'empty prefix costs', 'base cases on the border', 'all deletes or all inserts'],
+            hint: 'When one side is the empty string, how many operations does the other side force, and where do those go?',
+            misconception: 'These borders are the trivial base cases the interior leans on, not part of the main recurrence.',
+          },
+          {
+            lineRange: [11, 21],
+            referenceLabel: 'Resolve each cell by matching or taking the cheapest edit',
+            acceptableKeywords: ['compare last characters', 'min over three edits', 'fill the interior cells', 'transition over replace delete insert'],
+            hint: 'For an interior cell, when do the last characters cost nothing, and otherwise which three smaller cells compete?',
+            misconception: 'This is the core transition over match/replace/delete/insert, not the border seeding or the final read.',
+          },
+          {
+            lineRange: [22, 23],
+            referenceLabel: 'Return the corner spanning both full strings',
+            acceptableKeywords: ['return the bottom corner', 'answer at full prefixes', 'final grid cell', 'report the cost'],
+            hint: 'Which single cell represents converting all of one string into all of the other?',
+            misconception: 'This reads the finished corner cell; it performs no comparison of its own.',
+          },
+        ],
       },
       testCases: [
         { input: ['AX-204', 'AX-304'], expected: 1, label: 'single replacement' },
@@ -520,6 +647,43 @@ Pedestals integrate with zero special machinery. A blocked tile supports no rout
 The fill order falls straight out of the dependencies: each cell reads north and west, so sweeping rows top-to-bottom and columns left-to-right guarantees both are ready. Conceptually this is the ladder-routine recurrence from earlier in the module with one extra state dimension — position now needs two coordinates — and like that one, the table compresses further if you want it to: row r only reads row r-1, so a single rolling row of length cols suffices.
 `,
         complexity: 'Time O(rows * cols), Space O(rows * cols) (reducible to O(cols) with a rolling row)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Build a grid counting routes that reach each cell',
+            acceptableKeywords: ['two dimensional table', 'routes per cell', 'allocate the grid', 'state is a coordinate'],
+            hint: 'One cell stands for the count of paths to a position — how large is the grid and what does it start as?',
+            misconception: 'This declares the per-tile count and allocates storage; no path has been counted yet.',
+          },
+          {
+            lineRange: [5, 6],
+            referenceLabel: 'Seed the origin with its single empty route',
+            acceptableKeywords: ['seed the start tile', 'base case at origin', 'one empty path', 'initialize the corner'],
+            hint: 'How many ways are there to be standing on the very first tile before moving?',
+            misconception: 'This is the lone base case (also honoring a blocked start); it is not the propagation step.',
+          },
+          {
+            lineRange: [7, 15],
+            referenceLabel: 'Sweep cells in dependency order, zeroing blocked ones',
+            acceptableKeywords: ['iterate over the grid', 'skip blocked tiles', 'fill in order', 'guard obstacles and origin'],
+            hint: 'In what order must cells be visited so their inputs are ready, and what do obstacle tiles contribute?',
+            misconception: 'This is the traversal plus obstacle handling, not the formula that combines neighbours.',
+          },
+          {
+            lineRange: [16, 20],
+            referenceLabel: 'Accumulate each cell from its two legal predecessors',
+            acceptableKeywords: ['add the two incoming neighbours', 'sum from above and left', 'combine predecessor counts', 'route transition'],
+            hint: 'Given the allowed moves, a tile is entered only from which two neighbours, and how do their counts combine?',
+            misconception: 'This is the additive transition over disjoint arrival directions, not the loop scaffolding or the read.',
+          },
+          {
+            lineRange: [21, 21],
+            referenceLabel: 'Return the count at the destination corner',
+            acceptableKeywords: ['return the last cell', 'answer at the goal', 'final grid corner', 'report the route total'],
+            hint: 'Which single cell holds the number of routes to the finish tile?',
+            misconception: 'This reads the finished destination cell; it adds nothing further.',
+          },
+        ],
       },
       testCases: [
         { input: [[[0, 0, 0], [0, 1, 0], [0, 0, 0]]], expected: 2, label: 'pedestal in the centre' },
@@ -609,6 +773,36 @@ The recurrence conditions on the last word of a successful split of the first i 
 Two cheap engineering moves keep it fast: the phrasebook goes into a set for O(1) membership, and since no entry exceeds L characters, the scan for j only needs to look back L positions. That bounds the work at roughly n × L substring checks instead of n² — the difference between a snappy check and a sluggish one at 300 characters.
 `,
         complexity: 'Time O(n * L^2) worst case (n positions, <=L lookbacks, O(L) substring hash), Space O(n) plus the word set',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Index the dictionary for fast lookups and bound the lookback',
+            acceptableKeywords: ['build a lookup set', 'fast membership check', 'longest entry length', 'precompute bounds'],
+            hint: 'What structure makes word checks cheap, and what limit lets you skip impossibly long candidates?',
+            misconception: 'This is preprocessing for speed; it neither defines the table nor decides any split.',
+          },
+          {
+            lineRange: [5, 7],
+            referenceLabel: 'Set up a feasibility flag per cut position and seed the empty prefix',
+            acceptableKeywords: ['boolean per position', 'reachability table', 'empty prefix is true', 'base case at zero'],
+            hint: 'One flag per cut means what, and which position is trivially achievable to start?',
+            misconception: 'This declares the boolean state and its single seed; no real prefix has been tested yet.',
+          },
+          {
+            lineRange: [8, 15],
+            referenceLabel: 'Mark a cut reachable if some last word bridges from an earlier cut',
+            acceptableKeywords: ['condition on the last word', 'scan candidate cuts', 'reachable predecessor plus a word', 'stop on first witness'],
+            hint: 'A position is splittable when which earlier position is splittable and the gap between them forms a valid word?',
+            misconception: 'This is the feasibility transition over last-word cuts, not the setup or the final read.',
+          },
+          {
+            lineRange: [16, 16],
+            referenceLabel: 'Report whether the full message is splittable',
+            acceptableKeywords: ['return the last flag', 'answer at full length', 'final feasibility cell', 'report reachability'],
+            hint: 'Which flag tells you the entire message broke cleanly into words?',
+            misconception: 'This reads the finished flag; it computes nothing new.',
+          },
+        ],
       },
       testCases: [
         { input: ['sendcashnow', ['send', 'cash', 'now']], expected: true, label: 'clean three-word split' },
@@ -696,6 +890,36 @@ The fix is to widen the state. For each stage, track the best **and** worst prod
 Zeros fall out for free: a muted stage collapses both trackers to 0 (the fresh-start candidate revives the run afterwards), and 0 itself competes for the answer — which is exactly right when every zero-avoiding run is negative, as in \`[-2, 0, -1]\`. The transferable lesson: when a transition can invert what "better" means, carry the full frontier of optima — here a (max, min) pair — instead of a single best value.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Track both extremes and seed them from the first element',
+            acceptableKeywords: ['keep best and worst', 'two running optima', 'seed from first item', 'widen the state'],
+            hint: 'Why does one running best fail here, and what pair of values must you carry instead?',
+            misconception: 'This declares and seeds the dual high/low trackers; no extension has happened yet.',
+          },
+          {
+            lineRange: [5, 11],
+            referenceLabel: 'Extend or restart, recomputing both extremes each step',
+            acceptableKeywords: ['extend or start fresh', 'recompute max and min', 'candidates include a sign flip', 'transition with inversion'],
+            hint: 'At each element, which candidate runs compete for the new extremes, and why must the worst one be in the mix?',
+            misconception: 'This is the transition that updates both extremes, not the seeding or the global-best bookkeeping.',
+          },
+          {
+            lineRange: [12, 13],
+            referenceLabel: 'Fold the best ending here into the running answer',
+            acceptableKeywords: ['track the global best', 'update the answer', 'best ending anywhere', 'keep the overall maximum'],
+            hint: 'The optimal run ends at some position — how do you remember the best one seen so far?',
+            misconception: 'This maintains the cross-position answer; it does not itself extend any run.',
+          },
+          {
+            lineRange: [14, 14],
+            referenceLabel: 'Return the best run found anywhere',
+            acceptableKeywords: ['return the global best', 'final answer', 'overall maximum', 'report the result'],
+            hint: 'After the sweep, which variable holds the best result over all ending positions?',
+            misconception: 'This reads the accumulated answer; it computes nothing further.',
+          },
+        ],
       },
       testCases: [
         { input: [[2, 3, -2, 4]], expected: 6, label: 'inverting stage cuts the run' },
@@ -783,6 +1007,36 @@ The transition conditions on the last token of a reading. It spans one digit —
 Structurally this is the ladder recurrence wearing a validity mask: \`dp[i]\` still draws from \`dp[i-1]\` and \`dp[i-2]\`, but each contribution is gated by a token-legality predicate, so the count can stall at zero instead of growing like a Fibonacci sequence — and on an all-ones signal it does grow exactly like one. The base \`dp[0] = 1\` (one way to read nothing) is what lets the first legal token inherit a count rather than start from nothing.
 `,
         complexity: 'Time O(n), Space O(n) (reducible to O(1) with two rolling counts)',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Set up a per-position count and seed the empty prefix',
+            acceptableKeywords: ['count per prefix length', 'allocate the table', 'empty prefix has one reading', 'base case at zero'],
+            hint: 'One cell counts readings of how much of the input, and which prefix is trivially countable to start?',
+            misconception: 'This declares the state and its single seed; no token has been read yet.',
+          },
+          {
+            lineRange: [6, 10],
+            referenceLabel: 'Add the readings where the last token is a single unit',
+            acceptableKeywords: ['last token one digit', 'inherit from one back', 'guard the invalid single', 'single-unit transition'],
+            hint: 'When the final piece is one symbol, which earlier count carries forward, and when is that piece illegal?',
+            misconception: 'This is one of two disjoint transition branches, gated by a legality check — not the whole recurrence.',
+          },
+          {
+            lineRange: [11, 15],
+            referenceLabel: 'Add the readings where the last token spans two units',
+            acceptableKeywords: ['last token two digits', 'inherit from two back', 'valid pair range', 'two-unit transition'],
+            hint: 'When the final piece is two symbols, which earlier count carries forward, and what makes that pair valid?',
+            misconception: 'This is the second disjoint branch consuming two units; it never double-counts the one-unit case.',
+          },
+          {
+            lineRange: [16, 16],
+            referenceLabel: 'Return the count over the whole signal',
+            acceptableKeywords: ['return the last count', 'answer at full length', 'final table cell', 'report the total'],
+            hint: 'Which cell holds the number of readings of the entire input?',
+            misconception: 'This reads the finished count; it adds nothing.',
+          },
+        ],
       },
       testCases: [
         { input: ['26'], expected: 2, label: 'pair or single letters' },
@@ -878,6 +1132,36 @@ The state is the pair (crates considered, sum aimed for), and each cell stores f
 The cost is pseudo-polynomial: O(n × total/2) cell updates — comfortable for 200 crates of weight ≤ 100, a 10,001-wide array — while remaining untouched by the 2^200 assignment space. Subset-sum is NP-complete in general; this DP is tractable precisely because the *numeric size* of the target is small, not the number of crates. That distinction is worth saying out loud in an interview.
 `,
         complexity: 'Time O(n * T) where T = total/2, Space O(T)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Reduce the split to hitting half the total, rejecting odd sums',
+            acceptableKeywords: ['reduce to subset sum', 'each side is half', 'odd total is impossible', 'derive the target'],
+            hint: 'What single number must one side reach for the split to work, and which totals can be ruled out at once?',
+            misconception: 'This reframing and parity guard set up the target; it is not yet the subset-sum DP itself.',
+          },
+          {
+            lineRange: [7, 9],
+            referenceLabel: 'Set up reachable-sum flags and seed the empty subset',
+            acceptableKeywords: ['boolean per sum', 'reachability over sums', 'empty subset reaches zero', 'base case at zero'],
+            hint: 'One flag per possible sum means what, and which sum is always achievable to begin with?',
+            misconception: 'This declares the per-sum feasibility state and its seed; no crate has been considered yet.',
+          },
+          {
+            lineRange: [10, 17],
+            referenceLabel: 'Fold in each item once via a high-to-low sweep',
+            acceptableKeywords: ['process each item once', 'iterate sums downward', 'mark newly reachable sums', 'zero-or-one inclusion'],
+            hint: 'Why must the inner scan run from high to low so each crate is used at most once?',
+            misconception: 'The downward direction is what enforces 0/1 choice; an upward sweep would solve the unbounded problem instead.',
+          },
+          {
+            lineRange: [18, 18],
+            referenceLabel: 'Report whether the half-total is reachable',
+            acceptableKeywords: ['return the target flag', 'answer at half total', 'final feasibility cell', 'report reachability'],
+            hint: 'Which flag tells you some subset hit exactly half the total?',
+            misconception: 'This reads the finished flag; it performs no further marking.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 1, 4, 2]], expected: true, label: 'balances at 5 per lane' },

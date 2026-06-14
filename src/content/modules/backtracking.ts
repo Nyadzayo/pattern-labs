@@ -153,6 +153,36 @@ This is the purest form of the pattern: there are no constraints to prune on, so
 The final \`sort\` re-keys the natural DFS order (lexicographic) into the requested size-then-lex order. It is actually the asymptotic bottleneck: sorting \`2^n\` subsets takes \`O(2^n * log(2^n)) = O(n * 2^n)\` comparisons, and each comparison of two lists can cost up to \`O(n)\`, for \`O(n^2 * 2^n)\` worst case — more than the \`O(n * 2^n)\` generation. You could avoid the sort entirely by generating subsets size by size (one bounded DFS per target size), but for the n <= 12 limit here the straightforward sort is perfectly fine.
 `,
         complexity: 'Time O(n^2 * 2^n) (the size-then-lex sort dominates the O(n * 2^n) generation), Space O(n) beyond the output',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Normalize the input and set up the accumulators',
+            acceptableKeywords: ['sort the candidates', 'initialize results and path', 'prepare the working buffers', 'canonical order setup'],
+            hint: 'Before any recursion, what fixed order and what empty containers must exist?',
+            misconception: 'This is one-time preparation, not part of the recursive choose/explore/unchoose loop.',
+          },
+          {
+            lineRange: [6, 10],
+            referenceLabel: 'Open the recursion and record the node as an answer',
+            acceptableKeywords: ['define the recursive helper', 'snapshot the current path', 'every node is a solution', 'append a copy of the build'],
+            hint: 'At this kind of node, before looping, what do you immediately save?',
+            misconception: 'A copy is taken because the build keeps mutating — this is not a leaf-only base case.',
+          },
+          {
+            lineRange: [11, 14],
+            referenceLabel: 'Iterate remaining candidates with choose, recurse, undo',
+            acceptableKeywords: ['loop over later candidates', 'choose then recurse then pop', 'extend the partial build', 'advance the start index'],
+            hint: 'How do you try each forward candidate while keeping the others reusable for siblings?',
+            misconception: 'Recursing from the next index (not the current one) is what forbids reusing an item.',
+          },
+          {
+            lineRange: [15, 20],
+            referenceLabel: 'Launch the search, then reorder the collected results',
+            acceptableKeywords: ['kick off the recursion', 're-sort into the required order', 'final ordering pass', 'rekey by size then sequence'],
+            hint: 'After the tree is fully walked, what single pass reshapes the output to the asked-for order?',
+            misconception: 'This reordering is post-processing on completed answers, not a pruning or recursion step.',
+          },
+        ],
       },
       testCases: [
         {
@@ -309,6 +339,36 @@ Why does the output need no final sort? DFS tries smaller sizes first at every l
 `,
         complexity:
           'Time O(k * target/min(plates)) per emitted kit in the worst case — exponential in target overall; Space O(target/min(plates)) recursion depth beyond the output',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Sort the candidates and prepare the accumulators',
+            acceptableKeywords: ['sort to enable pruning', 'initialize results and path', 'canonical order setup', 'prepare the working buffers'],
+            hint: 'What ordering both canonicalizes output and later lets you stop early, and what empty buffers do you need?',
+            misconception: 'Sorting here serves both canonical output and the early break — it is setup, not a search step.',
+          },
+          {
+            lineRange: [7, 12],
+            referenceLabel: 'Define the helper and record on an exact target hit',
+            acceptableKeywords: ['recursive helper with remaining', 'base case target reached', 'snapshot when remaining is zero', 'success then return'],
+            hint: 'What condition on the leftover means this partial build is a complete answer?',
+            misconception: 'This succeeds only on an exact remaining of zero, not on overshooting or merely running out of candidates.',
+          },
+          {
+            lineRange: [13, 17],
+            referenceLabel: 'Scan candidates and abandon the level once one is too large',
+            acceptableKeywords: ['loop over later candidates', 'break when candidate exceeds remaining', 'stop the whole level early', 'sorted prune'],
+            hint: 'Because candidates are sorted, what can you conclude about all later ones the moment one overshoots?',
+            misconception: 'Break (not continue) is correct here — every later candidate is at least as large, so all are infeasible.',
+          },
+          {
+            lineRange: [18, 24],
+            referenceLabel: 'Choose with reuse, recurse, undo, then launch the search',
+            acceptableKeywords: ['choose then recurse then pop', 'recurse from the same index', 'allow reusing the candidate', 'kick off the recursion'],
+            hint: 'Which index do you pass down so the same value can be taken again, and where does the whole search begin?',
+            misconception: 'Recursing on the current index (not the next) is what permits unlimited reuse of a candidate.',
+          },
+        ],
       },
       testCases: [
         {
@@ -450,6 +510,43 @@ The restore line is the soul of the solution. It runs whether the branch succeed
 The Counter pre-check is a global prune: it costs one linear pass and instantly kills searches like "PROBES" (no S exists) that would otherwise probe every P on the board. Order-of-checks matters too — bounds, then letter — so the four recursive calls need no guards of their own.
 `,
         complexity: 'Time O(rows * cols * 3^len(code)), Space O(len(code)) recursion depth',
+        subgoals: [
+          {
+            lineRange: [1, 12],
+            referenceLabel: 'Set up dimensions and reject impossible inputs up front',
+            acceptableKeywords: ['read the grid size', 'cheap global feasibility check', 'count required letters', 'bail out early'],
+            hint: 'Before any walk, what single counting pass can prove no answer can possibly exist?',
+            misconception: 'This is a one-time global prune over the whole board, not the per-cell mismatch test inside the walk.',
+          },
+          {
+            lineRange: [13, 16],
+            referenceLabel: 'Open the recursive walk and accept on full consumption',
+            acceptableKeywords: ['define the walk helper', 'success when target exhausted', 'all symbols matched', 'base case returns true'],
+            hint: 'What progress counter reaching its target means the search has fully succeeded?',
+            misconception: 'This success base case fires only when the entire target is consumed, not at every visited cell.',
+          },
+          {
+            lineRange: [17, 20],
+            referenceLabel: 'Reject out-of-bounds and mismatched cells',
+            acceptableKeywords: ['bounds check then fail', 'reject off the grid', 'wrong symbol returns false', 'invalid cell guard'],
+            hint: 'Two ways a step is illegal before you commit — which two, and in what order?',
+            misconception: 'Bounds must be checked before indexing the cell, and the mismatch test also silently rejects already-visited cells.',
+          },
+          {
+            lineRange: [21, 27],
+            referenceLabel: 'Mark the cell used, then branch to the four neighbors',
+            acceptableKeywords: ['mark the cell visited', 'explore four directions', 'recurse on neighbors', 'short-circuit on success'],
+            hint: 'How do you record this cell as taken and then try every adjacent step?',
+            misconception: 'Overwriting the cell is the visited marker for this branch — it is a temporary choose, not a permanent edit.',
+          },
+          {
+            lineRange: [28, 32],
+            referenceLabel: 'Restore the cell, then launch from every starting square',
+            acceptableKeywords: ['undo the visited mark', 'restore for siblings', 'try all start cells', 'kick off the search'],
+            hint: 'After the branch returns, what must the cell look like again, and where may a trace begin?',
+            misconception: 'The restore must run regardless of success or failure so a later starting square sees a clean board.',
+          },
+        ],
       },
       testCases: [
         { input: [[['P', 'R', 'O'], ['Y', 'E', 'B']], 'PROBE'], expected: true, label: 'snake trace' },
@@ -579,6 +676,36 @@ The second is **O(1) conflict checks via diagonal arithmetic**. Every falling di
 Counting instead of listing changes only the leaf: \`return 1\` and sum the recursive results. The blocked-peg set composes for free as one more O(1) condition in the prune. For n = 9 with no blocks the search visits a few thousand nodes — the pruning discards essentially all of the 387 million raw column sequences.
 `,
         complexity: 'Time O(n!) nodes explored in the worst case (heavily pruned), Space O(n) for the sets and recursion',
+        subgoals: [
+          {
+            lineRange: [1, 8],
+            referenceLabel: 'Build the blocked set and the incremental constraint state',
+            acceptableKeywords: ['set of forbidden cells', 'track occupied columns', 'diagonal membership sets', 'initialize constraint state'],
+            hint: 'What lookup structures let every later conflict test be constant time?',
+            misconception: 'These sets are the live constraint state mutated during the walk — not a static precomputed answer.',
+          },
+          {
+            lineRange: [9, 13],
+            referenceLabel: 'Open the per-row recursion and count a completed layout',
+            acceptableKeywords: ['recurse one row at a time', 'count when all rows filled', 'base case returns one', 'initialize the running total'],
+            hint: 'What does reaching past the last row mean, and what do you return for it?',
+            misconception: 'Returning one (not appending a layout) is because we are counting arrangements, not listing them.',
+          },
+          {
+            lineRange: [14, 21],
+            referenceLabel: 'Scan columns and skip any that violate a constraint',
+            acceptableKeywords: ['loop over columns', 'skip conflicting placements', 'reject blocked or attacked cell', 'prune the subtree'],
+            hint: 'For a candidate column, which four conditions together mean it conflicts?',
+            misconception: 'A conflict skips this single column with continue; it does not abort the whole row.',
+          },
+          {
+            lineRange: [22, 33],
+            referenceLabel: 'Claim the cell, recurse, release it, then launch',
+            acceptableKeywords: ['mark column and diagonals', 'recurse to the next row', 'undo the three additions', 'kick off from the first row'],
+            hint: 'What three pieces of state go in before recursing and must come back out after?',
+            misconception: 'Every add on the way down needs a matching remove on the way up so the next column starts from a clean state.',
+          },
+        ],
       },
       testCases: [
         { input: [1, []], expected: 1, label: 'single peg, single layout' },
@@ -683,6 +810,36 @@ The facet to take with you is **deterministic output order from deterministic br
 The empty-code guard matters more than it looks: the bare recursion would happily record \`''\` (the empty product has exactly one term), but the statement defines an empty code as spelling nothing. Read edge-case contracts; do not let the recursion decide them for you.
 `,
         complexity: 'Time O(L * 4^L) where L = len(code) — up to 4^L mnemonics, each joined in O(L); Space O(L) for the path and recursion beyond the output',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Fix the lookup table mapping each symbol to its options',
+            acceptableKeywords: ['mapping from key to letters', 'static lookup table', 'options per digit', 'choices for each symbol'],
+            hint: 'What fixed structure tells you which letters each input symbol can expand to?',
+            misconception: 'This is a constant table of choices, not state that the recursion mutates.',
+          },
+          {
+            lineRange: [7, 12],
+            referenceLabel: 'Guard the empty input, then prepare the accumulators',
+            acceptableKeywords: ['handle empty input early', 'edge case empty contract', 'initialize results and path', 'prepare the working buffers'],
+            hint: 'What special input must be answered directly per the contract before setting up buffers?',
+            misconception: 'The empty-input answer is a contract decision, not something the bare recursion would produce correctly.',
+          },
+          {
+            lineRange: [13, 18],
+            referenceLabel: 'Open the recursion and emit on reaching full length',
+            acceptableKeywords: ['define the recursive helper', 'base case at full length', 'join the path into a string', 'record the completed build'],
+            hint: 'When the position counter reaches the end, what finished value do you save?',
+            misconception: 'This leaf only fires when every position is committed — partial builds are never recorded.',
+          },
+          {
+            lineRange: [19, 27],
+            referenceLabel: 'Try each option in order, recurse, undo, then launch',
+            acceptableKeywords: ['loop over the options in order', 'choose then recurse then pop', 'advance to the next position', 'kick off the recursion'],
+            hint: 'Why does iterating options in their listed order give sorted output for free, and where does it all start?',
+            misconception: 'Output order comes from the branch order here — there is no separate sorting pass.',
+          },
+        ],
       },
       testCases: [
         {
@@ -801,6 +958,36 @@ Notice the self-similarity that hint one points at: after committing \`strip[sta
 The prune is the palindrome test applied to the **segment, before descending** — a non-mirrorable segment kills its entire subtree of suffix cuttings unexplored. Worst case remains exponential and must: an all-equal strip like \`"aaaa"\` has a valid cutting for every subset of its n - 1 cut points, so the output itself holds 2^(n-1) cuttings. Output-bound problems cannot beat their own output size.
 `,
         complexity: 'Time O(n * 2^n) worst case — up to 2^(n-1) cuttings, each costing O(n) to copy, plus O(n) per palindrome test; Space O(n) for the path and recursion beyond the output',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Prepare the result list and the partial-build buffer',
+            acceptableKeywords: ['initialize results and path', 'prepare the working buffers', 'set up accumulators', 'empty output and build'],
+            hint: 'What two empty containers does the recursion fill and snapshot?',
+            misconception: 'This is plain setup — no input transformation or recursion happens yet.',
+          },
+          {
+            lineRange: [5, 9],
+            referenceLabel: 'Open the recursion and record once the input is consumed',
+            acceptableKeywords: ['define the recursive helper', 'base case at the string end', 'snapshot the current split', 'record when fully partitioned'],
+            hint: 'When the cursor reaches the end of the input, what complete arrangement do you save?',
+            misconception: 'Reaching the end is the only success here — partial splits are never recorded.',
+          },
+          {
+            lineRange: [10, 15],
+            referenceLabel: 'Enumerate next segments and skip invalid ones',
+            acceptableKeywords: ['loop over candidate segment lengths', 'choice is a cut point', 'skip non-palindromic piece', 'validity test on the segment'],
+            hint: 'A choice here is how long the next piece is — which pieces do you reject before descending?',
+            misconception: 'A choice is a cut length, not picking an item; an invalid piece skips itself, not the whole level.',
+          },
+          {
+            lineRange: [16, 21],
+            referenceLabel: 'Commit a segment, recurse on the suffix, undo, then launch',
+            acceptableKeywords: ['choose then recurse then pop', 'recurse on the remaining suffix', 'self-similar subproblem', 'kick off the recursion'],
+            hint: 'After committing a piece, the rest of the string is the same problem on a shorter input — what do you call?',
+            misconception: 'Recursing from the cut end is what makes the leftover an identical smaller subproblem.',
+          },
+        ],
       },
       testCases: [
         {
@@ -917,6 +1104,36 @@ The branching factor is at most two, and the guards frequently cut it to one (fo
 Order falls out structurally again: at every node the \`(\` branch is explored before the \`)\` branch, and \`(\` < \`)\`, so completed strings appear in dictionary order without a sort. When asked for "all valid sequences" of any bracket-like alphabet, reach for legality counters before reaching for post-hoc filtering.
 `,
         complexity: 'Time O(Catalan(n) * n) ≈ O(4^n / sqrt(n)) — one O(n) join per emitted sequence; Space O(n) for the path and recursion beyond the output',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Prepare the result list and the partial-build buffer',
+            acceptableKeywords: ['initialize results and path', 'prepare the working buffers', 'set up accumulators', 'empty output and build'],
+            hint: 'What two empty containers will the recursion fill and snapshot?',
+            misconception: 'This is plain setup, distinct from the counters that track feasibility during the walk.',
+          },
+          {
+            lineRange: [5, 10],
+            referenceLabel: 'Open the recursion and emit a full-length sequence',
+            acceptableKeywords: ['define the recursive helper', 'base case at full length', 'join the path into a string', 'record the completed build'],
+            hint: 'When the build reaches its target length, what finished value do you save?',
+            misconception: 'Because the guards only ever extend legal prefixes, reaching full length needs no extra validity check.',
+          },
+          {
+            lineRange: [11, 16],
+            referenceLabel: 'When still allowed, take the opening branch first',
+            acceptableKeywords: ['guard before opening', 'open while budget remains', 'choose open then recurse then pop', 'feasibility counter on opens'],
+            hint: 'What counter condition says an opening move is still legal, and why try it first?',
+            misconception: 'The guard runs before appending so no infeasible prefix is ever extended.',
+          },
+          {
+            lineRange: [17, 23],
+            referenceLabel: 'When it balances, take the closing branch, then launch',
+            acceptableKeywords: ['guard before closing', 'close only when something is open', 'choose close then recurse then pop', 'kick off the recursion'],
+            hint: 'What counter relationship means a closing move has something to attach to, and where does it all start?',
+            misconception: 'Closing is legal only when closes trail opens — order of the two branches sets the output order, not a sort.',
+          },
+        ],
       },
       testCases: [
         { input: [1], expected: ['()'], label: 'one slur' },
@@ -1046,6 +1263,36 @@ Two ideas from earlier problems fuse here, plus one new constraint shape.
 **The feasibility prune is about the future, not the past.** \`n - start < remaining\` rejects branches that are not (yet) in conflict but can no longer gather enough slots — a budget argument rather than a violation. Cheap forward-looking prunes like this routinely cut more of the tree than the conflict checks do, because they fire high up. Counting, as always, changes only the leaf: return 1 and sum, never materializing a single plan.
 `,
         complexity: 'Time O(C(n, k) * k) with n = rows * cols — each explored node scans up to k seated blades, and pruning keeps explored nodes far below the binomial bound in practice; Space O(k) for the seated list and recursion',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Linearize the grid and set up the placement state',
+            acceptableKeywords: ['flatten the grid to slots', 'total slot count', 'track seated placements', 'initialize constraint state'],
+            hint: 'How do you turn a two-dimensional board into a single index range, and what holds the current picks?',
+            misconception: 'The seated list is live constraint state mutated during the walk, not a precomputed result.',
+          },
+          {
+            lineRange: [4, 8],
+            referenceLabel: 'Define the geometric conflict test against placed items',
+            acceptableKeywords: ['proximity conflict check', 'test against seated items', 'neighbors within one cell', 'geometric interference predicate'],
+            hint: 'What helper decides whether a candidate slot is too close to anything already placed?',
+            misconception: 'A proximity constraint has no closed-form signature, so it is checked directly against the placed list.',
+          },
+          {
+            lineRange: [9, 16],
+            referenceLabel: 'Open the recursion with success and forward-looking prunes',
+            acceptableKeywords: ['count when budget reached', 'base case returns one', 'prune on too few remaining', 'forward feasibility check'],
+            hint: 'Besides completing the count, what future-looking test rejects branches that can no longer finish?',
+            misconception: 'The remaining-slots prune is about the future budget, not about any current conflict.',
+          },
+          {
+            lineRange: [17, 26],
+            referenceLabel: 'Scan slots, place, recurse, undo, then launch',
+            acceptableKeywords: ['loop over later slots', 'skip conflicting slot', 'choose then recurse then pop', 'advance the start index'],
+            hint: 'For each forward slot, how do you skip conflicts, commit, recurse, and restore before moving on?',
+            misconception: 'Recursing from the next slot index is the anti-symmetry rule that counts each set once, not k! times.',
+          },
+        ],
       },
       testCases: [
         { input: [2, 2, 1], expected: 4, label: 'lone blade, four slots' },
@@ -1145,6 +1392,36 @@ Read the condition's two halves separately, because mixing them up is the classi
 Contrast the three combination regimes now covered by this module: unlimited reuse recurses with \`i\` (counterweight kits); distinct items, no reuse recurses with \`i + 1\` (flag subsets); duplicated physical items, no reuse recurses with \`i + 1\` *plus* the equal-sibling skip. One loop skeleton, three policies. The \`n - i < k - len(path)\` break is the same forward-looking budget prune as the blade-server problem — sorted iteration makes \`break\` (not \`continue\`) safe, since every later index leaves even fewer stems.
 `,
         complexity: 'Time O(k * C(n, k)) worst case — at most one explored node per distinct partial bouquet, each completed bouquet copied in O(k); Space O(k) for the path and recursion beyond the output',
+        subgoals: [
+          {
+            lineRange: [1, 8],
+            referenceLabel: 'Sort to group duplicates and prepare the accumulators',
+            acceptableKeywords: ['sort to align equal items', 'canonical build order', 'initialize results and path', 'prepare the working buffers'],
+            hint: 'What ordering both canonicalizes the build and places equal items adjacent for the skip rule?',
+            misconception: 'Sorting here enables both canonical order and the duplicate-skip; it is setup, not a search step.',
+          },
+          {
+            lineRange: [9, 13],
+            referenceLabel: 'Open the recursion and record a full-size selection',
+            acceptableKeywords: ['define the recursive helper', 'base case at target size', 'snapshot the current selection', 'record when k chosen'],
+            hint: 'When the build reaches the required count, what complete selection do you save?',
+            misconception: 'This succeeds only at the exact target size, and the copy is needed because the build keeps mutating.',
+          },
+          {
+            lineRange: [14, 21],
+            referenceLabel: 'Iterate candidates, skipping repeats and dead-end levels',
+            acceptableKeywords: ['loop over later candidates', 'skip equal sibling at this level', 'break when too few remain', 'duplicate and budget prunes'],
+            hint: 'Two guards here: one suppresses a repeated choice among siblings, one stops when too few are left — which is which?',
+            misconception: 'The equal-sibling skip applies only to alternatives at the same level (i > start), never to stacking a twin deeper.',
+          },
+          {
+            lineRange: [22, 27],
+            referenceLabel: 'Choose without reuse, recurse, undo, then launch',
+            acceptableKeywords: ['choose then recurse then pop', 'recurse from the next index', 'use each item at most once', 'kick off the recursion'],
+            hint: 'Which index do you pass down so each physical item is used at most once, and where does it start?',
+            misconception: 'Recursing from the next index (not the current one) is what forbids reusing the same physical item.',
+          },
+        ],
       },
       testCases: [
         {
