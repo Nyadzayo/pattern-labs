@@ -17,7 +17,7 @@
 | — | Expand every module to **9 problems** (was 4) | ✅ committed (this checkpoint) |
 | **5.5** | **Primitives Lab** (40 primitives, 6-rung ladder) | ✅ **committed** |
 | **5.6** | **Mastery & Recall** (Code Katas + Pattern Sprint + Daily Warm-up) | ✅ **committed** |
-| **5.7** | **Subgoal & Metacognition** (subgoal labeling + productive failure + calibration) | ✅ **committed** (16 modules' subgoal pass deferred) |
+| **5.7** | **Subgoal & Metacognition** (subgoal labeling + productive failure + calibration) | ✅ **committed** (all 19 modules + 40 primitives annotated) |
 | 7 | Polish & package (cheat sheets, decision tree, shortcuts, Tauri) | ✅ done |
 
 Content now: 19 modules × **9 problems** (171 total), 8 quiz Qs each, 10 flashcards each.
@@ -104,8 +104,8 @@ Build steps (commit per verified step):
 - **5b Annotate all 40 primitives** — ✅ committed: 6-agent workflow, all 40 carry a label rung.
 - **5c Annotate first-3 modules** — ✅ committed: 3-agent workflow, all 27 solutions in two-pointers /
   hash-maps-sets / sliding-windows have `subgoals` (validate-content 19/0).
-- **6 (deferred)** annotate the 16 remaining modules (~144 solutions): run the saved workflow
-  `phase57-annotate-modules` with the remaining module ids (each agent self-validates; resumable). ⏳
+- **6 Annotate the 16 remaining modules** — ✅ committed: 3 resilient workflow batches (6+6+4 agents,
+  one per module file, each self-validated). All 19 modules now annotated = **171 subgoal solutions**.
 
 ## Resilient-workflow conventions (learned the hard way — quota walls killed mid-runs)
 

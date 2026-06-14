@@ -220,6 +220,43 @@ Two details worth noticing. The base case carries half the logic: an empty subtr
 One honest caveat for the constraint ceiling: a recursive solution on a 10^4-mast *chain* brushes against Python's default recursion limit (~1000). The same contract converts mechanically to an explicit-stack postorder if you ever need it; for interview-sized inputs the recursive form is the one to write.
 `,
         complexity: 'Time O(n), Space O(h) recursion stack (O(n) worst case on a chain)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Define the node type that links to two children',
+            acceptableKeywords: ['node class definition', 'value and two child links', 'tree node structure', 'left and right pointers'],
+            hint: 'What shape does a single element of this structure have?',
+            misconception: 'This only declares the node type; no traversal or measuring happens yet.',
+          },
+          {
+            lineRange: [8, 32],
+            referenceLabel: 'Materialize the structure from a flat level-order list',
+            acceptableKeywords: ['build tree from list', 'parse level order', 'wire up children', 'construct from array'],
+            hint: 'How does the flat input list become a linked structure of nodes?',
+            misconception: 'This is input parsing, not the audit logic itself.',
+          },
+          {
+            lineRange: [33, 39],
+            referenceLabel: 'State the per-subtree contract and the empty base case',
+            acceptableKeywords: ['recursive contract', 'empty subtree returns zero', 'base case for none', 'what one call promises'],
+            hint: 'What should a call return when the subtree is empty, before any combining?',
+            misconception: 'This fixes the base case; it is not where a violation gets reported.',
+          },
+          {
+            lineRange: [40, 46],
+            referenceLabel: 'Gather child results and reject anything out of tolerance',
+            acceptableKeywords: ['recurse into both children', 'short circuit on poison', 'check the local constraint', 'reject when too unbalanced'],
+            hint: 'After both sides answer, which conditions force this node to emit the failure signal?',
+            misconception: 'This both relays a child failure and tests this node itself; it is not yet the healthy return.',
+          },
+          {
+            lineRange: [47, 49],
+            referenceLabel: 'Report this subtree height upward and launch the sweep',
+            acceptableKeywords: ['return height to parent', 'combine child results', 'one plus max of children', 'kick off the recursion'],
+            hint: 'When everything below is healthy, what single number does this node hand up?',
+            misconception: 'This is the healthy combine step, distinct from the failure rejection above it.',
+          },
+        ],
       },
       testCases: [
         { input: [[8, 3, 10, 1, 6, null, 14]], expected: 3, label: 'balanced network' },
@@ -388,6 +425,43 @@ Two small correctness points. Python's \`/\` performs true division, so \`total 
 An equivalent DFS formulation — recurse with a \`depth\` parameter into \`sums[depth]\` and \`counts[depth]\` lists, divide at the end — is also linear and worth knowing, but the queue version reads as what it is: a tier-by-tier sweep.
 `,
         complexity: 'Time O(n), Space O(w) for the queue, up to O(n) on the widest tier',
+        subgoals: [
+          {
+            lineRange: [1, 9],
+            referenceLabel: 'Import the queue and define the node type',
+            acceptableKeywords: ['import a queue', 'node class definition', 'value and two child links', 'set up data structures'],
+            hint: 'What collection type and what element type does a level-by-level sweep need ready?',
+            misconception: 'This is setup only; no levels are walked here.',
+          },
+          {
+            lineRange: [10, 34],
+            referenceLabel: 'Materialize the structure from a flat level-order list',
+            acceptableKeywords: ['build tree from list', 'parse level order', 'wire up children', 'construct from array'],
+            hint: 'How does the flat input list become a linked structure of nodes?',
+            misconception: 'This is input parsing, separate from the breadth-first averaging.',
+          },
+          {
+            lineRange: [35, 41],
+            referenceLabel: 'Seed the frontier with the root and handle the empty case',
+            acceptableKeywords: ['queue starts with root', 'empty input returns empty', 'initialize the frontier', 'result accumulator'],
+            hint: 'Before the level loop runs, what single node is in the queue, and what if there are none?',
+            misconception: 'This primes the breadth-first walk; it does not yet compute any average.',
+          },
+          {
+            lineRange: [42, 51],
+            referenceLabel: 'Drain exactly one level, summing as you enqueue the next',
+            acceptableKeywords: ['snapshot the level width', 'pop one full tier', 'enqueue children for next level', 'accumulate the running total'],
+            hint: 'Why must you record how many nodes are on this level before popping any of them?',
+            misconception: 'The width snapshot keeps levels from merging; without it the per-level boundary blurs.',
+          },
+          {
+            lineRange: [52, 53],
+            referenceLabel: 'Convert each level total into its average',
+            acceptableKeywords: ['divide sum by count', 'record the level mean', 'append the average', 'return the per-level results'],
+            hint: 'Once a level is fully drained, what single value represents it?',
+            misconception: 'This finalizes one level mean; it is not part of the draining loop above.',
+          },
+        ],
       },
       testCases: [
         { input: [[8, 3, 10, 1, 6, null, 14]], expected: [8.0, 6.5, 7.0], label: 'three tiers' },
@@ -573,6 +647,50 @@ Failure handling is where the "largest" twist lives. A poisoned subtree returns 
 Strictness falls out for free: the comparisons use \`>=\` and \`<=\` to reject ties, so duplicate part numbers can never share a block. One pass, constant work per node.
 `,
         complexity: 'Time O(n), Space O(h) recursion stack (O(n) worst case on a chain)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Define the node type that links to two children',
+            acceptableKeywords: ['node class definition', 'value and two child links', 'tree node structure', 'left and right pointers'],
+            hint: 'What shape does a single element of this structure have?',
+            misconception: 'This only declares the node type; the validity scan comes later.',
+          },
+          {
+            lineRange: [8, 32],
+            referenceLabel: 'Materialize the structure from a flat level-order list',
+            acceptableKeywords: ['build tree from list', 'parse level order', 'wire up children', 'construct from array'],
+            hint: 'How does the flat input list become a linked structure of nodes?',
+            misconception: 'This is input parsing, not the search for the largest valid block.',
+          },
+          {
+            lineRange: [33, 46],
+            referenceLabel: 'Declare the running best and gather both child summaries',
+            acceptableKeywords: ['track best so far', 'rich return per subtree', 'recurse into children', 'empty subtree base case'],
+            hint: 'What facts about each whole subtree must come back before this node can judge itself?',
+            misconception: 'This collects child reports and the base case; it has not yet tested the ordering rule.',
+          },
+          {
+            lineRange: [47, 55],
+            referenceLabel: 'Validate this node against the full extent of both sides',
+            acceptableKeywords: ['compare against subtree extremes', 'left max below node', 'right min above node', 'inherited range check'],
+            hint: 'A child-only comparison is not enough — what does the node check against the whole left and right blocks?',
+            misconception: 'This tests entire-subtree bounds, not just the two immediate children.',
+          },
+          {
+            lineRange: [56, 60],
+            referenceLabel: 'Mark a failed block so ancestors abandon it',
+            acceptableKeywords: ['return failure signal', 'poison the ancestors', 'invalid block reported', 'stop counting upward'],
+            hint: 'When this block breaks the rule, what must it tell every node above it?',
+            misconception: 'This reports failure upward; healthy blocks found below were already recorded.',
+          },
+          {
+            lineRange: [61, 69],
+            referenceLabel: 'Record the valid block size and propagate its extremes',
+            acceptableKeywords: ['update best with block size', 'pass min and max up', 'count this valid block', 'launch the audit'],
+            hint: 'When the block is valid, what size do you record and which extremes flow to the parent?',
+            misconception: 'This is the success path that updates the answer, distinct from the failure return above.',
+          },
+        ],
       },
       testCases: [
         { input: [[10, 5, 15, 1, 8, null, 7]], expected: 3, label: 'stray leaf poisons the root' },
@@ -731,6 +849,36 @@ Here is the argument. At any node, if both badges are strictly smaller, then bot
 Note what the policy clause "a person counts as a member of their own team" buys: the \`else\` branch fires both for true splits and for the case where the walk lands on \`a\` or \`b\` itself — including \`a == b\`, where the descent simply steers to that badge and stops. No special cases needed; the guarantee that both badges exist is what makes the bare \`while\` loop safe.
 `,
         complexity: 'Time O(h) — O(log n) balanced, O(n) worst case — Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Define the node type that links to two children',
+            acceptableKeywords: ['node class definition', 'value and two child links', 'tree node structure', 'left and right pointers'],
+            hint: 'What shape does a single element of this structure have?',
+            misconception: 'This only declares the node type; the descent logic is separate.',
+          },
+          {
+            lineRange: [8, 32],
+            referenceLabel: 'Materialize the structure from a flat level-order list',
+            acceptableKeywords: ['build tree from list', 'parse level order', 'wire up children', 'construct from array'],
+            hint: 'How does the flat input list become a linked structure of nodes?',
+            misconception: 'This is input parsing, not the ordered-tree descent.',
+          },
+          {
+            lineRange: [33, 37],
+            referenceLabel: 'Start a single-path descent from the root',
+            acceptableKeywords: ['begin at the root', 'loop down one path', 'walk a single branch', 'no branching traversal'],
+            hint: 'Where does the walk begin, and why does it follow just one path rather than recursing both ways?',
+            misconception: 'This sets up the descent; it does not yet decide which way to turn.',
+          },
+          {
+            lineRange: [38, 44],
+            referenceLabel: 'Turn toward both targets until they diverge',
+            acceptableKeywords: ['both values smaller go left', 'both values larger go right', 'stop at the split point', 'first node between the targets'],
+            hint: 'When both targets sit on the same side, which way do you go — and what does it mean when they do not?',
+            misconception: 'The split point is where the search stops, not just any common ancestor higher up.',
+          },
+        ],
       },
       testCases: [
         { input: [[8, 3, 10, 1, 6, null, 14], 1, 6], expected: 3, label: 'owners split below 3' },
@@ -909,6 +1057,43 @@ This pairwise recursion is a "same tree" check with one of the two argument orde
 An equivalent iterative version pushes pairs onto an explicit stack — handy if the window is a degenerate chain deep enough to threaten Python's recursion limit.
 `,
         complexity: 'Time O(n), Space O(h) recursion stack (O(n) worst case on a chain)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Define the node type that links to two children',
+            acceptableKeywords: ['node class definition', 'value and two child links', 'tree node structure', 'left and right pointers'],
+            hint: 'What shape does a single element of this structure have?',
+            misconception: 'This only declares the node type; the mirror check is separate.',
+          },
+          {
+            lineRange: [8, 32],
+            referenceLabel: 'Materialize the structure from a flat level-order list',
+            acceptableKeywords: ['build tree from list', 'parse level order', 'wire up children', 'construct from array'],
+            hint: 'How does the flat input list become a linked structure of nodes?',
+            misconception: 'This is input parsing, not the symmetry comparison.',
+          },
+          {
+            lineRange: [33, 37],
+            referenceLabel: 'Set up the two-subtree comparison from the root halves',
+            acceptableKeywords: ['compare left and right halves', 'pairwise recursion setup', 'empty tree is symmetric', 'reflect the two sides'],
+            hint: 'What two subtrees does the symmetry check compare against each other?',
+            misconception: 'This frames the problem as a pair comparison; the cross-recursion is defined next.',
+          },
+          {
+            lineRange: [38, 47],
+            referenceLabel: 'Decide when two mirrored positions agree or fail',
+            acceptableKeywords: ['both absent is a match', 'one absent breaks shape', 'values must be equal', 'base cases for the pair'],
+            hint: 'For a pair of mirrored nodes, what are the cases that immediately settle match or mismatch?',
+            misconception: 'These are the per-pair base cases, not the recursive descent into deeper pairs.',
+          },
+          {
+            lineRange: [48, 50],
+            referenceLabel: 'Recurse with outer and inner sides crossed',
+            acceptableKeywords: ['cross left with right', 'outer pair and inner pair', 'flip the recursive arguments', 'launch the mirror check'],
+            hint: 'When the current pair matches, which children of each side must you compare against which?',
+            misconception: 'This is the crossed recursion that encodes reflection, not a same-side comparison.',
+          },
+        ],
       },
       testCases: [
         { input: [[1, 2, 2, 3, 4, 4, 3]], expected: true, label: 'mirror-true window' },
@@ -1076,6 +1261,43 @@ The example worth internalizing is the left chain \`[1, 2, null, 3]\`. "Rightmos
 There is a slick DFS alternative: preorder visiting the RIGHT child first, carrying a depth counter, and recording a node only when its depth appears for the first time — the first arrival at each depth is automatically the rightmost. Same O(n) time with a stack instead of a queue. It is worth knowing, but the queue version states the per-tier structure of the question directly, which is what you want to be able to produce on demand.
 `,
         complexity: 'Time O(n), Space O(w) for the queue, up to O(n) on the widest tier',
+        subgoals: [
+          {
+            lineRange: [1, 9],
+            referenceLabel: 'Import the queue and define the node type',
+            acceptableKeywords: ['import a queue', 'node class definition', 'value and two child links', 'set up data structures'],
+            hint: 'What collection type and what element type does a level-by-level sweep need ready?',
+            misconception: 'This is setup only; no levels are walked here.',
+          },
+          {
+            lineRange: [10, 34],
+            referenceLabel: 'Materialize the structure from a flat level-order list',
+            acceptableKeywords: ['build tree from list', 'parse level order', 'wire up children', 'construct from array'],
+            hint: 'How does the flat input list become a linked structure of nodes?',
+            misconception: 'This is input parsing, separate from the per-level selection.',
+          },
+          {
+            lineRange: [35, 41],
+            referenceLabel: 'Seed the frontier with the root and handle the empty case',
+            acceptableKeywords: ['queue starts with root', 'empty input returns empty', 'initialize the frontier', 'result accumulator'],
+            hint: 'Before the level loop runs, what single node is in the queue, and what if there are none?',
+            misconception: 'This primes the breadth-first walk; nothing is selected yet.',
+          },
+          {
+            lineRange: [42, 51],
+            referenceLabel: 'Scan each level and keep only its final node',
+            acceptableKeywords: ['snapshot the level width', 'pick the last pop', 'enqueue children left then right', 'one node per level'],
+            hint: 'Since children are queued left-then-right, which pop of the round is the one you want?',
+            misconception: 'This selects by position in the level, not by following right-child pointers down.',
+          },
+          {
+            lineRange: [52, 52],
+            referenceLabel: 'Return the collected per-level picks',
+            acceptableKeywords: ['return the result list', 'hand back the view', 'output collected nodes', 'one value per level'],
+            hint: 'After every level is processed, what do you hand back?',
+            misconception: 'This is the final return, not part of the scanning loop.',
+          },
+        ],
       },
       testCases: [
         { input: [[5, 3, 9, 1, null, null, 4]], expected: [5, 9, 4], label: 'rightmost of each tier' },
@@ -1232,6 +1454,43 @@ Note what makes this immune to the leading-zero worry: \`0 * 10 + 1 = 1\`, so a 
 The shape generalizes well beyond digits: whenever each node needs facts about its **ancestors** — path prefixes, inherited bounds, remaining budgets — pass them down as parameters instead of trying to look upward. Compare this with the module's postorder problems, where the facts needed live *below* instead.
 `,
         complexity: 'Time O(n), Space O(h) recursion stack (O(n) worst case on a chain)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Define the node type that links to two children',
+            acceptableKeywords: ['node class definition', 'value and two child links', 'tree node structure', 'left and right pointers'],
+            hint: 'What shape does a single element of this structure have?',
+            misconception: 'This only declares the node type; the path accumulation is separate.',
+          },
+          {
+            lineRange: [8, 32],
+            referenceLabel: 'Materialize the structure from a flat level-order list',
+            acceptableKeywords: ['build tree from list', 'parse level order', 'wire up children', 'construct from array'],
+            hint: 'How does the flat input list become a linked structure of nodes?',
+            misconception: 'This is input parsing, not the prefix-building walk.',
+          },
+          {
+            lineRange: [33, 39],
+            referenceLabel: 'Carry the running prefix down and fold in this node',
+            acceptableKeywords: ['accumulator passed downward', 'extend the prefix number', 'append digit by ten times', 'empty branch contributes nothing'],
+            hint: 'What value flows down into each call, and how does this node extend it?',
+            misconception: 'The prefix is passed down before children act; this is preorder, not an upward combine.',
+          },
+          {
+            lineRange: [40, 41],
+            referenceLabel: 'Bank the completed number only at a leaf',
+            acceptableKeywords: ['leaf finishes a path', 'no children means done', 'commit the full number', 'terminal node returns the value'],
+            hint: 'At which kind of node is the accumulated number actually a finished result?',
+            misconception: 'Only a true leaf banks the number; a node with one child must keep descending.',
+          },
+          {
+            lineRange: [42, 46],
+            referenceLabel: 'Sum the results from both branches and launch',
+            acceptableKeywords: ['add both child totals', 'absent side contributes zero', 'recurse into children', 'start the walk from root'],
+            hint: 'For a non-leaf, how do the two branch results combine, and why is plain addition safe?',
+            misconception: 'A single-child node still recurses both ways; the missing side returns zero via the base case.',
+          },
+        ],
       },
       testCases: [
         { input: [[1, 2, 3]], expected: 25, label: 'two short extensions' },
@@ -1389,6 +1648,43 @@ The reference goes iterative rather than recursive because of the early exit. A 
 If the announcer asked for ranks repeatedly while finishers were still streaming in, you would augment each node with its left-subtree size and descend numerically — an interview-worthy remark, but overkill for a single ceremony.
 `,
         complexity: 'Time O(h + k) — O(log n + k) balanced, O(n) worst case — Space O(h) for the stack',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Define the node type that links to two children',
+            acceptableKeywords: ['node class definition', 'value and two child links', 'tree node structure', 'left and right pointers'],
+            hint: 'What shape does a single element of this structure have?',
+            misconception: 'This only declares the node type; the ordered walk is separate.',
+          },
+          {
+            lineRange: [8, 32],
+            referenceLabel: 'Materialize the structure from a flat level-order list',
+            acceptableKeywords: ['build tree from list', 'parse level order', 'wire up children', 'construct from array'],
+            hint: 'How does the flat input list become a linked structure of nodes?',
+            misconception: 'This is input parsing, not the in-order counting.',
+          },
+          {
+            lineRange: [33, 39],
+            referenceLabel: 'Prepare an explicit stack for an in-order walk',
+            acceptableKeywords: ['iterative inorder setup', 'explicit stack of nodes', 'ascending visit order', 'start at the root'],
+            hint: 'What auxiliary structure lets an ordered visit pause and resume so it can stop early?',
+            misconception: 'This sets up the ordered traversal; no counting toward k happens yet.',
+          },
+          {
+            lineRange: [40, 43],
+            referenceLabel: 'Dive to the smallest unvisited value',
+            acceptableKeywords: ['slide all the way left', 'push nodes on the way down', 'pop the smallest remaining', 'leftmost is smallest'],
+            hint: 'To reach the next-smallest value, which way do you keep descending, and what do you stack as you go?',
+            misconception: 'The leftmost-reachable node is the next in ascending order, not necessarily a leaf.',
+          },
+          {
+            lineRange: [44, 47],
+            referenceLabel: 'Count down and stop on the target rank, else go right',
+            acceptableKeywords: ['decrement k each visit', 'return on the kth pop', 'move to the right subtree', 'stop at the target order'],
+            hint: 'Each pop is the next value in order — when do you stop, and where do you go otherwise?',
+            misconception: 'After visiting a node you turn right to the next-larger values, not back up the left chain.',
+          },
+        ],
       },
       testCases: [
         { input: [[240, 180, 300, 150, 200], 2], expected: 180, label: '2nd fastest' },
@@ -1555,6 +1851,43 @@ Why does scoring only bends cover every walk? Each walk in a tree has a unique h
 Set every rating to 1 and the same skeleton computes the tree's diameter measured in platforms; the weighting, and especially the negative ratings, are what push this version to the hard tier.
 `,
         complexity: 'Time O(n), Space O(h) recursion stack (O(n) worst case on a chain)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Define the node type that links to two children',
+            acceptableKeywords: ['node class definition', 'value and two child links', 'tree node structure', 'left and right pointers'],
+            hint: 'What shape does a single element of this structure have?',
+            misconception: 'This only declares the node type; the best-path search is separate.',
+          },
+          {
+            lineRange: [8, 32],
+            referenceLabel: 'Materialize the structure from a flat level-order list',
+            acceptableKeywords: ['build tree from list', 'parse level order', 'wire up children', 'construct from array'],
+            hint: 'How does the flat input list become a linked structure of nodes?',
+            misconception: 'This is input parsing, not the path-scoring sweep.',
+          },
+          {
+            lineRange: [33, 44],
+            referenceLabel: 'Track a global best and clamp each arm to non-negative',
+            acceptableKeywords: ['external best tracker', 'best downward arm contract', 'discard negative arms', 'recurse into both sides'],
+            hint: 'What separate variable holds the overall answer, and why is a negative arm replaced with zero?',
+            misconception: 'A clamped arm contributes zero rather than dragging the score down; this is not yet the answer update.',
+          },
+          {
+            lineRange: [45, 46],
+            referenceLabel: 'Score the bent path that joins both arms here',
+            acceptableKeywords: ['combine both arms at node', 'candidate full path', 'update the global best', 'value plus left plus right'],
+            hint: 'What full-path candidate is only visible at this node, using both of its arms?',
+            misconception: 'The bent (two-arm) sum is recorded as a candidate answer, never returned to the parent.',
+          },
+          {
+            lineRange: [47, 51],
+            referenceLabel: 'Hand the parent a single straight arm and launch',
+            acceptableKeywords: ['return one arm only', 'extendable straight path', 'value plus the better side', 'start the recursion'],
+            hint: 'What single quantity can a parent actually extend, so what does this node return upward?',
+            misconception: 'Only one arm is returned; returning the bent sum would let a path cross the same node twice.',
+          },
+        ],
       },
       testCases: [
         { input: [[4, 2, 6]], expected: 12, label: 'walk through the tower' },

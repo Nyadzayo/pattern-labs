@@ -177,6 +177,43 @@ The one design decision worth noticing is **where the counter lives**. It is a *
 Counting the root per insertion is what makes the empty prefix fall out for free: the walk over \`""\` takes zero steps and reads \`root.count\`. The other edge — a prefix that walks off the structure — is the trie's other gift: missing child means *nothing* stored starts this way, so the answer is 0 without inspecting a single word.
 `,
         complexity: 'Time O(total chars in words + total chars in prefixes), Space O(total chars in words)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define the node carrying a per-prefix aggregate',
+            acceptableKeywords: ['node with children map', 'per-node counter field', 'trie node definition', 'children plus running tally'],
+            hint: 'What state does each node need so a single read answers a prefix query?',
+            misconception: 'This declares storage shape only — nothing is counted or inserted yet.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Open the routine and create the empty root',
+            acceptableKeywords: ['create the root node', 'function entry point', 'initialise empty trie', 'start with a bare root'],
+            hint: 'Before any word goes in, what single object does every walk begin from?',
+            misconception: 'This only allocates the starting point; no data has been ingested.',
+          },
+          {
+            lineRange: [9, 19],
+            referenceLabel: 'Ingest entries, bumping the tally along each path',
+            acceptableKeywords: ['insert each word', 'increment count on every node', 'build phase one pass', 'tally entries through nodes'],
+            hint: 'As you thread a word in, where do you record that one more entry passes through?',
+            misconception: 'The tally is a pass-through count on every node, not a marker only at word ends.',
+          },
+          {
+            lineRange: [20, 28],
+            referenceLabel: 'Walk each query down the structure',
+            acceptableKeywords: ['descend by each character', 'follow child links', 'walk the prefix', 'break when child missing'],
+            hint: 'How do you locate the node that represents a given query string?',
+            misconception: 'Falling off mid-walk means nothing stored starts that way — distinct from reaching a node with a zero tally.',
+          },
+          {
+            lineRange: [29, 30],
+            referenceLabel: 'Read off the precomputed answer per query',
+            acceptableKeywords: ['collect the counts', 'read the node tally', 'append result then return', 'zero when off the trie'],
+            hint: 'Once the walk lands (or fails), what value is the answer for that query?',
+            misconception: 'This harvests the already-computed tally; it does no counting of its own.',
+          },
+        ],
       },
       testCases: [
         { input: [['apple', 'app', 'apricot', 'banana'], ['ap', 'app', 'b', 'c']], expected: [3, 2, 1, 0], label: 'basic catalog' },
@@ -287,6 +324,43 @@ Both stopping conditions carry real meaning and both are required:
 Forgetting the marker check is the classic bug here: the code passes every test built from forking inputs, then returns \`"datab..."\`-style nonsense the first time one code is a prefix of another. Duplicates are harmless — inserting the same code twice re-walks the same path. The single-code tote also falls out correctly: the walk descends the whole word and stops at its end marker, returning the word itself.
 `,
         complexity: 'Time O(total characters), Space O(total characters)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define a node that can mark where an entry ends',
+            acceptableKeywords: ['node with children', 'end-of-entry flag', 'trie node with marker', 'children plus terminal bit'],
+            hint: 'Besides links to next characters, what one fact must a node remember?',
+            misconception: 'The end marker records termination, not the count of entries passing through.',
+          },
+          {
+            lineRange: [5, 9],
+            referenceLabel: 'Enter and short-circuit the empty input',
+            acceptableKeywords: ['handle empty list', 'guard no entries', 'function start', 'return empty when nothing'],
+            hint: 'What is the shared stem of a collection with no members?',
+            misconception: 'This degenerate exit returns before any structure exists, not a stem of length zero found by walking.',
+          },
+          {
+            lineRange: [10, 18],
+            referenceLabel: 'Collapse shared openings into shared paths',
+            acceptableKeywords: ['insert every entry', 'build the trie', 'mark each entry end', 'shared prefixes merge'],
+            hint: 'How does inserting all entries turn the common opening into a single corridor?',
+            misconception: 'Insertion only forms the structure; the stem is not yet extracted from it.',
+          },
+          {
+            lineRange: [19, 29],
+            referenceLabel: 'Descend the unbranched, unmarked corridor',
+            acceptableKeywords: ['walk while single child', 'stop at a fork', 'stop at end marker', 'follow the one corridor'],
+            hint: 'Which two events force agreement among entries to stop?',
+            misconception: 'A node with one child can still end the stem if an entry terminates there — a fork is not the only stopping condition.',
+          },
+          {
+            lineRange: [30, 30],
+            referenceLabel: 'Assemble the corridor characters into the answer',
+            acceptableKeywords: ['join collected characters', 'build the result string', 'return the stem', 'stitch the prefix'],
+            hint: 'The walk gathered characters in order — what is the final return?',
+            misconception: 'This only materialises the already-determined path into text.',
+          },
+        ],
       },
       testCases: [
         { input: [['flowchart', 'flowmeter', 'flows']], expected: 'flow', label: 'stem ends at a fork' },
@@ -396,6 +470,43 @@ The recursion has exactly three shapes. A **literal letter** is deterministic: o
 Worst case (a pattern of all dots against an adversarial registry) the DFS can touch nearly every node in the trie — \`O(total characters)\` — but it can never do worse than the trie's actual size, and literal characters prune aggressively in practice.
 `,
         complexity: 'Time O(build: total chars) + per pattern O(L) for literal patterns, up to O(trie size) with dots; Space O(total chars)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define a node that marks complete entries',
+            acceptableKeywords: ['node with children', 'end-of-entry flag', 'trie node definition', 'children plus terminal marker'],
+            hint: 'For exact-length matching later, what must each node be able to signal?',
+            misconception: 'The marker means an entry ends here, distinct from a node merely existing on a path.',
+          },
+          {
+            lineRange: [5, 14],
+            referenceLabel: 'Build the searchable registry once up front',
+            acceptableKeywords: ['insert each name', 'build the trie once', 'mark word ends', 'register all entries'],
+            hint: 'The same structure serves every query — when do you pay to build it?',
+            misconception: 'This one-time build is amortised across all queries, not redone per pattern.',
+          },
+          {
+            lineRange: [15, 20],
+            referenceLabel: 'Anchor the recursion on a consumed pattern',
+            acceptableKeywords: ['base case of recursion', 'pattern fully consumed', 'require an end marker', 'stop when index reaches length'],
+            hint: 'When the pattern runs out, what must be true of the node for a real match?',
+            misconception: 'Reaching a node is not enough — an exact match demands the node be an entry end, not a pass-through.',
+          },
+          {
+            lineRange: [21, 29],
+            referenceLabel: 'Branch on wildcard versus literal at this position',
+            acceptableKeywords: ['wildcard tries all children', 'literal follows one child', 'dot explores every branch', 'fixed letter is deterministic'],
+            hint: 'A normal letter follows one link; what does the any-character symbol do instead?',
+            misconception: 'The wildcard explores only children the registry actually has — it never invents missing letters.',
+          },
+          {
+            lineRange: [30, 31],
+            referenceLabel: 'Resolve every pattern against the registry',
+            acceptableKeywords: ['evaluate each pattern', 'collect boolean results', 'run the matcher per query', 'map over patterns'],
+            hint: 'With the matcher defined, how do you produce one verdict per input pattern?',
+            misconception: 'This driver only invokes the recursion; the matching logic lives above it.',
+          },
+        ],
       },
       testCases: [
         { input: [['mail', 'main', 'map'], ['ma..', 'm.p', 'ma.', '.ail', 'mall']], expected: [true, true, true, true, false], label: 'mixed literals and dots' },
@@ -509,6 +620,43 @@ Each word's walk also distinguishes the three outcomes cleanly: **fall off** the
 Each word costs at most its own length, so the whole rewrite is linear in the report plus the one-time build — and an empty registry or empty report degrade gracefully to identity and \`""\`.
 `,
         complexity: 'Time O(total chars in codes + len(report)), Space O(total chars in codes)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define a node that marks where entries end',
+            acceptableKeywords: ['node with children', 'end-of-entry flag', 'trie node definition', 'children plus terminal bit'],
+            hint: 'To detect a matching code mid-walk later, what must each node carry?',
+            misconception: 'The marker flags a code ending here; passing through a node is not the same as a match.',
+          },
+          {
+            lineRange: [5, 15],
+            referenceLabel: 'Register all canonical entries once',
+            acceptableKeywords: ['insert each code', 'build the registry trie', 'mark code ends', 'one-time structure build'],
+            hint: 'Every word in the report consults the same set of codes — build it when?',
+            misconception: 'Duplicates and nested codes are absorbed by re-marking; no per-word rebuild happens.',
+          },
+          {
+            lineRange: [16, 28],
+            referenceLabel: 'Map one token to its shortest matching code',
+            acceptableKeywords: ['walk the word', 'return on first marker', 'shortest prefix wins', 'fall off keeps original'],
+            hint: 'Walking a word visits its prefixes shortest-first — what does the first marker mean?',
+            misconception: 'The first marker is already the shortest match; running off the trie means keep the word unchanged, a different outcome.',
+          },
+          {
+            lineRange: [29, 31],
+            referenceLabel: 'Short-circuit an empty report',
+            acceptableKeywords: ['guard empty input', 'return empty string', 'handle no tokens', 'degenerate report case'],
+            hint: 'What should the canonical form of an empty report be?',
+            misconception: 'This is a degenerate exit, not the result of splitting and rejoining nothing.',
+          },
+          {
+            lineRange: [32, 33],
+            referenceLabel: 'Rewrite every token and reassemble the line',
+            acceptableKeywords: ['split on spaces', 'shorten each token', 'join the results', 'rebuild the report'],
+            hint: 'How do you apply the per-token rewrite across the whole line losslessly?',
+            misconception: 'This orchestrates the helper over each token; the matching decision belongs to the helper.',
+          },
+        ],
       },
       testCases: [
         {
@@ -616,6 +764,43 @@ There are only two ways prefix-freeness can die, and one insertion walk witnesse
 The early return is not just politeness — it is what keeps the whole audit \`O(total digits)\`: each digit of each code is touched at most once before a verdict. The "instant playback" framing is the everyday face of a classic idea: a code set where no entry prefixes another is exactly a set a device can decode with no terminator symbol — the same property that makes variable-length schemes like Huffman codes decodable.
 `,
         complexity: 'Time O(total digits across all codes), Space O(total digits)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define a node that marks a registered entry',
+            acceptableKeywords: ['node with children', 'end-of-entry flag', 'trie node definition', 'children plus terminal marker'],
+            hint: 'To catch a conflict while inserting, what must each node be able to signal?',
+            misconception: 'The marker means an entry terminates here; an internal node having children is a separate signal.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Open the audit with an empty structure',
+            acceptableKeywords: ['create the root', 'function entry point', 'start empty trie', 'begin with bare root'],
+            hint: 'Before testing any code, what does the first insertion start from?',
+            misconception: 'This only sets up the loop; no conflict can be detected yet.',
+          },
+          {
+            lineRange: [9, 18],
+            referenceLabel: 'Insert a code and catch an earlier entry inside it',
+            acceptableKeywords: ['thread the code in', 'pass a marked node', 'earlier entry is a prefix', 'detect conflict mid-insert'],
+            hint: 'While descending a new code, what does meeting an existing end marker reveal?',
+            misconception: 'Hitting a marker mid-walk means a shorter entry prefixes this one — different from this code prefixing a longer one.',
+          },
+          {
+            lineRange: [19, 23],
+            referenceLabel: 'Catch this entry being a prefix, then commit it',
+            acceptableKeywords: ['ends on internal node', 'has children below', 'this code is a prefix', 'mark on clean insert'],
+            hint: 'If a finished code lands on a node that already continues deeper, what does that mean?',
+            misconception: 'Finishing on a node with children is the mirror conflict; only a truly clean stop earns the end marker.',
+          },
+          {
+            lineRange: [24, 24],
+            referenceLabel: 'Declare the whole set conflict-free',
+            acceptableKeywords: ['all inserts clean', 'return true', 'no prefix collisions', 'set is prefix-free'],
+            hint: 'If every code inserts without firing either check, what is the verdict?',
+            misconception: 'Reaching here proves no entry prefixes another across the entire set.',
+          },
+        ],
       },
       testCases: [
         { input: [['302', '45', '718']], expected: true, label: 'distinct openings' },
@@ -724,6 +909,43 @@ That connectivity is what justifies the pruned DFS: descending only into marked 
 The tie-break costs nothing extra, which is the second idea worth keeping. A preorder walk that visits children in alphabetical order enumerates stored strings in exact lexicographic order, so among words of equal maximal length the FIRST one encountered is the alphabetically smallest — updating \`best\` only on a strictly longer find bakes the tie-break into the traversal itself. The common alternative (sort the words, grow a hash set of buildable words) also runs near-linear, but it re-derives per word what the trie states once, structurally: qualification is a property of the path, not of the word in isolation.
 `,
         complexity: 'Time O(total characters), Space O(total characters)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define a node that marks a valid stage',
+            acceptableKeywords: ['node with children', 'end-of-entry flag', 'trie node definition', 'children plus terminal marker'],
+            hint: 'Buildability depends on every prefix being a word — what must each node record?',
+            misconception: 'The marker says a word ends here; it is what makes a node a legal rung, not mere existence.',
+          },
+          {
+            lineRange: [5, 14],
+            referenceLabel: 'Build the structure from every entry',
+            acceptableKeywords: ['insert each word', 'build the trie', 'mark word ends', 'collapse shared prefixes'],
+            hint: 'How does inserting all words make the inheritance relation into adjacency?',
+            misconception: 'Building only forms the structure; which words qualify is decided by the later traversal.',
+          },
+          {
+            lineRange: [15, 17],
+            referenceLabel: 'Initialise the running best answer',
+            acceptableKeywords: ['track the best so far', 'start best empty', 'running champion', 'seed the answer'],
+            hint: 'Before searching, what placeholder holds the longest qualifying word found?',
+            misconception: 'This seeds the comparison state; it is updated during the search, not here.',
+          },
+          {
+            lineRange: [18, 28],
+            referenceLabel: 'Search only through fully-valid extensions',
+            acceptableKeywords: ['recurse through marked children', 'strictly longer wins', 'visit children in order', 'prune unmarked branches'],
+            hint: 'Which children may the descent follow, and when do you update the champion?',
+            misconception: 'Descending only into marked children is the definition restated, not a heuristic; updating only on strictly longer keeps the alphabetical tie-break.',
+          },
+          {
+            lineRange: [29, 31],
+            referenceLabel: 'Launch the search and return the winner',
+            acceptableKeywords: ['kick off the dfs', 'start from the root', 'return the best', 'run then report'],
+            hint: 'With the search defined, how do you start it and surface the answer?',
+            misconception: 'This driver only invokes and reports; the qualifying logic lives in the recursion.',
+          },
+        ],
       },
       testCases: [
         { input: [['w', 'wo', 'wor', 'worl', 'world']], expected: 'world', label: 'one complete ladder' },
@@ -842,6 +1064,43 @@ The deterministic ordering rests on a fact worth memorizing: **a preorder DFS th
 Deduplication never appears in the code because the structure absorbs it: duplicates re-mark one node, and the DFS reads each marker once. And carrying the \`None\` forward after falling off encodes the obvious-but-easy-to-botch invariant that no longer prefix can ever match again.
 `,
         complexity: 'Time O(total catalog chars) to build + O(len(query)) walk with a 3-capped DFS per keystroke; Space O(total catalog chars)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define a node that marks a catalog entry',
+            acceptableKeywords: ['node with children', 'end-of-entry flag', 'trie node definition', 'children plus terminal marker'],
+            hint: 'To emit only real names during a traversal, what must each node signal?',
+            misconception: 'The marker distinguishes a real name from an intermediate node on the way to longer names.',
+          },
+          {
+            lineRange: [5, 15],
+            referenceLabel: 'Build the catalog structure once',
+            acceptableKeywords: ['insert each name', 'build the trie once', 'mark name ends', 'dedupe by construction'],
+            hint: 'Every keystroke reuses the same structure — when is it built?',
+            misconception: 'Duplicates collapse onto one path; the build is amortised, not redone per keystroke.',
+          },
+          {
+            lineRange: [16, 26],
+            referenceLabel: 'Gather the smallest few names under a node',
+            acceptableKeywords: ['preorder dfs sorted', 'emit in lexicographic order', 'append before recursing', 'cap the result count'],
+            hint: 'How does a sorted-order traversal hand you names already ranked, and when do you stop?',
+            misconception: 'Appending at a marked node before recursing places a shorter name ahead of its own extensions; the cap is a clean short-circuit, not a post-hoc slice.',
+          },
+          {
+            lineRange: [27, 39],
+            referenceLabel: 'Advance one link per keystroke and harvest',
+            acceptableKeywords: ['one child per keystroke', 'walk the growing prefix', 'collect suggestions per step', 'stay none after falling off'],
+            hint: 'Each keystroke extends the previous prefix — how far does the walk move, and what then?',
+            misconception: 'The walk advances a single link per keystroke rather than restarting; once it falls off, no longer prefix can match again.',
+          },
+          {
+            lineRange: [40, 40],
+            referenceLabel: 'Return the per-keystroke suggestion lists',
+            acceptableKeywords: ['return all results', 'one list per keystroke', 'final answer', 'report the suggestions'],
+            hint: 'After processing every keystroke, what is handed back?',
+            misconception: 'This only returns the accumulated lists; the ranking happened during collection.',
+          },
+        ],
       },
       testCases: [
         { input: [['lima', 'lisbon', 'london', 'lagos', 'lyon'], 'li'], expected: [['lagos', 'lima', 'lisbon'], ['lima', 'lisbon']], label: 'narrowing pool' },
@@ -950,6 +1209,43 @@ A counter dict keyed on \`code[:k]\` also solves this — the reason to reach fo
 The skip rule (barcodes shorter than \`k\`) is enforced before insertion rather than patched up during traversal, and that placement is the quiet design decision: it keeps the invariant "every path has length exactly k, every depth-k node is a real plate with count >= 1" airtight, so the harvest DFS needs no existence checks, no pruning, and no special cases. Structure built to a clean invariant makes the traversal almost embarrassingly simple — which is exactly the trade you want.
 `,
         complexity: 'Time O(total bases read, at most k per barcode) + O(plates) for the harvest; Space O(distinct stem characters)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Define a node carrying a bucket tally',
+            acceptableKeywords: ['node with children', 'per-node counter', 'trie node definition', 'children plus tally'],
+            hint: 'Each group needs a count — where does that live in the structure?',
+            misconception: 'The tally sits at the stem-ending node, not on every node along the path.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Open the routine with an empty structure',
+            acceptableKeywords: ['create the root', 'function entry point', 'start empty trie', 'begin with bare root'],
+            hint: 'Before routing any barcode, what does every path begin from?',
+            misconception: 'This only allocates the starting point; no routing has happened.',
+          },
+          {
+            lineRange: [9, 18],
+            referenceLabel: 'Route each entry by its leading segment only',
+            acceptableKeywords: ['use first k characters', 'skip entries too short', 'insert the prefix segment', 'bump the bucket count'],
+            hint: 'Only the opening segment decides the group — and which entries get skipped?',
+            misconception: 'Filtering short entries before insertion keeps every stored path exactly length k; it is not patched during harvest.',
+          },
+          {
+            lineRange: [19, 30],
+            referenceLabel: 'Set up an ordered traversal of the groups',
+            acceptableKeywords: ['collect at full depth', 'visit children sorted', 'depth-k nodes are buckets', 'ordered harvest dfs'],
+            hint: 'Depth-k nodes are the groups — how do you reach them already sorted?',
+            misconception: 'Sorted child order yields ascending stems for free; no separate sort over the groups is needed.',
+          },
+          {
+            lineRange: [31, 33],
+            referenceLabel: 'Run the harvest and return the buckets',
+            acceptableKeywords: ['launch the dfs', 'start from the root', 'return the plates', 'run then report'],
+            hint: 'With the traversal defined, how do you start it and surface the groups?',
+            misconception: 'This driver only invokes and returns; the ordering came from the traversal.',
+          },
+        ],
       },
       testCases: [
         { input: [['acgt', 'acgg', 'actt', 'gggg'], 2], expected: [['ac', 3], ['gg', 1]], label: 'basic pooling' },
@@ -1064,6 +1360,43 @@ Fixed width matters more than it looks. Inserting raw bit strings of varying len
 The query-before-insert loop is a small idiom with two payoffs: it enforces \`i != j\` (an ID is never offered itself as a partner — only earlier packs are in the trie), and it covers every unordered pair exactly once, because whichever element comes later does the querying. Total work \`O(n * B)\` with \`B <= 31\` versus the scan's \`O(n^2)\`: at fifty thousand packs, roughly 1.5 million steps instead of 2.5 billion.
 `,
         complexity: 'Time O(n * B) where B = bit-length of the max ID (<= 31), Space O(n * B)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Define a node branching on a single bit',
+            acceptableKeywords: ['binary trie node', 'children keyed by bit', 'node with two branches', 'bit-indexed node'],
+            hint: 'For a bitwise structure, what are the outgoing links of each node keyed on?',
+            misconception: 'Branching is on one bit (0 or 1), not on a full character or value.',
+          },
+          {
+            lineRange: [4, 11],
+            referenceLabel: 'Fix a uniform width and start the structure',
+            acceptableKeywords: ['pad to common bit-length', 'align bit positions', 'compute the width', 'create the root'],
+            hint: 'Why must every value be considered at the same number of bits before inserting?',
+            misconception: 'Fixed width makes depth mean a single bit position across all paths; without it bits would misalign.',
+          },
+          {
+            lineRange: [12, 18],
+            referenceLabel: 'Thread a value in bit by bit, high first',
+            acceptableKeywords: ['insert most significant first', 'descend by each bit', 'build the bit path', 'create children per bit'],
+            hint: 'Going from the top bit down, how does one value get stored?',
+            misconception: 'Insertion lays down a full-width path; it does no scoring, only storage.',
+          },
+          {
+            lineRange: [19, 32],
+            referenceLabel: 'Greedily chase the opposite bit for the best partner',
+            acceptableKeywords: ['greedy walk top bit first', 'prefer the opposite bit child', 'maximise high bits first', 'accumulate the score'],
+            hint: 'At each level, which child grows the result, and why take it without hesitation?',
+            misconception: 'Taking the opposite-bit child whenever it exists is optimal because a high bit outweighs all lower bits combined.',
+          },
+          {
+            lineRange: [33, 41],
+            referenceLabel: 'Query each value before storing it, tracking the best',
+            acceptableKeywords: ['query before insert', 'each pair counted once', 'keep the running maximum', 'partner is a different element'],
+            hint: 'How does asking before inserting cover every pair once and forbid self-pairing?',
+            misconception: 'Querying before inserting both ensures the partner is a distinct earlier element and visits each unordered pair exactly once.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 10, 5, 25, 2, 8]], expected: 28, label: 'classic small fleet' },

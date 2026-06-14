@@ -148,6 +148,43 @@ A **min-heap capped at size k** stores exactly the elite group, and its root is 
 Note the comparison is strict (\`s > heap[0]\`): a score equal to the cutoff leaves the displayed value unchanged either way, so skipping the replace saves work without changing any answer. The \`-1\` warm-up phase falls out of the same code path — the heap simply hasn't reached size k yet.
 `,
         complexity: 'Time O(n log k), Space O(k)',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Set up a bounded structure to track only the best few',
+            acceptableKeywords: ['import heap', 'empty min-heap', 'create result list', 'initialize the keepers'],
+            hint: 'What do you allocate before any element streams in?',
+            misconception: 'This only prepares storage — no element has been admitted or ranked yet.',
+          },
+          {
+            lineRange: [6, 9],
+            referenceLabel: 'While under capacity, admit every arrival unconditionally',
+            acceptableKeywords: ['heap not yet full', 'push while under k', 'fill the warm-up', 'admit until size k'],
+            hint: 'Before the pool is full, does any arrival need to prove itself?',
+            misconception: 'During warm-up nothing is rejected — the comparison guard only matters once the pool is full.',
+          },
+          {
+            lineRange: [10, 13],
+            referenceLabel: 'Once full, swap in only arrivals that beat the weakest keeper',
+            acceptableKeywords: ['beats the root', 'evict the smallest', 'replace the weakest', 'better than the bar'],
+            hint: 'When the pool is full, what must a newcomer exceed to get in?',
+            misconception: 'This compares against the root (the worst keeper), not the best — admitting only true improvements.',
+          },
+          {
+            lineRange: [14, 17],
+            referenceLabel: 'Record the current boundary value after each step',
+            acceptableKeywords: ['append the root', 'read the cutoff', 'log the boundary', 'k-th best so far'],
+            hint: 'What single value answers the query after each arrival?',
+            misconception: 'The root is the boundary of the best group, not the overall best element.',
+          },
+          {
+            lineRange: [18, 18],
+            referenceLabel: 'Return the accumulated answers',
+            acceptableKeywords: ['return the results', 'hand back the list', 'output per-step answers', 'return display'],
+            hint: 'What gets returned once the stream is exhausted?',
+            misconception: 'This emits the per-arrival log, not the heap itself.',
+          },
+        ],
       },
       testCases: [
         { input: [[40, 60, 50, 30, 70], 2], expected: [-1, 40, 50, 50, 60], label: 'worked example' },
@@ -247,6 +284,43 @@ The subtlety here is **direction**. We want the k *smallest* distance keys, so t
 The final \`sorted(...)\` over k survivors costs \`O(k log k)\` — negligible — and converts the heap's loose internal order into the contractual output order. Returning the heap as-is would be a bug: heaps are not sorted.
 `,
         complexity: 'Time O(n log k), Space O(k)',
+        subgoals: [
+          {
+            lineRange: [1, 9],
+            referenceLabel: 'Prepare a max-heap of keepers by reversing the ordering',
+            acceptableKeywords: ['negate to fake max-heap', 'reverse the order', 'empty bounded heap', 'min-heap as max-heap'],
+            hint: 'To keep the smallest keys with a min-only heap, which direction must the root face?',
+            misconception: 'Negation flips a min-heap into a max-heap of keepers — the root is the worst kept, not the best.',
+          },
+          {
+            lineRange: [10, 12],
+            referenceLabel: 'Derive each item\'s composite ranking key',
+            acceptableKeywords: ['compute the distance', 'build the sort key', 'negated tuple key', 'rank with tie-breaks'],
+            hint: 'What value decides a candidate\'s rank, including tie-breakers?',
+            misconception: 'Every field of the key is negated together so tuple order matches the intended ranking.',
+          },
+          {
+            lineRange: [13, 14],
+            referenceLabel: 'Admit freely until the pool reaches capacity',
+            acceptableKeywords: ['push while under k', 'fill until full', 'admit unconditionally', 'below capacity'],
+            hint: 'While the heap has room, does a candidate need to compete?',
+            misconception: 'Warm-up admits everyone; the eviction test only applies once size k is reached.',
+          },
+          {
+            lineRange: [15, 18],
+            referenceLabel: 'Replace the worst keeper when a better candidate arrives',
+            acceptableKeywords: ['beats the root', 'evict the worst', 'replace if better', 'swap out weakest'],
+            hint: 'Once full, what must a candidate beat to displace someone?',
+            misconception: 'A larger negated key means a smaller true key, so this admits genuinely closer drones.',
+          },
+          {
+            lineRange: [19, 22],
+            referenceLabel: 'Restore original values and order before returning',
+            acceptableKeywords: ['un-negate the survivors', 'sort into final order', 'heap is unordered', 'format the output'],
+            hint: 'The heap is not sorted — what must happen before returning it?',
+            misconception: 'The heap\'s internal order is not the answer order; survivors must be un-negated and sorted.',
+          },
+        ],
       },
       testCases: [
         { input: [[[1, 2], [3, 4], [-1, 0]], [0, 0], 2], expected: [[-1, 0], [1, 2]], label: 'basic selection' },
@@ -345,6 +419,43 @@ So the live decision set has at most k members at all times. A min-heap over the
 The \`(value, stream_index, position)\` tuple shape is defensive engineering: on timestamp ties Python compares the second field, and stream indices are unique, so comparison never touches the third field. If the payload were something non-comparable (a dict of log fields), that tiebreaker would be the difference between working code and a \`TypeError\` mid-merge.
 `,
         complexity: 'Time O(N log k), Space O(k) beyond the output',
+        subgoals: [
+          {
+            lineRange: [1, 9],
+            referenceLabel: 'Seed the frontier with one entry per sorted source',
+            acceptableKeywords: ['heap of stream heads', 'one candidate per list', 'seed the frontier', 'heapify the heads'],
+            hint: 'Which single element of each sorted source can compete to be next?',
+            misconception: 'Only the current heads belong in the heap — never the whole streams at once.',
+          },
+          {
+            lineRange: [10, 11],
+            referenceLabel: 'Prepare the output accumulator',
+            acceptableKeywords: ['empty result list', 'initialize output', 'collector for merged', 'accumulator'],
+            hint: 'Where will the merged sequence be gathered?',
+            misconception: 'This just allocates the result; nothing has been merged yet.',
+          },
+          {
+            lineRange: [12, 14],
+            referenceLabel: 'Repeatedly extract the global minimum and emit it',
+            acceptableKeywords: ['pop the smallest head', 'extract global minimum', 'emit next element', 'loop popping the root'],
+            hint: 'Across all current heads, which one is provably next in order?',
+            misconception: 'The root is the minimum across all frontiers, not just within one source.',
+          },
+          {
+            lineRange: [15, 18],
+            referenceLabel: 'Advance the donor source and re-seed its successor',
+            acceptableKeywords: ['push the next element', 'advance the donor', 'refill from same list', 'replace popped head'],
+            hint: 'After consuming a head, what should take its place in the frontier?',
+            misconception: 'Only the source that lost its head is advanced — not every source.',
+          },
+          {
+            lineRange: [19, 19],
+            referenceLabel: 'Return the fully merged sequence',
+            acceptableKeywords: ['return merged', 'hand back result', 'output the timeline', 'final ordered list'],
+            hint: 'What is returned once every frontier is empty?',
+            misconception: 'The loop ends only when all sources are drained, leaving the complete merge.',
+          },
+        ],
       },
       testCases: [
         { input: [[[1, 4, 7], [2, 5], [3, 6, 9]]], expected: [1, 2, 3, 4, 5, 6, 7, 9], label: 'three interleaved streams' },
@@ -449,6 +560,36 @@ Each arrival does three constant-shape steps. **Route**: compare against \`low\`
 One detail worth internalizing: pushing the arrival into a half and *then* rebalancing is what keeps both invariants (ordering and size) simultaneously true — trying to choose the destination by sizes alone, without comparing values, is the classic way this solution goes subtly wrong.
 `,
         complexity: 'Time O(n log n) total — O(log n) per arrival, Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Stand up two opposing heaps to hold each half',
+            acceptableKeywords: ['two heaps for halves', 'max-heap and min-heap', 'lower and upper half', 'opposing heaps setup'],
+            hint: 'How many heaps, and facing which directions, surround the middle?',
+            misconception: 'One heap surfaces an extreme; the median needs two heaps meeting at the center.',
+          },
+          {
+            lineRange: [7, 13],
+            referenceLabel: 'Route each arrival into the side that preserves ordering',
+            acceptableKeywords: ['compare against the frontier', 'route to correct half', 'place by value', 'decide which heap'],
+            hint: 'What value decides which half a new element belongs to?',
+            misconception: 'Destination is chosen by value versus the boundary, not by which heap is smaller.',
+          },
+          {
+            lineRange: [14, 21],
+            referenceLabel: 'Rebalance so the halves differ by at most one',
+            acceptableKeywords: ['equalize the sizes', 'transfer across heaps', 'keep halves balanced', 'move root between heaps'],
+            hint: 'After inserting, what size relationship must the two halves keep?',
+            misconception: 'At most one element migrates; this is a size fix, not where the value gets placed.',
+          },
+          {
+            lineRange: [22, 28],
+            referenceLabel: 'Read the median from the frontier and record it',
+            acceptableKeywords: ['peek the roots', 'middle from the tops', 'odd versus even median', 'average the two tops'],
+            hint: 'Given the balanced halves, where does the median sit?',
+            misconception: 'The median is read from one or both roots, never re-derived by sorting.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 1, 4]], expected: [3, 2.0, 3], label: 'worked example' },
@@ -539,6 +680,43 @@ The heap is what makes the greedy *executable*. After every weld, the pile chang
 Note the shape of this facet: unlike top-k problems where the heap is a *filter* that stays small, here the heap holds everything and acts as a *scheduler* — the pattern to recognize is "repeatedly combine the two extremes and feed the result back in."
 `,
         complexity: 'Time O(n log n), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Short-circuit the case with nothing to combine',
+            acceptableKeywords: ['guard tiny input', 'fewer than two', 'nothing to merge', 'early return zero'],
+            hint: 'Is there any work to do when there are zero or one pieces?',
+            misconception: 'This is a base-case guard, not part of the greedy loop.',
+          },
+          {
+            lineRange: [7, 9],
+            referenceLabel: 'Load everything into the heap and zero the running cost',
+            acceptableKeywords: ['heapify the pile', 'build the min-heap', 'initialize total', 'all items into heap'],
+            hint: 'Before combining, how do you arrange the pieces and the tally?',
+            misconception: 'Here the heap holds everything as a scheduler — not a small fixed-size filter.',
+          },
+          {
+            lineRange: [10, 15],
+            referenceLabel: 'Repeatedly take the two smallest available items',
+            acceptableKeywords: ['pop the two smallest', 'extract cheapest pair', 'greedy two minimums', 'loop while more than one'],
+            hint: 'Which two pieces does the greedy choice fuse each round?',
+            misconception: 'The greedy always combines the two minimums, not arbitrary or largest pieces.',
+          },
+          {
+            lineRange: [16, 18],
+            referenceLabel: 'Charge the combined cost and reinsert the result',
+            acceptableKeywords: ['add to running total', 'push the merged sum', 'feed result back', 'accumulate then reinsert'],
+            hint: 'After fusing, what is billed and what rejoins the pile?',
+            misconception: 'The merged piece must re-enter the heap; it is a future candidate, not done.',
+          },
+          {
+            lineRange: [19, 19],
+            referenceLabel: 'Return the accumulated total cost',
+            acceptableKeywords: ['return the total', 'final summed cost', 'hand back tally', 'output accumulated cost'],
+            hint: 'What value answers the problem once one piece remains?',
+            misconception: 'The answer is the accumulated charge, not the final piece\'s length.',
+          },
+        ],
       },
       testCases: [
         { input: [[4, 3, 2, 6]], expected: 29, label: 'worked example' },
@@ -629,6 +807,29 @@ So flip the architecture: instead of a small heap of survivors, build a heap ove
 The general lesson: when a composite ranking mixes directions over non-numeric fields, *pop from a full heap in answer order* instead of *maintaining a bounded heap of keepers*. Same data structure, opposite deployment.
 `,
         complexity: 'Time O(n + m + k log m) for m distinct names, Space O(m)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Aggregate the raw input into per-key counts',
+            acceptableKeywords: ['count occurrences', 'tally per key', 'collapse to frequencies', 'build the counter'],
+            hint: 'What must you compute before anything can be ranked?',
+            misconception: 'This collapses duplicates into frequencies — no ordering happens yet.',
+          },
+          {
+            lineRange: [7, 14],
+            referenceLabel: 'Build a full heap whose pop order equals the answer order',
+            acceptableKeywords: ['heap over all keys', 'encode composite ranking', 'key for pop order', 'heapify every entry'],
+            hint: 'How do you encode a mixed-direction ranking so a min-heap pops correctly?',
+            misconception: 'This heap holds every distinct key, not a bounded set of survivors.',
+          },
+          {
+            lineRange: [15, 17],
+            referenceLabel: 'Emit the top results by popping a fixed number of times',
+            acceptableKeywords: ['pop k times', 'take the best k', 'extract top results', 'drain k from root'],
+            hint: 'Given a heap already in answer order, how do you produce the top k?',
+            misconception: 'Popping yields answer order directly; the heap itself was never sorted.',
+          },
+        ],
       },
       testCases: [
         {
@@ -731,6 +932,43 @@ Column-sortedness buys the second optimization: seeding only \`min(k, rows)\` ro
 The \`(value, row, col)\` tuple is doing double duty again: equal readings fall back to comparing row indices, which are unique among heap entries, so comparisons are always decided before reaching a third field and pops are fully deterministic. Worth knowing for follow-up conversations: a binary search **on the value range**, counting cells \`<=\` mid per row, solves the same problem in \`O((R + C) log range)\` — but the heap version is the one that generalizes to "give me the readings in dryness order until I say stop."
 `,
         complexity: 'Time O(min(rows, k) + k log min(rows, k)), Space O(min(rows, k))',
+        subgoals: [
+          {
+            lineRange: [1, 10],
+            referenceLabel: 'Seed a bounded frontier from each sorted source\'s smallest entry',
+            acceptableKeywords: ['heap of row heads', 'one candidate per row', 'bound by k sources', 'seed smallest per row'],
+            hint: 'Which entry of each sorted row can be the next-smallest, and how many rows even matter?',
+            misconception: 'Sorted structure lets you skip rows beyond k and seed only the heads — not the whole grid.',
+          },
+          {
+            lineRange: [11, 13],
+            referenceLabel: 'Set up to advance exactly k steps',
+            acceptableKeywords: ['initialize result holder', 'loop k iterations', 'count k pops', 'prepare extraction loop'],
+            hint: 'How many extractions reach the target rank?',
+            misconception: 'The loop stops at k, never draining the whole grid like a full merge.',
+          },
+          {
+            lineRange: [14, 16],
+            referenceLabel: 'Extract the current global minimum across frontiers',
+            acceptableKeywords: ['pop the smallest head', 'global minimum candidate', 'take next in order', 'extract root'],
+            hint: 'Across all current heads, which is provably the next smallest?',
+            misconception: 'The next-smallest must be a current head, since everything behind a head is larger.',
+          },
+          {
+            lineRange: [17, 19],
+            referenceLabel: 'Replace the consumed entry with its successor',
+            acceptableKeywords: ['push next in row', 'advance the donor', 'refill same source', 'replace popped candidate'],
+            hint: 'After popping a head, what re-enters the frontier from that same source?',
+            misconception: 'Only the donor source advances, and only if it still has a next element.',
+          },
+          {
+            lineRange: [20, 20],
+            referenceLabel: 'Return the value reached at the target step',
+            acceptableKeywords: ['return the kth value', 'output the last popped', 'hand back result', 'final extracted value'],
+            hint: 'What value is the answer after the loop completes?',
+            misconception: 'The answer is the value at the k-th pop, not the heap\'s contents.',
+          },
+        ],
       },
       testCases: [
         { input: [[[2, 4, 7], [3, 5, 8], [6, 9, 10]], 4], expected: 5, label: 'worked example' },
@@ -835,6 +1073,36 @@ This problem layers two independent exploitations of structure, and it is worth 
 Total cost: \`O(m log w)\` to count, \`O(m)\` to heapify, \`O(k log m)\` to extract — versus \`O(m log m)\` for the sort-everything baseline. For small k the heap wins; and unlike the sort, it can stop the moment the overflow system has enough levels.
 `,
         complexity: 'Time O(m log w + m + k log m), Space O(m)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Declare the entry point and bring in the heap tool',
+            acceptableKeywords: ['import heap', 'function signature', 'define entry point', 'top-level def'],
+            hint: 'What scaffolding opens the solution before any logic?',
+            misconception: 'This is just the header — no counting or ranking happens here.',
+          },
+          {
+            lineRange: [4, 15],
+            referenceLabel: 'Exploit monotone rows to find the boundary in log time',
+            acceptableKeywords: ['binary search the boundary', 'first zero index', 'count via search', 'locate the split'],
+            hint: 'Each row is sorted — how do you count without scanning it linearly?',
+            misconception: 'A monotone row lets binary search find the boundary; scanning would be the slow baseline.',
+          },
+          {
+            lineRange: [16, 21],
+            referenceLabel: 'Build a heap whose natural order matches the answer order',
+            acceptableKeywords: ['heap over all levels', 'tuple key needs no negation', 'heapify the pairs', 'ascending composite key'],
+            hint: 'When both ranking fields ascend, what key shape does a min-heap need?',
+            misconception: 'When directions already match, the raw tuple works — no negation or custom key required.',
+          },
+          {
+            lineRange: [22, 24],
+            referenceLabel: 'Pop a fixed number of times to emit the selection',
+            acceptableKeywords: ['pop k times', 'take the best k', 'emit top results', 'drain k entries'],
+            hint: 'How do you produce the requested count from a correctly ordered heap?',
+            misconception: 'Popping yields answer order directly and can stop early — unlike sorting everything.',
+          },
+        ],
       },
       testCases: [
         {
@@ -952,6 +1220,50 @@ Two implementation choices carry the determinism and the cleanliness. First, the
 The drain condition \`while heap or cooling\` plus the unconditional \`slot += 1\` is what counts idle time correctly: when everything eligible is exhausted but a color is still cooling, the loop keeps ticking — and those ticks *are* the purge slots the answer must include.
 `,
         complexity: 'Time O(n log m + idle) for m distinct colors, Space O(m)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Handle the empty input before simulating',
+            acceptableKeywords: ['guard empty input', 'no jobs return zero', 'early base case', 'short-circuit nothing'],
+            hint: 'What is the schedule length when there is no work at all?',
+            misconception: 'This is a base-case guard, separate from the scheduling loop.',
+          },
+          {
+            lineRange: [7, 10],
+            referenceLabel: 'Order candidates by remaining workload, heaviest first',
+            acceptableKeywords: ['max-heap of counts', 'negate the frequencies', 'rank by remaining work', 'heaviest at the root'],
+            hint: 'What property must the root expose so the greedy can pick correctly?',
+            misconception: 'Only counts go in the heap — tags are dropped because they never need comparing.',
+          },
+          {
+            lineRange: [11, 17],
+            referenceLabel: 'Set up the cooldown holding area and the clock',
+            acceptableKeywords: ['queue for cooldown', 'fifo of waiting items', 'initialize the clock', 'parked candidates structure'],
+            hint: 'Where do items wait while ineligible, and how is time tracked?',
+            misconception: 'A FIFO queue suffices here because ready times arrive already in order — no second heap needed.',
+          },
+          {
+            lineRange: [18, 22],
+            referenceLabel: 'Advance one tick and reactivate anything now eligible',
+            acceptableKeywords: ['increment the clock', 'release expired cooldowns', 'move ready back', 'tick then re-admit'],
+            hint: 'Each step the clock moves — what becomes eligible again?',
+            misconception: 'Time advances every tick regardless, and expired items return to the priority pool.',
+          },
+          {
+            lineRange: [23, 31],
+            referenceLabel: 'Run the heaviest eligible candidate and park its remainder',
+            acceptableKeywords: ['pop the heaviest', 'consume one unit', 'send to cooldown', 'park remaining work'],
+            hint: 'When something is eligible, which one runs and where does its leftover go?',
+            misconception: 'The greedy runs the heaviest eligible item, then it must cool down before reuse.',
+          },
+          {
+            lineRange: [32, 32],
+            referenceLabel: 'Return the total elapsed time including idle ticks',
+            acceptableKeywords: ['return the slot count', 'total elapsed time', 'final clock value', 'length with idles'],
+            hint: 'What does the clock value represent once everything is done?',
+            misconception: 'The answer counts every tick, including forced idle slots, not just productive ones.',
+          },
+        ],
       },
       testCases: [
         { input: [['A', 'A', 'A', 'B', 'B', 'B'], 2], expected: 8, label: 'worked example' },

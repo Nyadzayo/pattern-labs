@@ -139,6 +139,29 @@ So the scan is pure defer-and-resolve. An opener can't be judged when we meet it
 The third failure mode hides *after* the loop: \`"((("\` never triggers either check, so the final \`return not stack\` is load-bearing. Forgetting it is probably the single most common bracket-validation bug. Payload characters simply never touch the stack, which is why the same skeleton extends to linting real config formats where delimiters are sparse.
 `,
         complexity: 'Time O(n), Space O(n) worst case (all openers)',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Build the matching table and an empty pending pile',
+            acceptableKeywords: ['map closers to openers', 'pairing lookup table', 'empty stack of openers', 'set of opening symbols'],
+            hint: 'What lookup do you need before scanning so a closer knows which opener it answers?',
+            misconception: 'This only declares the pairing data and the holding pile — no symbols are judged yet.',
+          },
+          {
+            lineRange: [6, 12],
+            referenceLabel: 'Defer each opener, settle each closer against the top',
+            acceptableKeywords: ['push opener onto stack', 'pop and check most recent', 'closer matches top opener', 'reject on mismatch or empty'],
+            hint: 'When a closing symbol arrives, which single open symbol must it resolve, and where does it sit?',
+            misconception: 'A closer settles the most recent opener (top), not any matching opener anywhere — count balance is not enough.',
+          },
+          {
+            lineRange: [13, 15],
+            referenceLabel: 'Demand an empty pile to confirm nothing was left open',
+            acceptableKeywords: ['stack must be empty', 'no leftover openers', 'unclosed blocks fail', 'return whether empty'],
+            hint: 'After the whole scan, what about openers that never met a closer?',
+            misconception: 'This post-loop check is load-bearing — without it, a string of pure openers wrongly passes.',
+          },
+        ],
       },
       testCases: [
         { input: ['(deploy [stage {env}])'], expected: true, label: 'nested with payload' },
@@ -231,6 +254,43 @@ Two details carry all the difficulty. First, **operand order**: \`pop()\` return
 Note the elegant recursion of the invariant: an operator's result is pushed back and becomes an ordinary waiting value, indistinguishable from a literal. That's why arbitrarily deep expressions need no special handling — the stack depth simply mirrors the expression tree's depth.
 `,
         complexity: 'Time O(n), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Hold produced-but-unconsumed values and scan tokens',
+            acceptableKeywords: ['stack of pending values', 'iterate over tokens', 'one pass through input', 'values waiting to be used'],
+            hint: 'What single structure holds the numbers that are ready but not yet combined?',
+            misconception: 'This is just the value pile and the scan — it does not yet distinguish numbers from operators.',
+          },
+          {
+            lineRange: [4, 8],
+            referenceLabel: 'Detect an operator and grab its two most recent values',
+            acceptableKeywords: ['token is an operator', 'pop the two newest', 'first pop is right operand', 'second pop is left operand'],
+            hint: 'When the token is an operator, which two values does it act on and in what order do they come off?',
+            misconception: 'The first popped value is the right operand, not the left — swapping them breaks subtraction and division.',
+          },
+          {
+            lineRange: [9, 19],
+            referenceLabel: 'Apply the operation and push its result back',
+            acceptableKeywords: ['compute and push result', 'dispatch on the operator', 'truncate division toward zero', 'result re-enters the pile'],
+            hint: 'After choosing the two operands, what happens to the combined value?',
+            misconception: 'The result must go back on the pile as an ordinary value — and division truncates toward zero, not floor.',
+          },
+          {
+            lineRange: [20, 21],
+            referenceLabel: 'Treat a number token as a value to set aside',
+            acceptableKeywords: ['parse integer token', 'push operand for later', 'number waits on the stack', 'literal value deferred'],
+            hint: 'What do you do with a token that is a plain number?',
+            misconception: 'A number is just deferred — it does no computation until a later operator consumes it.',
+          },
+          {
+            lineRange: [22, 23],
+            referenceLabel: 'Return the lone value the expression resolves to',
+            acceptableKeywords: ['final remaining value', 'single result left', 'return the answer', 'last value standing'],
+            hint: 'A well-formed expression leaves how many values behind at the end?',
+            misconception: 'Exactly one value should remain — more or fewer signals a malformed expression, not the answer.',
+          },
+        ],
       },
       testCases: [
         { input: [['2', '3', '4', '*', '+']], expected: 14, label: 'precedence via structure' },
@@ -316,6 +376,36 @@ The stack holds the indices of unresolved days. The crucial structural fact: the
 Two details worth saying in an interview. **Strictness**: the pop condition is \`<\`, so an equal temperature does not resolve a waiting day — equal days pile up on the stack together, all waiting for the same genuinely warmer day. **Why this is \`O(n)\`** despite the nested loops: each index is pushed exactly once and popped at most once, so the inner \`while\` runs at most \`n\` times *total across the whole scan*. Storing indices rather than temperatures is what lets us compute the distance; the temperature is one lookup away.
 `,
         complexity: 'Time O(n) amortized, Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Default every answer to none-found and ready a pending pile',
+            acceptableKeywords: ['default answer zero', 'result array preset', 'empty stack of indices', 'pending unresolved days'],
+            hint: 'What value should an entry hold if its trigger never arrives, and what holds the still-waiting items?',
+            misconception: 'The pile stores indices of unresolved items, not their values — the distance needs the index.',
+          },
+          {
+            lineRange: [5, 11],
+            referenceLabel: 'Let each new item resolve every smaller pending item it beats',
+            acceptableKeywords: ['pop while top is smaller', 'newcomer settles waiting items', 'record the index gap', 'resolve who this answers'],
+            hint: 'When a new value arrives, which pending items does it finalize, and how do you measure their wait?',
+            misconception: 'A newcomer asks "whose answer am I?" and settles a run at the top — it does not scan forward for itself.',
+          },
+          {
+            lineRange: [12, 13],
+            referenceLabel: 'Enqueue the current item to await its own trigger',
+            acceptableKeywords: ['push current index', 'item now waits', 'add to pending pile', 'defer this position'],
+            hint: 'Once a new item has resolved others, what happens to the item itself?',
+            misconception: 'Pushing keeps the pile non-increasing by value — the item now waits for a strictly greater future value.',
+          },
+          {
+            lineRange: [14, 15],
+            referenceLabel: 'Hand back results, leftovers keeping their no-trigger default',
+            acceptableKeywords: ['return the answers', 'unresolved stay default', 'leftover items keep zero', 'final result array'],
+            hint: 'What about items still on the pile when the scan ends?',
+            misconception: 'Items never resolved keep the preset default — no extra cleanup pass is needed for them.',
+          },
+        ],
       },
       testCases: [
         { input: [[21, 19, 22, 22, 25]], expected: [2, 1, 2, 1, 0], label: 'mixed with duplicates' },
@@ -417,6 +507,43 @@ Why is applying the inverse always safe? Because history is LIFO: when \`*\` fir
 The traps are the no-ops. A \`#\` on an empty draft must record nothing — otherwise a later \`*\` would "restore" a character that never existed. Likewise \`*\` with empty history must do nothing rather than crash. And since undone entries are popped off history, a run of \`*\` keys naturally walks backward through time until history runs dry, with no extra bookkeeping. Each keystroke does \`O(1)\` work, so a session replays in linear time.
 `,
         complexity: 'Time O(n + m), Space O(n + m)',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Set up the working draft and a reversible action log to replay over',
+            acceptableKeywords: ['stack of current characters', 'log of effective actions', 'replay helper over keys', 'two parallel stacks'],
+            hint: 'Beyond the visible draft, what second record lets you later reverse a keystroke?',
+            misconception: 'The action log stores inverse-operation data, not just the draft — undo needs to know what each step did.',
+          },
+          {
+            lineRange: [6, 9],
+            referenceLabel: 'Make a delete remove the top character only if one exists',
+            acceptableKeywords: ['backspace pops a char', 'guard against empty draft', 'record the deletion', 'no-op on empty'],
+            hint: 'When the delete key fires on an empty draft, should anything be recorded?',
+            misconception: 'A delete on an empty draft must record nothing, or a later undo would restore a character that never existed.',
+          },
+          {
+            lineRange: [10, 17],
+            referenceLabel: 'Reverse the most recent effective action when undo fires',
+            acceptableKeywords: ['undo the latest action', 'pop from action log', 'invert typed or deleted', 'restore or remove a char'],
+            hint: 'Undo must perfectly reverse one prior step — how does the action it pops decide what to do?',
+            misconception: 'Undo applies the inverse of the latest logged action; an empty log means do nothing rather than crash.',
+          },
+          {
+            lineRange: [18, 21],
+            referenceLabel: 'Type a literal onto the draft and log it, then yield the draft',
+            acceptableKeywords: ['append the typed letter', 'record a typed action', 'push character to draft', 'return joined text'],
+            hint: 'For an ordinary letter, what must change on both records before returning the draft?',
+            misconception: 'A typed letter updates both the draft and the action log so a future undo can reverse exactly this keystroke.',
+          },
+          {
+            lineRange: [22, 24],
+            referenceLabel: 'Replay both inputs independently and compare final states',
+            acceptableKeywords: ['compare two final drafts', 'replay each log separately', 'equality of end states', 'run helper on both'],
+            hint: 'With one self-contained replay, how do you judge whether two logs agree?',
+            misconception: 'Only the final states matter — the two replays are independent and the keystroke paths may differ.',
+          },
+        ],
       },
       testCases: [
         { input: ['draft#t', 'draf#ft'], expected: true, label: 'different fixes, same draft' },
@@ -513,6 +640,43 @@ So each level of the stack carries a **snapshot**: \`[weight, lightest from here
 The pattern generalizes: any **fold over stack contents** (min, max, gcd, sum) can be answered in O(1) by snapshotting the running fold per level. A common variant stores the minimum in a second, parallel stack that only pushes when a new value ties or beats the current minimum — less memory in the average case, same idea. The pitfall either way is forgetting that ties must also be pushed in the sparse variant, or popping the aggregate out of sync with the data.
 `,
         complexity: 'Time O(1) per operation (O(n) total), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Keep a layered pile and a results list, dispatching each command',
+            acceptableKeywords: ['stack of snapshot pairs', 'collect query answers', 'route each operation', 'main command loop'],
+            hint: 'What two containers do you need before processing the stream of operations?',
+            misconception: 'Each pile entry will carry a running aggregate, not just a raw value — that is what enables the O(1) query.',
+          },
+          {
+            lineRange: [5, 10],
+            referenceLabel: 'On push, snapshot the running minimum alongside the value',
+            acceptableKeywords: ['compute min including new value', 'compare against level below', 'store value with its min', 'push snapshot pair'],
+            hint: 'When a new item lands, how do you record the minimum of everything at or below it in one step?',
+            misconception: 'The per-level minimum is computed once at push time and frozen — items added later above never change it.',
+          },
+          {
+            lineRange: [11, 14],
+            referenceLabel: 'On pop, discard the top layer and its frozen aggregate',
+            acceptableKeywords: ['remove the top entry', 'discard its min snapshot', 'previous truth re-exposed', 'pop restores prior min'],
+            hint: 'When the most recent item leaves, where does the correct minimum come from with no rescan?',
+            misconception: 'Popping the top layer is enough — the layer beneath already holds the correct minimum of what remains.',
+          },
+          {
+            lineRange: [15, 16],
+            referenceLabel: 'Answer a min query by reading the top snapshot',
+            acceptableKeywords: ['read top entry min', 'report current minimum', 'constant-time lookup', 'none when pile empty'],
+            hint: 'How fast can you report the current minimum, and what if the pile is empty?',
+            misconception: 'The query never scans — the answer sits in the top snapshot, with a sentinel when nothing is present.',
+          },
+          {
+            lineRange: [17, 17],
+            referenceLabel: 'Return the answers gathered in query order',
+            acceptableKeywords: ['return collected answers', 'one entry per query', 'final results list', 'in original order'],
+            hint: 'What is the function ultimately handing back?',
+            misconception: 'Only query results are returned, one per query, in the order the queries appeared.',
+          },
+        ],
       },
       testCases: [
         {
@@ -633,6 +797,36 @@ Instead of single characters, the stack stores **run-length compressed** entries
 Why is the result well-defined without simulating the robot's exact timing? Adjacent stack entries always hold different flavors (an equal flavor would have merged), so popping the top can never make two *stored* runs mergeable — the only merge point is with future arrivals. That structural invariant is what makes the greedy left-to-right pass produce the unique final lineup. Each bottle is pushed (as +1 to a count) once and removed at most once, so the whole shift processes in O(n), and the count trick also handles \`k\` larger than the line — counts simply never reach it.
 `,
         complexity: 'Time O(n), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Keep a run-length pile of surviving groups and scan arrivals',
+            acceptableKeywords: ['stack of run pairs', 'group and count', 'compress consecutive items', 'scan each arrival'],
+            hint: 'Instead of single items, what compact form does the top of the pile hold?',
+            misconception: 'Storing grouped counts, not individual items, is what avoids the rescans of naive string surgery.',
+          },
+          {
+            lineRange: [7, 10],
+            referenceLabel: 'Grow the top group, removing it the instant it hits the threshold',
+            acceptableKeywords: ['extend the matching run', 'increment top count', 'remove run at limit', 'pop when full'],
+            hint: 'When an arrival matches the most recent group, what changes, and what triggers its removal?',
+            misconception: 'Removing a full group exposes the run beneath it, which is exactly where the next merge can happen.',
+          },
+          {
+            lineRange: [11, 12],
+            referenceLabel: 'Begin a fresh group when the arrival differs from the top',
+            acceptableKeywords: ['start a new run', 'different item begins group', 'push count of one', 'fresh group on top'],
+            hint: 'What happens when the arrival does not match the most recent group?',
+            misconception: 'A differing arrival opens a new group rather than merging — adjacent stored groups are always distinct.',
+          },
+          {
+            lineRange: [13, 14],
+            referenceLabel: 'Expand the surviving groups back into the final sequence',
+            acceptableKeywords: ['expand runs to items', 'repeat by stored count', 'join front to back', 'rebuild the output'],
+            hint: 'The pile holds compressed runs — how do you turn them into the literal result?',
+            misconception: 'The final output is reconstructed from the surviving counts, not from any leftover raw string.',
+          },
+        ],
       },
       testCases: [
         { input: ['aabbbacc', 3], expected: 'cc', label: 'one cascade' },
@@ -723,6 +917,43 @@ Tokenizing first with \`split('/')\` does a lot of silent work. Repeated slashes
 Two classic traps. First, \`..\` at the trailhead: the pop must be guarded, and the right behavior is to *ignore* it, not to fail — \`"/../"\` canonicalizes to \`"/"\`. Second, reconstruction: building the answer from the surviving stack guarantees every formatting rule at once (single leading slash, single separators, no trailing slash), and the empty-stack case degenerates to \`"/"\` for free. Trying to fix up the original string in place instead of rebuilding is how trailing-slash bugs are born. One pass over the tokens, O(n) overall.
 `,
         complexity: 'Time O(n), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Hold committed segments on a pile and split the input into tokens',
+            acceptableKeywords: ['stack of committed names', 'split on separators', 'tokenize the path', 'iterate over segments'],
+            hint: 'Splitting first turns messy separators into clean tokens — what holds the segments you keep?',
+            misconception: 'Tokenizing up front offloads the slash handling, so each token is a plain string comparison, not a character scan.',
+          },
+          {
+            lineRange: [4, 5],
+            referenceLabel: 'Discard empty and stay-here tokens as pure noise',
+            acceptableKeywords: ['skip empty tokens', 'ignore current-directory marker', 'drop redundant separators', 'continue past noise'],
+            hint: 'Which tokens carry no meaning and should simply be passed over?',
+            misconception: 'Empty and same-place tokens change nothing — only real names and the backtrack marker affect the result.',
+          },
+          {
+            lineRange: [6, 9],
+            referenceLabel: 'Treat the parent marker as an undo of the latest segment',
+            acceptableKeywords: ['parent pops a segment', 'backtrack cancels latest', 'guard at the root', 'ignore when nothing to pop'],
+            hint: 'The parent marker reverses one prior commitment — what if there is nothing committed yet?',
+            misconception: 'A parent marker at the root is ignored, not an error — it cannot cancel a segment that was never added.',
+          },
+          {
+            lineRange: [10, 11],
+            referenceLabel: 'Commit any ordinary name onto the pile',
+            acceptableKeywords: ['push a real segment', 'commit ordinary name', 'add normal token', 'keep the name'],
+            hint: 'What do you do with a token that is neither noise nor the backtrack marker?',
+            misconception: 'Anything that is not the special markers is a literal name to keep, including odd-looking dotted names.',
+          },
+          {
+            lineRange: [12, 14],
+            referenceLabel: 'Rebuild the canonical path from the surviving segments',
+            acceptableKeywords: ['join surviving segments', 'single leading separator', 'reconstruct canonical form', 'empty pile becomes root'],
+            hint: 'Building the answer from the kept segments gives every formatting rule for free — what about an empty pile?',
+            misconception: 'Reconstructing from the pile guarantees single separators and no trailing slash; an empty pile degenerates to the root.',
+          },
+        ],
       },
       testCases: [
         { input: ['/peak/./north/../east//cabin/'], expected: '/peak/east/cabin', label: 'all the noise at once' },
@@ -804,6 +1035,36 @@ Why may popped days be thrown away forever? **Dominance.** If \`depths[j] <= dep
 Note which comparison is non-strict and why. Ties *extend* the streak ("never deeper" allows equal), so a tied day must not act as a blocker — the pop condition is \`<=\`, evicting ties along with shallower days. Flip it to \`<\` and \`[3, 3, 3]\` comes out \`[1, 1, 1]\` instead of \`[1, 2, 3]\`: with monotonic stacks the strictness of one comparison is the entire spec. The structure is also naturally **streaming** — each new reading is answered from the stack alone, with no need to know the future, which is exactly how a live dashboard would consume the gauge feed. Amortized O(n): each index is pushed once and popped at most once.
 `,
         complexity: 'Time O(n) amortized, Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Collect spans while keeping a pile of candidate blockers and scan',
+            acceptableKeywords: ['results list of spans', 'stack of blocker indices', 'decreasing candidate values', 'scan each reading'],
+            hint: 'Reframe the streak by its blocker — what does the pile hold as you walk left to right?',
+            misconception: 'The pile keeps potential nearest-greater-to-the-left blockers, kept strictly decreasing, not every index.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Evict candidates the current reading dominates',
+            acceptableKeywords: ['pop while top not greater', 'evict dominated days', 'discard weaker blockers', 'remove smaller or equal'],
+            hint: 'Which earlier candidates can never block anything once the current value arrives, and why for good?',
+            misconception: 'A candidate at or below the current value is dominated and gone forever — the newcomer is closer and at least as strong.',
+          },
+          {
+            lineRange: [9, 10],
+            referenceLabel: 'Measure the streak as the gap to the nearest surviving blocker',
+            acceptableKeywords: ['span is index gap', 'nearest greater to the left', 'reach to start when none', 'distance from blocker'],
+            hint: 'After eviction, what sits on top, and how does the span follow from it?',
+            misconception: 'With no surviving blocker the streak reaches the very start, not zero — the gap is measured to the blocker index.',
+          },
+          {
+            lineRange: [11, 12],
+            referenceLabel: 'Enroll the current reading as a future blocker, then return',
+            acceptableKeywords: ['push current index', 'may block later days', 'add to candidate pile', 'return all spans'],
+            hint: 'Once a reading is answered, why must it join the pile before moving on?',
+            misconception: 'The current reading can block later days, so it is pushed; the strict-vs-nonstrict pop is what makes ties extend.',
+          },
+        ],
       },
       testCases: [
         { input: [[310, 290, 250, 270, 250, 300]], expected: [1, 1, 1, 2, 1, 5], label: 'mixed readings' },
@@ -898,6 +1159,50 @@ What exactly gets pushed is the subtle design decision. At each \`[\`, *two* thi
 Two pitfalls account for most wrong submissions. **Multi-digit counts**: handling \`num = num * 10 + int(ch)\` keeps \`10[z]\` from becoming one \`z\` followed by garbage; resetting \`num\` after each \`[\` is its mirror twin. **Quadratic concatenation**: appending characters to a list and joining at block boundaries keeps the work proportional to text produced rather than re-copying a growing string per stitch. Cost is O(n + m), where m is the expanded length — m, not n, dominates, and the output-size constraint exists precisely because expansion can be exponential in the nesting depth.
 `,
         complexity: 'Time O(n + m) where m is the expanded length, Space O(n + m)',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Set up a frame pile, the current-level buffer, and a count register',
+            acceptableKeywords: ['stack of suspended frames', 'buffer for current level', 'pending repeat count', 'scan each character'],
+            hint: 'What three pieces of state do you carry: the saved contexts, the text being built now, and the number being read?',
+            misconception: 'The frame pile holds suspended outer contexts; the current buffer is only this nesting level.',
+          },
+          {
+            lineRange: [6, 8],
+            referenceLabel: 'Accumulate a possibly multi-digit repeat count',
+            acceptableKeywords: ['build multi-digit number', 'shift by ten and add', 'read count digit by digit', 'parse the multiplier'],
+            hint: 'A count can span several characters — how do you fold each digit into the number so far?',
+            misconception: 'Counts must accumulate across digits, or a two-digit multiplier collapses to a single digit plus stray text.',
+          },
+          {
+            lineRange: [9, 14],
+            referenceLabel: 'On an opener, suspend the level and start fresh inside the block',
+            acceptableKeywords: ['push frame on open', 'save text and count', 'reset for inner block', 'clear current buffer'],
+            hint: 'When a block opens, what pair of things must be set aside before the inner level begins blank?',
+            misconception: 'Both the outer text and its waiting multiplier go dormant together, and the inner level resets to empty.',
+          },
+          {
+            lineRange: [15, 18],
+            referenceLabel: 'On a closer, resume the owner and splice in the repeated block',
+            acceptableKeywords: ['pop the suspended frame', 'repeat inner by count', 'splice result into owner', 'resume outer level'],
+            hint: 'When the innermost block ends, how do you reattach its repeated text to the level that opened it?',
+            misconception: 'The repeated result re-enters the buffer as ordinary text, so deeper nesting needs no special handling.',
+          },
+          {
+            lineRange: [19, 20],
+            referenceLabel: 'Append a literal at the current nesting level',
+            acceptableKeywords: ['add plain character', 'literal at this level', 'append to current buffer', 'non-special symbol'],
+            hint: 'What happens to a character that is neither a digit nor a bracket?',
+            misconception: 'A literal joins the current level only; it is not yet subject to any pending multiplier.',
+          },
+          {
+            lineRange: [21, 21],
+            referenceLabel: 'Return the fully expanded top-level text',
+            acceptableKeywords: ['join the current buffer', 'return expanded result', 'top-level text', 'final output string'],
+            hint: 'When the scan ends, where does the complete answer live?',
+            misconception: 'A well-formed program leaves everything spliced into the top-level buffer — the frame pile is empty by then.',
+          },
+        ],
       },
       testCases: [
         { input: ['3[ab]'], expected: 'ababab', label: 'single block' },
