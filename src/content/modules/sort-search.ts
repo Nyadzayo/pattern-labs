@@ -150,6 +150,36 @@ Unsorted, every range is a potential partner for every other range — that's \`
 So the sweep needs exactly one comparison per range: \`start <= last_end\` means overlap (the ranges share that boundary byte, since ends are inclusive), anything else means a gap. The single subtlety is nested ranges — \`[2, 3]\` arriving inside \`[1, 10]\` — which is why the merge takes \`max(last_end, end)\` instead of overwriting. The output is born sorted by start, so the required ordering costs nothing extra.
 `,
         complexity: 'Time O(n log n) for the sort, O(n) sweep; Space O(n) for the output',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Handle the empty input up front',
+            acceptableKeywords: ['empty input guard', 'nothing to process return early', 'base case for no data', 'short-circuit on empty'],
+            hint: 'What should happen before any sweeping when there is no data at all?',
+            misconception: 'This is only the trivial-input exit, not where merging begins.',
+          },
+          {
+            lineRange: [5, 9],
+            referenceLabel: 'Order the items so interactions become adjacent, then seed the result',
+            acceptableKeywords: ['sort by start key', 'order so overlaps are neighbors', 'the ordering investment', 'seed output with a copy'],
+            hint: 'What single rearrangement makes "can these overlap?" a question about neighbors only?',
+            misconception: 'This buys the structure the sweep relies on; it is not yet the overlap test.',
+          },
+          {
+            lineRange: [10, 15],
+            referenceLabel: 'Extend the current block when the next item overlaps it',
+            acceptableKeywords: ['merge overlapping into current', 'extend the open block', 'take the max end', 'absorb a nested range'],
+            hint: 'When the new item touches the most recent block, how do you grow that block safely?',
+            misconception: 'Overwriting the end instead of taking the max would shrink the block on a nested range.',
+          },
+          {
+            lineRange: [16, 19],
+            referenceLabel: 'Open a fresh block on a gap, then hand back the result',
+            acceptableKeywords: ['start a new block on a gap', 'no overlap append disjoint', 'close out and continue', 'return the merged list'],
+            hint: 'When the next item starts past the open block, what do you do instead of extending?',
+            misconception: 'This is the disjoint case plus the final return — not part of the overlap branch.',
+          },
+        ],
       },
       testCases: [
         { input: [[[5, 8], [1, 3], [2, 4], [10, 12]]], expected: [[1, 4], [5, 8], [10, 12]], label: 'basic merge' },
@@ -253,6 +283,43 @@ Two hardening choices matter here. **Median-of-three** pivots keep sorted and re
 We copy the input once (\`O(n)\` space) because the contract forbids mutation; given a scratch buffer you own, the algorithm itself is \`O(1)\` extra space.
 `,
         complexity: 'Time O(n) average, O(n^2) worst; Space O(n) for the defensive copy',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Copy the input and set up the rank target and search bounds',
+            acceptableKeywords: ['defensive copy of input', 'convert rank to zero-based index', 'initialize lo and hi', 'set up the working range'],
+            hint: 'Before any partitioning, what do you protect, and what index are you actually hunting for?',
+            misconception: 'This is setup and the rank translation, not the selection logic itself.',
+          },
+          {
+            lineRange: [6, 9],
+            referenceLabel: 'Loop until the window collapses to the answer',
+            acceptableKeywords: ['repeat until one candidate', 'window shrinks each round', 'single element holds the rank', 'termination on lo equals hi'],
+            hint: 'What condition means the search has narrowed to exactly the element you want?',
+            misconception: 'This is the loop frame and its exit, not the partition step.',
+          },
+          {
+            lineRange: [10, 13],
+            referenceLabel: 'Choose a pivot resistant to adversarial input',
+            acceptableKeywords: ['median-of-three pivot', 'pick a robust pivot', 'avoid worst-case sorted input', 'pivot selection'],
+            hint: 'How do you pick a splitter that does not blow up on already-ordered data?',
+            misconception: 'A fixed or naive pivot here is what degrades selection to quadratic.',
+          },
+          {
+            lineRange: [14, 26],
+            referenceLabel: 'Partition the window into less-than, equal, and greater-than regions',
+            acceptableKeywords: ['three-way partition', 'dutch national flag', 'group around the pivot', 'split into three regions'],
+            hint: 'How do you arrange the window so all copies of the pivot sit together in their final place?',
+            misconception: 'A two-way split would not collapse duplicates in one pass like this does.',
+          },
+          {
+            lineRange: [27, 33],
+            referenceLabel: 'Keep only the region that contains the target rank',
+            acceptableKeywords: ['recurse into one side', 'discard the half without the rank', 'rank inside the equal block', 'narrow lo and hi'],
+            hint: 'Once the pivot sits at its final spot, how do you decide which side to keep?',
+            misconception: 'This is the discard decision, not the partitioning that produced the regions.',
+          },
+        ],
       },
       testCases: [
         { input: [[7, 2, 9, 4], 2], expected: 4, label: 'basic rank' },
@@ -341,6 +408,43 @@ The trick is choosing a corner where the two sort orders **disagree**. At the to
 Every iteration permanently deletes a full row or a full column, so the walk takes at most \`m + n - 1\` steps — a staircase trace across the plate. It's worth seeing why plain binary search over the flattened grid is *wrong* here: row-and-column-sorted is strictly weaker than globally sorted, and 10 (start of the last row) sitting below 16 (end of the third) breaks any single sorted-list assumption. The staircase only relies on the two local guarantees the plate actually provides.
 `,
         complexity: 'Time O(m + n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Reject degenerate input and read off the dimensions',
+            acceptableKeywords: ['guard empty grid', 'handle no rows or columns', 'record width and height', 'dimension setup'],
+            hint: 'What must be true about the grid before a staircase walk can even begin?',
+            misconception: 'This only rules out empty grids and records sizes; no searching yet.',
+          },
+          {
+            lineRange: [6, 8],
+            referenceLabel: 'Begin at the corner where the two sort orders disagree',
+            acceptableKeywords: ['start at top-right corner', 'pick the pivot corner', 'max of row min of column', 'corner where directions split'],
+            hint: 'Which starting cell lets every comparison send you in exactly one unambiguous direction?',
+            misconception: 'A corner where both directions grow gives no information; this picks the useful one.',
+          },
+          {
+            lineRange: [9, 12],
+            referenceLabel: 'Walk the staircase and report a direct hit',
+            acceptableKeywords: ['loop while inside the grid', 'read the current cell', 'return on exact match', 'found the target'],
+            hint: 'While still on the plate, what do you check at the current cell before moving?',
+            misconception: 'This is the scan loop and success case, not the elimination step.',
+          },
+          {
+            lineRange: [13, 20],
+            referenceLabel: 'Discard a whole row or column based on the comparison',
+            acceptableKeywords: ['cell too big drop column', 'cell too small drop row', 'eliminate a full line', 'move based on comparison'],
+            hint: 'When the cell misses, how does its value tell you to delete an entire row or column?',
+            misconception: 'Moving the wrong index discards the line that might still hold the target.',
+          },
+          {
+            lineRange: [21, 22],
+            referenceLabel: 'Report absence after walking off the grid',
+            acceptableKeywords: ['exhausted the grid return false', 'walked off the plate', 'no match found', 'not present'],
+            hint: 'If the walk leaves the grid entirely, what does that prove about the target?',
+            misconception: 'This is the failure exit, reached only when every row and column is exhausted.',
+          },
+        ],
       },
       testCases: [
         {
@@ -456,6 +560,36 @@ Why is sorting by a pairwise rule even legal? An **exchange argument**: in any a
 The one edge case is all-zero input: glue order would emit \`"00"\` for \`[0, 0]\`, so we collapse any result with a leading zero (only possible when *every* panel is zero) to \`"0"\`.
 `,
         complexity: 'Time O(n log n * L) where L is max digit-length (comparisons cost O(L)); Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Move the data into the space where the comparison is natural',
+            acceptableKeywords: ['convert to strings', 'work in string space', 'import the comparator adapter', 'represent items for concatenation'],
+            hint: 'In what representation does "which arrangement reads larger" become a clean comparison?',
+            misconception: 'This only reframes the items; the ordering rule has not been defined yet.',
+          },
+          {
+            lineRange: [7, 16],
+            referenceLabel: 'Define the pairwise rule that decides which item leads',
+            acceptableKeywords: ['custom comparator', 'compare a+b against b+a', 'pairwise ordering rule', 'which concatenation is bigger'],
+            hint: 'For two pieces, what local test says which one belongs first?',
+            misconception: 'Numeric or plain lexicographic order is wrong here; the rule must compare both gluings.',
+          },
+          {
+            lineRange: [17, 21],
+            referenceLabel: 'Sort the whole collection under the custom rule',
+            acceptableKeywords: ['sort by the comparator', 'apply the ordering globally', 'cmp_to_key sort', 'arrange all pieces'],
+            hint: 'How do you turn the two-item rule into a full arrangement of every piece?',
+            misconception: 'This relies on the pairwise rule being a true total order, or the sort is meaningless.',
+          },
+          {
+            lineRange: [22, 26],
+            referenceLabel: 'Assemble the answer and collapse the all-zeros edge case',
+            acceptableKeywords: ['join into the final string', 'handle leading zero', 'collapse all zeros to one', 'build the result'],
+            hint: 'After concatenating in order, what single degenerate input still needs special care?',
+            misconception: 'Forgetting the leading-zero collapse emits "000" instead of "0" for all-zero input.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 30, 34, 5, 9]], expected: '9534330', label: 'classic mixed lengths' },
@@ -555,6 +689,36 @@ The payoff is monotonicity: on one sorted timeline, "latest departure at or befo
 Concretely, \`bisect_right(merged, t)\` is the count of departures \`<= t\` (ties land to its left), so \`merged[idx - 1]\` is the latest qualifying boat and \`idx == 0\` means the harbor was still quiet.
 `,
         complexity: 'Time O(n + m) to merge + O(log(n + m)) per query; Space O(n + m) for the timeline',
+        subgoals: [
+          {
+            lineRange: [1, 9],
+            referenceLabel: 'Set up the combined timeline and twin read cursors',
+            acceptableKeywords: ['import the search helper', 'initialize the output list', 'two pointers at the starts', 'prepare to merge'],
+            hint: 'Before weaving two sorted logs, what container and cursors do you initialize?',
+            misconception: 'This is preparation; the actual interleaving has not started.',
+          },
+          {
+            lineRange: [10, 16],
+            referenceLabel: 'Interleave two pre-sorted runs by always taking the smaller front',
+            acceptableKeywords: ['merge two sorted lists', 'take the smaller head', 'advance the chosen pointer', 'linear-time weave'],
+            hint: 'At each step, which of the two front elements goes into the timeline next?',
+            misconception: 'A comparison sort here re-derives order the inputs already carry.',
+          },
+          {
+            lineRange: [17, 19],
+            referenceLabel: 'Append whichever run still has leftovers',
+            acceptableKeywords: ['drain the remaining tail', 'flush the leftover run', 'append the rest', 'finish the exhausted merge'],
+            hint: 'Once one log runs out, what do you do with the other log’s remaining entries?',
+            misconception: 'Skipping the leftover tail drops the largest timestamps from the timeline.',
+          },
+          {
+            lineRange: [20, 27],
+            referenceLabel: 'Answer each predecessor query by binary search',
+            acceptableKeywords: ['find latest value at or before', 'predecessor via bisect', 'binary search per query', 'nearest below the target'],
+            hint: 'On the single sorted timeline, how do you find the latest entry not exceeding each query?',
+            misconception: 'A hash set answers exact membership but cannot find the nearest-below entry.',
+          },
+        ],
       },
       testCases: [
         { input: [[10, 30, 60], [20, 45], [5, 20, 40, 100]], expected: [-1, 20, 30, 60], label: 'basic complaints' },
@@ -648,6 +812,36 @@ Sorting by a composite key works because Python compares sequences lexicographic
 This is the chained-criteria idea from the concept page compressed into a single key — primary, secondary, and final fallback packed in priority order, with no need for repeated stable sorts.
 `,
         complexity: 'Time O(b·n) tallying + O(n log n) comparisons of O(n)-long keys = O(b·n + n^2 log n); Space O(n^2) for the tallies',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Enumerate the candidates and allocate a per-position tally',
+            acceptableKeywords: ['collect the candidate names', 'set up the tally structure', 'count slots per position', 'initialize position counts'],
+            hint: 'Before counting anything, what structure must exist to hold per-position votes?',
+            misconception: 'This only allocates the counters; no ballots have been tallied yet.',
+          },
+          {
+            lineRange: [7, 9],
+            referenceLabel: 'Accumulate how often each item lands at each position',
+            acceptableKeywords: ['count votes per position', 'tally each ballot', 'increment position counts', 'aggregate the rankings'],
+            hint: 'How do you turn the raw ballots into a profile of each name across positions?',
+            misconception: 'This fills the tally; it does not yet decide any ordering.',
+          },
+          {
+            lineRange: [10, 16],
+            referenceLabel: 'Build a composite key encoding the tie-breaking priority',
+            acceptableKeywords: ['lexicographic key by position', 'negate counts for descending', 'name as final tiebreak', 'multi-level sort key'],
+            hint: 'How do you pack "first position counts, then second, then a final fallback" into one comparable value?',
+            misconception: 'Collapsing the positions into one weighted number loses the lexicographic rule.',
+          },
+          {
+            lineRange: [17, 21],
+            referenceLabel: 'Produce the standings by sorting on that key',
+            acceptableKeywords: ['sort names by the key', 'order by composite key', 'apply the ranking key', 'final ordering'],
+            hint: 'With the priority encoded as a key, what single operation yields the standings?',
+            misconception: 'Without the trailing name term the order would not be total or deterministic.',
+          },
+        ],
       },
       testCases: [
         {
@@ -761,6 +955,36 @@ Keeping the board sorted makes both halves of the update easy to reason about: \
 Contrast with quickselect: that finds **one rank** inside a buffer you fully hold; here the memory wall forces a *streaming* selection that never holds the data at all. And the answer needs no final sort — the invariant kept it ascending the whole night.
 `,
         complexity: 'Time O(n log k) comparisons (rejections cost O(1); each accepted insert shifts O(k)); Space O(k)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Start an empty bounded leaderboard and stream the input',
+            acceptableKeywords: ['initialize the sorted board', 'bounded running collection', 'set up the streaming loop', 'empty top-k holder'],
+            hint: 'What small ordered structure do you maintain as readings arrive one at a time?',
+            misconception: 'This only sets up the board and the stream; no selection has happened yet.',
+          },
+          {
+            lineRange: [8, 11],
+            referenceLabel: 'Admit every item while the board is below capacity',
+            acceptableKeywords: ['board not yet full', 'insert until capacity reached', 'fill the first k', 'accept while under budget'],
+            hint: 'Until the board reaches its size limit, which incoming readings qualify?',
+            misconception: 'This warm-up phase is not the competitive replacement; every reading still fits.',
+          },
+          {
+            lineRange: [12, 18],
+            referenceLabel: 'Swap in a newcomer that beats the current worst, evicting the loser',
+            acceptableKeywords: ['compare against the worst member', 'insert then evict the maximum', 'replace the weakest', 'maintain the top-k invariant'],
+            hint: 'Once full, what single member must a reading beat, and what then gets dropped?',
+            misconception: 'Comparing against anything but the worst member admits values that cannot belong.',
+          },
+          {
+            lineRange: [19, 21],
+            referenceLabel: 'Return the board, already in sorted order',
+            acceptableKeywords: ['return the leaderboard', 'invariant keeps it sorted', 'no final sort needed', 'report the top-k'],
+            hint: 'After the stream ends, why is no extra sorting required before returning?',
+            misconception: 'The board is already ordered by the invariant; re-sorting would be wasted work.',
+          },
+        ],
       },
       testCases: [
         { input: [[2.5, -1.4, 0.3, 5.0, -0.2], 3], expected: [-1.4, -0.2, 0.3], label: 'basic night' },
@@ -849,6 +1073,36 @@ The three-level rule maps onto tuple slots in priority order. The padding is wha
 The pitfall this problem rehearses: an under-specified order does not crash, it just quietly returns *one of several valid* arrangements. Forcing every tie to resolve makes the sort a pure function of the tag multiset.
 `,
         complexity: 'Time O(n log n) comparisons on small fixed-size keys, plus O(n) key construction; Space O(n) for the keys',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Decompose each item into its numeric components',
+            acceptableKeywords: ['split on the separator', 'parse parts to integers', 'extract numeric components', 'normalize each segment'],
+            hint: 'What is the raw numeric material for ordering, pulled out of each tag?',
+            misconception: 'This only parses the segments; the comparison rule is not yet assembled.',
+          },
+          {
+            lineRange: [7, 9],
+            referenceLabel: 'Pad to a fixed width so short items compare correctly',
+            acceptableKeywords: ['pad to fixed length', 'missing component counts as zero', 'align the component vectors', 'normalize widths'],
+            hint: 'Why must a shorter component list be extended before it can be compared numerically?',
+            misconception: 'Without padding, length alone decides order and smuggles a later rule into rule one.',
+          },
+          {
+            lineRange: [10, 13],
+            referenceLabel: 'Assemble a tuple key with the tie-break levels in priority order',
+            acceptableKeywords: ['build the composite key', 'order the tie-break levels', 'tuple compares left to right', 'priority-ordered key'],
+            hint: 'How do you stack the primary, secondary, and final fallback into one comparable value?',
+            misconception: 'Omitting later levels leaves equal-on-numbers tags resolved by accident of input order.',
+          },
+          {
+            lineRange: [14, 16],
+            referenceLabel: 'Sort once using that translated key',
+            acceptableKeywords: ['sort by the key function', 'one pass over the translation', 'apply the release key', 'final ordering'],
+            hint: 'With each item translated to a total-order key, what single call produces the result?',
+            misconception: 'A key function computes once per item; a pairwise comparator would recompute per comparison.',
+          },
+        ],
       },
       testCases: [
         { input: [['1.10', '1.9', '1.9.1']], expected: ['1.9', '1.9.1', '1.10'], label: 'numeric beats lexicographic' },
@@ -959,6 +1213,43 @@ Why does the merge count them in bulk? Split the list: pairs living entirely ins
 The tie rule is load-bearing. Taking from the left on \`left[i] <= right[j]\` keeps equal seeds out of the count (and, incidentally, keeps the sort stable); flip the comparison to strict \`<\` and \`[2, 2, 1]\` silently over-counts. The recursion does \`O(n)\` merge work on each of \`O(log n)\` levels — the familiar merge-sort bill, now buying a statistic instead of just order.
 `,
         complexity: 'Time O(n log n); Space O(n) for merge scratch plus O(log n) recursion depth',
+        subgoals: [
+          {
+            lineRange: [1, 8],
+            referenceLabel: 'Frame the recursive helper and its trivial base case',
+            acceptableKeywords: ['define the recursive routine', 'base case single element', 'no inversions in a unit', 'set up divide and conquer'],
+            hint: 'What is the smallest input the counter can answer without any merging?',
+            misconception: 'This is the recursion frame and base case, not where pairs get counted.',
+          },
+          {
+            lineRange: [9, 15],
+            referenceLabel: 'Split in half, recurse, and carry the subtotals forward',
+            acceptableKeywords: ['divide into two halves', 'recurse on each side', 'sum the inner counts', 'prepare the merge accumulators'],
+            hint: 'How do you reduce the problem to two smaller counts before combining them?',
+            misconception: 'The within-half inversions come from recursion; the cross-half ones are still uncounted here.',
+          },
+          {
+            lineRange: [16, 28],
+            referenceLabel: 'Merge the two runs while counting cross-half inversions in bulk',
+            acceptableKeywords: ['merge the sorted halves', 'count inversions during merge', 'batch the cross-half upsets', 'take from left on a tie'],
+            hint: 'When you pull from the right run, how many waiting left elements does that reveal as out of order?',
+            misconception: 'Using strict less-than on ties over-counts equal elements as upsets.',
+          },
+          {
+            lineRange: [29, 32],
+            referenceLabel: 'Flush the leftover run and return the sorted run with its count',
+            acceptableKeywords: ['drain the remaining run', 'append the leftover tail', 'return sorted run and count', 'finish the merge'],
+            hint: 'After one run empties, what remains to append, and what two things does the helper hand back?',
+            misconception: 'The trailing run adds no new inversions; only its elements need appending.',
+          },
+          {
+            lineRange: [33, 35],
+            referenceLabel: 'Launch the recursion on a copy and report the total',
+            acceptableKeywords: ['kick off the recursion', 'pass a defensive copy', 'extract the total count', 'return the answer'],
+            hint: 'What single call starts the whole process, and which part of its result do you actually want?',
+            misconception: 'Only the count is wanted; the sorted run produced alongside it is discarded.',
+          },
+        ],
       },
       testCases: [
         { input: [[2, 1, 3]], expected: 1, label: 'single upset' },

@@ -188,6 +188,36 @@ The order of the four statements is the whole exercise. \`curr.next\` is the *on
 When \`curr\` becomes \`None\`, the frontier has swept the whole train and \`prev\` holds the new head. Empty input never enters the loop and \`to_list(None)\` returns \`[]\` — no special cases needed. One pass, three pointers, no allocation beyond the nodes themselves.
 `,
         complexity: 'Time O(n), Space O(1) beyond the chain',
+        subgoals: [
+          {
+            lineRange: [1, 21],
+            referenceLabel: 'Define the node type and convert between list and chain',
+            acceptableKeywords: ['node class with next', 'build chain from list', 'walk chain into list', 'pointer-based scaffolding'],
+            hint: 'What plumbing turns a plain array into linked nodes and back again?',
+            misconception: 'This is reusable setup, not the reversal logic itself.',
+          },
+          {
+            lineRange: [22, 25],
+            referenceLabel: 'Open with an empty processed side and a cursor on the unprocessed side',
+            acceptableKeywords: ['previous starts empty', 'current at head', 'two frontier cursors', 'initialize before walking'],
+            hint: 'Before flipping any links, which two references mark the boundary you maintain?',
+            misconception: 'Starting the processed side at the head instead of empty would mislabel the first node as already done.',
+          },
+          {
+            lineRange: [26, 30],
+            referenceLabel: 'Per node, save the remainder, flip the link, then advance both cursors',
+            acceptableKeywords: ['save next before rewiring', 'redirect link backward', 'move both cursors forward', 'flip one coupling per step'],
+            hint: 'Why must the remainder be captured before you overwrite the outgoing link?',
+            misconception: 'Rewiring before saving the next reference strands the rest of the chain — order is the whole point, not a comparison.',
+          },
+          {
+            lineRange: [31, 32],
+            referenceLabel: 'When the cursor runs out, the processed side is the new head',
+            acceptableKeywords: ['return processed head', 'previous holds new head', 'emit reversed chain', 'finish when cursor null'],
+            hint: 'After the walk ends, which reference points at the front of the result?',
+            misconception: 'Returning the spent forward cursor yields nothing; the processed side holds the answer.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 1, 4, 1, 5]], expected: [5, 1, 4, 1, 3], label: 'basic reversal' },
@@ -320,6 +350,36 @@ Two idioms carry the implementation. The **dummy node** means we never ask "is t
 The \`<=\` (rather than \`<\`) is the stability guarantee from the statement: on equal timestamps the primary's record is spliced first. No new record objects are created — every node in the output is a relinked input node, which is exactly why this runs in \`O(1)\` extra space.
 `,
         complexity: 'Time O(m + n), Space O(1) beyond the chains',
+        subgoals: [
+          {
+            lineRange: [1, 21],
+            referenceLabel: 'Define the node type and convert between list and chain',
+            acceptableKeywords: ['node class with next', 'build chain from list', 'walk chain into list', 'pointer-based scaffolding'],
+            hint: 'What plumbing turns a plain array into linked nodes and back again?',
+            misconception: 'This is reusable setup, not the merge logic itself.',
+          },
+          {
+            lineRange: [22, 26],
+            referenceLabel: 'Stage both inputs and a sentinel-anchored output cursor',
+            acceptableKeywords: ['build both chains', 'dummy head sentinel', 'tail cursor at sentinel', 'initialize the result builder'],
+            hint: 'What standing reference lets you append without a special case for the first node?',
+            misconception: 'Skipping the sentinel forces a branch to detect the very first output node.',
+          },
+          {
+            lineRange: [27, 34],
+            referenceLabel: 'While both remain, splice the smaller head and advance that side',
+            acceptableKeywords: ['compare the two heads', 'attach the smaller node', 'advance the chosen side', 'extend the output tail'],
+            hint: 'With both inputs sorted, which candidate is guaranteed to be the next output node?',
+            misconception: 'Using strict less-than on equal keys silently breaks the stable-ordering promise.',
+          },
+          {
+            lineRange: [35, 37],
+            referenceLabel: 'Attach the leftover sorted run wholesale and drop the sentinel',
+            acceptableKeywords: ['link remaining survivor', 'attach the rest in one move', 'return past the sentinel', 'splice leftover whole'],
+            hint: 'Once one side empties, why can the other be attached with a single pointer write?',
+            misconception: 'Looping over the survivor node by node repeats work — the remainder is already sorted.',
+          },
+        ],
       },
       testCases: [
         { input: [[1, 3, 5], [2, 4, 6]], expected: [1, 2, 3, 4, 5, 6], label: 'perfect interleave' },
@@ -444,6 +504,36 @@ The trick is to convert "k from the end" — which you cannot see — into "k be
 The dummy node earns its keep on the \`k == len(builds)\` case: the victim is the head, which has no real predecessor. Starting \`trail\` at the sentinel means the head's predecessor *exists*, and the same one-line splice \`trail.next = trail.next.next\` covers every position, including a single-node chain collapsing to empty. Start \`trail\` at \`head\` instead and you end up standing *on* the victim with no way to unlink it — the classic off-by-one of this problem.
 `,
         complexity: 'Time O(n), Space O(1) beyond the chain',
+        subgoals: [
+          {
+            lineRange: [1, 21],
+            referenceLabel: 'Define the node type and convert between list and chain',
+            acceptableKeywords: ['node class with next', 'build chain from list', 'walk chain into list', 'pointer-based scaffolding'],
+            hint: 'What plumbing turns a plain array into linked nodes and back again?',
+            misconception: 'This is reusable setup, not the deletion logic itself.',
+          },
+          {
+            lineRange: [22, 27],
+            referenceLabel: 'Open a fixed-size lead by advancing one cursor ahead',
+            acceptableKeywords: ['lead pointer steps ahead', 'create a gap of k', 'sentinel before the head', 'pre-advance the runner'],
+            hint: 'How do you turn "k from the end" into a gap you can actually measure from the front?',
+            misconception: 'This sets up the gap; the victim is not located yet, and over-stepping the lead would target the wrong node.',
+          },
+          {
+            lineRange: [28, 31],
+            referenceLabel: 'Slide both cursors in lockstep until the leader leaves the chain',
+            acceptableKeywords: ['move both pointers together', 'trailing cursor follows', 'preserve the fixed gap', 'walk until lead exits'],
+            hint: 'If two cursors stay a fixed distance apart, where does the trailing one land when the leader falls off?',
+            misconception: 'Letting the gap drift means the trailing cursor stops at the wrong predecessor.',
+          },
+          {
+            lineRange: [32, 35],
+            referenceLabel: 'Unlink the targeted node with a single splice and return',
+            acceptableKeywords: ['bypass the victim node', 'splice over one node', 'predecessor skips the target', 'return past the sentinel'],
+            hint: 'Standing one node before the target, what single pointer rewrite removes it?',
+            misconception: 'Standing on the victim instead of before it leaves no way to splice it out.',
+          },
+        ],
       },
       testCases: [
         { input: [[101, 102, 103, 104, 105], 2], expected: [101, 102, 103, 105], label: 'mid-chain unlink' },
@@ -603,6 +693,50 @@ Step 1's slow/fast pair stops \`slow\` on the **last node of the front half** fo
 Step 4 is the part interviews use to separate careful engineers from fast ones: the burst is shared state, so the back half is reversed *again* and spliced back onto \`slow\`, restoring the original chain even when the check fails early (note the \`break\` — we still fall through to the restore). The whole routine is three linear walks and two half-reversals: \`O(n)\` time, and the only extra memory is a handful of cursors.
 `,
         complexity: 'Time O(n), Space O(1) beyond the chain',
+        subgoals: [
+          {
+            lineRange: [1, 21],
+            referenceLabel: 'Define the node type and convert between list and chain',
+            acceptableKeywords: ['node class with next', 'build chain from list', 'walk chain into list', 'pointer-based scaffolding'],
+            hint: 'What plumbing turns a plain array into linked nodes and back again?',
+            misconception: 'This is reusable setup, not the symmetry check itself.',
+          },
+          {
+            lineRange: [22, 30],
+            referenceLabel: 'Provide a reusable in-place link-reversal helper',
+            acceptableKeywords: ['reverse a sublist', 'flip links in place', 'returns new head', 'helper for reversal'],
+            hint: 'What standalone routine can flip the direction of any chain segment?',
+            misconception: 'This helper only reverses links; it does not itself compare anything.',
+          },
+          {
+            lineRange: [31, 44],
+            referenceLabel: 'Handle trivial inputs and find the midpoint with a two-speed walk',
+            acceptableKeywords: ['slow and fast pointers', 'find the middle node', 'short-circuit tiny input', 'split at the midpoint'],
+            hint: 'How can one pass land a cursor on the end of the first half regardless of parity?',
+            misconception: 'Advancing the fast pointer wrongly mislocates the split — this only finds the middle, it does not compare values.',
+          },
+          {
+            lineRange: [45, 47],
+            referenceLabel: 'Detach the second half and reverse it in place',
+            acceptableKeywords: ['reverse the back half', 'flip the second segment', 'prepare for comparison', 'isolate the tail half'],
+            hint: 'To compare front-to-back without extra memory, what do you do to the back half first?',
+            misconception: 'Reversing the wrong half, or forgetting it must be undone later, corrupts the chain.',
+          },
+          {
+            lineRange: [48, 60],
+            referenceLabel: 'Walk both halves in lockstep checking for a value mismatch',
+            acceptableKeywords: ['compare halves pairwise', 'stop on first mismatch', 'lockstep value check', 'middle element skipped'],
+            hint: 'With the back half reversed, what do you compare step by step to decide symmetry?',
+            misconception: 'Driving the loop by the longer half overruns the shorter one — the reversed half should bound it.',
+          },
+          {
+            lineRange: [61, 64],
+            referenceLabel: 'Restore the original chain and report the verdict',
+            acceptableKeywords: ['reverse the back half again', 'reattach the tail', 'undo the mutation', 'return the boolean result'],
+            hint: 'Before returning, what must you put back so the input is left unchanged?',
+            misconception: 'Skipping the restore leaves the caller holding a mangled chain even though the answer is correct.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 7, 7, 3]], expected: true, label: 'even-length mirror' },
@@ -728,6 +862,36 @@ The write order matters for the same reason it does in reversal: \`second.next\`
 After a swap, \`first\` is the rear dancer of its pair, so it becomes \`prev\` for the next pair. The loop guard (\`prev.next\` and \`prev.next.next\`) does double duty: it stops cleanly on even lines (nothing left) and odd lines (one partner-less dancer left untouched), and it makes the empty line a non-event.
 `,
         complexity: 'Time O(n), Space O(1) beyond the chain',
+        subgoals: [
+          {
+            lineRange: [1, 21],
+            referenceLabel: 'Define the node type and convert between list and chain',
+            acceptableKeywords: ['node class with next', 'build chain from list', 'walk chain into list', 'pointer-based scaffolding'],
+            hint: 'What plumbing turns a plain array into linked nodes and back again?',
+            misconception: 'This is reusable setup, not the swapping logic itself.',
+          },
+          {
+            lineRange: [22, 26],
+            referenceLabel: 'Anchor before the first pair and loop while a full pair remains',
+            acceptableKeywords: ['sentinel before the head', 'predecessor of the pair', 'guard needs two nodes', 'initialize the anchor'],
+            hint: 'What standing reference points just before each pair, and what must the guard confirm before swapping?',
+            misconception: 'Without an anchor before the head, swapping the first pair needs its own special case.',
+          },
+          {
+            lineRange: [27, 32],
+            referenceLabel: 'Rewire the three links of one pair, then re-anchor past it',
+            acceptableKeywords: ['save the outgoing link first', 'cross the two nodes', 'predecessor points to new front', 'move anchor to pair rear'],
+            hint: 'A pair swap touches three links — which one must be read before it gets overwritten?',
+            misconception: 'A pair swap is three links, not two; ignoring the link into the pair leaves the chain ahead pointing at the old leader.',
+          },
+          {
+            lineRange: [33, 34],
+            referenceLabel: 'Leave any lone trailing node untouched and return',
+            acceptableKeywords: ['odd node stays put', 'return past the sentinel', 'loop guard stops cleanly', 'emit the swapped chain'],
+            hint: 'When an unpaired node is left over, what should happen to it?',
+            misconception: 'Forcing a swap on a lone trailing node would dereference a missing partner.',
+          },
+        ],
       },
       testCases: [
         { input: [[1, 2, 3, 4]], expected: [2, 1, 4, 3], label: 'two full pairs' },
@@ -868,6 +1032,43 @@ Reducing \`k\` modulo \`n\` first is a correctness requirement, not an optimizat
 Closing the chain into a temporary ring (\`tail.next = head\`) is the tidy trick: once the chain is circular, "move the last k to the front" becomes "open the ring at a different spot." The node \`n - k - 1\` hops from the old head is the new tail; cut there and the ring unrolls into the rotated chain. Two pointer writes total — close, then cut — and no node is ever detached individually. Forgetting the final \`new_tail.next = None\` is the classic failure: the chain stays circular and the next traversal never ends.
 `,
         complexity: 'Time O(n), Space O(1) beyond the chain',
+        subgoals: [
+          {
+            lineRange: [1, 21],
+            referenceLabel: 'Define the node type and convert between list and chain',
+            acceptableKeywords: ['node class with next', 'build chain from list', 'walk chain into list', 'pointer-based scaffolding'],
+            hint: 'What plumbing turns a plain array into linked nodes and back again?',
+            misconception: 'This is reusable setup, not the rotation logic itself.',
+          },
+          {
+            lineRange: [22, 26],
+            referenceLabel: 'Short-circuit inputs that no rotation can change',
+            acceptableKeywords: ['empty or single node guard', 'trivial case returns early', 'nothing to rotate', 'bail on tiny input'],
+            hint: 'Which inputs make every rotation a no-op, deserving an early exit?',
+            misconception: 'Skipping this guard risks dereferencing a missing next on a one-node chain.',
+          },
+          {
+            lineRange: [27, 33],
+            referenceLabel: 'Traverse once to measure length and reach the tail',
+            acceptableKeywords: ['count the nodes', 'walk to the last node', 'find length and tail together', 'single measuring pass'],
+            hint: 'What two facts about the chain can one walk to the end give you at once?',
+            misconception: 'This pass only measures; it does not yet cut anything.',
+          },
+          {
+            lineRange: [34, 37],
+            referenceLabel: 'Reduce the shift modulo length and skip when it vanishes',
+            acceptableKeywords: ['take k modulo length', 'normalize the shift', 'zero shift returns unchanged', 'collapse full rotations'],
+            hint: 'Why is only the remainder of the shift against the length ever observable?',
+            misconception: 'Forgetting the modulo loops uselessly over full multiples of the length.',
+          },
+          {
+            lineRange: [38, 45],
+            referenceLabel: 'Close into a ring, locate the cut, and sever the new tail',
+            acceptableKeywords: ['link tail to head', 'find the cut point', 'set new head and tail', 'break the ring'],
+            hint: 'A rotation is one cut, not many moves — where do you join and then re-break the chain?',
+            misconception: 'Forgetting to null out the new tail leaves the chain as an infinite ring.',
+          },
+        ],
       },
       testCases: [
         { input: [[10, 20, 30, 40, 50], 2], expected: [40, 50, 10, 20, 30], label: 'last two tracks open the night' },
@@ -1006,6 +1207,36 @@ Each node is examined once, appended once, and never revisited; the finale is tw
 The one genuine trap is the **stale link**. Appending a node does not clear its old \`.next\`; the last routine patient can still point back into a node that now lives in the urgent chain, and splicing without \`routine_tail.next = None\` quietly builds a cycle that hangs the next traversal. Cut first, then splice.
 `,
         complexity: 'Time O(n), Space O(1) beyond the chain',
+        subgoals: [
+          {
+            lineRange: [1, 21],
+            referenceLabel: 'Define the node type and convert between list and chain',
+            acceptableKeywords: ['node class with next', 'build chain from list', 'walk chain into list', 'pointer-based scaffolding'],
+            hint: 'What plumbing turns a plain array into linked nodes and back again?',
+            misconception: 'This is reusable setup, not the partitioning logic itself.',
+          },
+          {
+            lineRange: [22, 28],
+            referenceLabel: 'Start two sentinel-anchored builders plus a scanning cursor',
+            acceptableKeywords: ['two output chains', 'dummy head per bucket', 'tail cursor for each group', 'cursor over the input'],
+            hint: 'What lets you append to two growing groups in original order with no shifting?',
+            misconception: 'A single in-place chain scrambles relative order; two append-only builders keep stability for free.',
+          },
+          {
+            lineRange: [29, 36],
+            referenceLabel: 'Route each node into its bucket by the threshold predicate',
+            acceptableKeywords: ['compare value to threshold', 'append to the matching group', 'advance each group tail', 'split by predicate'],
+            hint: 'As you scan, what test decides which of the two chains each node joins?',
+            misconception: 'Using the wrong comparison boundary puts threshold-equal nodes in the wrong group.',
+          },
+          {
+            lineRange: [37, 41],
+            referenceLabel: 'Terminate the second group, then concatenate the two chains',
+            acceptableKeywords: ['null the trailing group', 'join first group to second', 'avoid a dangling link', 'return the merged head'],
+            hint: 'Before joining the buckets, why must the trailing chain be capped first?',
+            misconception: 'Concatenating before cutting the stale link can splice the chains into a cycle.',
+          },
+        ],
       },
       testCases: [
         { input: [[5, 1, 8, 3, 9, 2], 4], expected: [1, 3, 2, 5, 8, 9], label: 'mixed queue' },
@@ -1136,6 +1367,36 @@ The tail-attachment move carries over unchanged and is still the efficiency play
 The strict-alternation contract is also why example 3 matters: \`[9, 1]\` interleaved with \`[5, 5]\` yields \`9, 5, 1, 5\` — wrong for a merge, exactly right here. If your output comes back sorted, you have solved the previous problem again instead of this one.
 `,
         complexity: 'Time O(m + n), Space O(1) beyond the chains',
+        subgoals: [
+          {
+            lineRange: [1, 21],
+            referenceLabel: 'Define the node type and convert between list and chain',
+            acceptableKeywords: ['node class with next', 'build chain from list', 'walk chain into list', 'pointer-based scaffolding'],
+            hint: 'What plumbing turns a plain array into linked nodes and back again?',
+            misconception: 'This is reusable setup, not the interleaving logic itself.',
+          },
+          {
+            lineRange: [22, 27],
+            referenceLabel: 'Stage both inputs, a sentinel output, and a turn selector',
+            acceptableKeywords: ['build both chains', 'dummy head sentinel', 'tail cursor at sentinel', 'flag picks which side'],
+            hint: 'Beyond the usual builder scaffolding, what extra state decides whose turn it is?',
+            misconception: 'Without a turn flag this collapses into a comparison-based merge instead of strict alternation.',
+          },
+          {
+            lineRange: [28, 36],
+            referenceLabel: 'While both remain, splice from the side whose turn it is, then flip',
+            acceptableKeywords: ['take from current side', 'advance that chain', 'extend the output tail', 'toggle the turn each step'],
+            hint: 'What replaces the value comparison here so the two sides take strict turns?',
+            misconception: 'Choosing by value rather than by the turn flag re-solves the sorted merge, not this problem.',
+          },
+          {
+            lineRange: [37, 39],
+            referenceLabel: 'Attach the leftover side wholesale and drop the sentinel',
+            acceptableKeywords: ['link remaining survivor', 'attach the rest in one move', 'return past the sentinel', 'splice leftover whole'],
+            hint: 'Once one line empties, why can the rest be attached with a single pointer write?',
+            misconception: 'Looping over the survivor node by node is wasted work — its order is already correct.',
+          },
+        ],
       },
       testCases: [
         { input: [[1, 3, 5], [2, 4, 6]], expected: [1, 2, 3, 4, 5, 6], label: 'perfect alternation' },
@@ -1281,6 +1542,43 @@ The wheel budget converts a textbook exercise into pointer discipline. Instead o
 Keeping the \`last\` cursor one step behind the walk is the standard idiom for "I may need to append after the end": when the loop finishes, \`a\` is \`None\` and useless, but \`last\` still grips the highest wheel, ready to hang the overflow wheel if the carry survived. Zero inputs need no special case — \`[0] + [0]\` walks one column, writes 0, carries nothing.
 `,
         complexity: 'Time O(m + n), Space O(1) beyond the chains (at most one new node)',
+        subgoals: [
+          {
+            lineRange: [1, 21],
+            referenceLabel: 'Define the node type and convert between list and chain',
+            acceptableKeywords: ['node class with next', 'build chain from list', 'walk chain into list', 'pointer-based scaffolding'],
+            hint: 'What plumbing turns a plain array into linked nodes and back again?',
+            misconception: 'This is reusable setup, not the addition logic itself.',
+          },
+          {
+            lineRange: [22, 28],
+            referenceLabel: 'Provide a helper that counts the nodes in a chain',
+            acceptableKeywords: ['count chain length', 'walk and tally nodes', 'length helper', 'measure number of nodes'],
+            hint: 'What small routine lets you compare the two chains by size?',
+            misconception: 'This helper only measures length; it performs no arithmetic.',
+          },
+          {
+            lineRange: [29, 38],
+            referenceLabel: 'Pick the longer chain as the accumulator and seed the carry state',
+            acceptableKeywords: ['choose longer as accumulator', 'swap so longer drives', 'remember the result head', 'carry and trailing cursor'],
+            hint: 'Which chain should be overwritten in place so the main loop stays branch-free, and what running state do you seed?',
+            misconception: 'Letting the shorter chain drive forces an awkward "which ended first" tangle in the loop.',
+          },
+          {
+            lineRange: [39, 46],
+            referenceLabel: 'Add each column with carry, writing the digit in place',
+            acceptableKeywords: ['sum the aligned digits', 'add the carry in', 'store digit and new carry', 'advance both chains'],
+            hint: 'For each position, what three things sum and where does the resulting digit get stored?',
+            misconception: 'Forgetting the trailing cursor leaves nowhere to attach a final overflow.',
+          },
+          {
+            lineRange: [47, 49],
+            referenceLabel: 'Append the single overflow node if a carry survives, then return',
+            acceptableKeywords: ['leftover carry needs a node', 'append final digit', 'at most one new node', 'return the result chain'],
+            hint: 'After the last column, what remaining value might still need one extra wheel?',
+            misconception: 'Dropping the surviving carry truncates the highest digit of the sum.',
+          },
+        ],
       },
       testCases: [
         { input: [[2, 4, 3], [5, 6, 4]], expected: [7, 0, 8], label: '342 + 465 = 807' },

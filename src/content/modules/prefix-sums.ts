@@ -153,6 +153,22 @@ The fix is to notice that every range sum is a **difference of two running total
 The leading zero matters more than it looks: \`prefix\` has length \`n + 1\` and \`prefix[0] = 0\` stands for the empty prefix. That is what lets \`prefix[end + 1] - prefix[start]\` handle \`start = 0\` identically to every other start — no branch, no bug. Negative readings need no special treatment because subtraction of running totals is exact regardless of sign. An empty farm with an empty query batch falls straight through to \`[]\`.
 `,
         complexity: 'Time O(n + m) for n readings and m queries, Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Precompute cumulative totals with a sentinel zero',
+            acceptableKeywords: ['build prefix array', 'running totals', 'empty-prefix sentinel', 'one pass accumulate'],
+            hint: 'This block does its work once, up front; nothing here depends on a specific query.',
+            misconception: 'Treating this as per-query work — it is a one-time setup that every later answer reuses.',
+          },
+          {
+            lineRange: [7, 12],
+            referenceLabel: 'Answer each range as a difference of two totals',
+            acceptableKeywords: ['range as subtraction', 'per-query lookup', 'collect results', 'two endpoint reads'],
+            hint: 'Each query should resolve in constant time by subtracting two already-known values.',
+            misconception: 'Re-summing the slice here instead of subtracting endpoints, which throws away the precompute.',
+          },
+        ],
       },
       testCases: [
         { input: [[5, 2, 7, 1, 4], [[0, 2], [1, 3], [4, 4]]], expected: [14, 10, 4], label: 'basic batch' },
@@ -252,6 +268,29 @@ Two details carry the correctness. First, \`seen = {0: 1}\`: the empty prefix (b
 Why not a sliding window? Windows rely on monotonicity — extend grows the sum, shrink reduces it. Negative movements destroy that: the right answer might require growing *through* a dip. The hash map sidesteps the issue entirely because it never assumes anything about sign.
 `,
         complexity: 'Time O(n), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Seed the tally with the empty-prefix base case',
+            acceptableKeywords: ['initialize counts map', 'empty-prefix seed', 'running total state', 'zero-total base case'],
+            hint: 'Set up the bookkeeping so a span starting at the very first element is already accountable.',
+            misconception: 'Omitting the zero-total seed, which silently drops every span anchored at index 0.',
+          },
+          {
+            lineRange: [8, 12],
+            referenceLabel: 'Match the current total against a complementary earlier one',
+            acceptableKeywords: ['extend running total', 'look up complement', 'count matching prefixes', 'add to result'],
+            hint: 'For each new element, ask how many earlier states would close a qualifying span ending here.',
+            misconception: 'Searching for the raw target instead of the complement of the current running total.',
+          },
+          {
+            lineRange: [13, 16],
+            referenceLabel: 'Record the current state after counting, then finish',
+            acceptableKeywords: ['register current total', 'update after lookup', 'avoid self-match', 'return tally'],
+            hint: 'Order matters: store the present state only once it can no longer match against itself.',
+            misconception: 'Recording the current total before the lookup, letting a zero-length span count itself.',
+          },
+        ],
       },
       testCases: [
         { input: [[1, 1, 1], 2], expected: 2, label: 'overlapping spans' },
@@ -333,6 +372,29 @@ Order of operations is the subtle part: check the balance condition **before** f
 The edge cases follow from the conventions rather than fighting them: an empty list never enters the loop (\`-1\`); a single day checks \`0 == total - 0 - total\`, which is true, so index 0 comes back; and negatives need no special handling because the identity \`left + amount + right = total\` holds for any signs.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Capture the grand total and seed a running accumulator',
+            acceptableKeywords: ['total of all', 'initialize accumulator', 'left side starts empty', 'one-pass sum'],
+            hint: 'Compute the global aggregate once so each side can be derived without re-scanning.',
+            misconception: 'Building a full stored table when a single total plus one accumulator already suffices.',
+          },
+          {
+            lineRange: [7, 10],
+            referenceLabel: 'Test the balance condition before consuming the element',
+            acceptableKeywords: ['compare both sides', 'derive right from total', 'check balance', 'return earliest index'],
+            hint: 'Evaluate whether the split holds before the current element joins either side.',
+            misconception: 'Folding the pivot element into the accumulator before testing, so it lands on the wrong side.',
+          },
+          {
+            lineRange: [11, 12],
+            referenceLabel: 'Advance the accumulator and report no-match fallback',
+            acceptableKeywords: ['fold element left', 'move boundary forward', 'no split found', 'default return'],
+            hint: 'After the test fails, shift the just-seen element into the left aggregate and continue.',
+            misconception: 'Returning a found index here rather than only the failure sentinel after the loop.',
+          },
+        ],
       },
       testCases: [
         { input: [[4, 1, 6, 5]], expected: 2, label: 'hinge in the middle' },
@@ -428,6 +490,29 @@ A query \`[r1, c1, r2, c2]\` then carves its rectangle out of \`P[r2+1][c2+1]\`:
 The padding (an extra zero row and column) is the 2D version of the leading zero in 1D: queries touching row 0 or column 0 hit the zero border instead of needing branches. With the table in place, 100k queries cost 100k constant-time lookups instead of up to 100k × 90,000 cell additions.
 `,
         complexity: 'Time O(R*C + Q), Space O(R*C)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Read the grid dimensions defensively',
+            acceptableKeywords: ['measure dimensions', 'guard empty input', 'row and column counts', 'shape setup'],
+            hint: 'Establish the size of the structure before allocating anything that depends on it.',
+            misconception: 'Indexing into the first row without guarding the empty case, crashing on no data.',
+          },
+          {
+            lineRange: [4, 13],
+            referenceLabel: 'Build the padded cumulative table via inclusion-exclusion',
+            acceptableKeywords: ['summed-area precompute', 'add above and left', 'subtract overlap', 'padded border'],
+            hint: 'This is one-time setup: fill every cell so any origin-anchored rectangle becomes a single lookup.',
+            misconception: 'Forgetting to subtract the doubly-counted overlap, so the cumulative table inflates.',
+          },
+          {
+            lineRange: [14, 22],
+            referenceLabel: 'Carve each rectangle out with four corner reads',
+            acceptableKeywords: ['four-corner query', 'inclusion-exclusion lookup', 'restore overlap', 'collect per-query results'],
+            hint: 'Each query should combine a fixed number of table entries, never re-scan the area.',
+            misconception: 'Dropping the add-back of the top-left block, the classic summed-area off-by-region bug.',
+          },
+        ],
       },
       testCases: [
         {
@@ -593,6 +678,22 @@ The closing prefix-sum pass is what makes the shortcut legal: summing the steps 
 The \`n + 1\` length on \`diff\` mirrors the leading zero of a prefix table: a cue ending at the last fixture writes to \`diff[n]\`, which exists precisely so no cue needs a bounds check. And the pattern's usual limitation holds in mirror image too — if reads and writes *interleave*, the deferred integration breaks down, and you are back in Fenwick/segment-tree territory.
 `,
         complexity: 'Time O(n + c) for c cues, Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 8],
+            referenceLabel: 'Record each range update as two boundary marks',
+            acceptableKeywords: ['difference array', 'mark start and end', 'constant-time range write', 'padded boundary slot'],
+            hint: 'Each bulk update should leave only two stamps — where its effect begins and where it stops.',
+            misconception: 'Looping over the whole range per update instead of stamping just its two boundaries.',
+          },
+          {
+            lineRange: [9, 17],
+            referenceLabel: 'Integrate the stamps into final per-position values',
+            acceptableKeywords: ['running total pass', 're-integrate differences', 'accumulate left to right', 'recover final state'],
+            hint: 'A single cumulative sweep over the stamps reconstructs every position\'s actual value.',
+            misconception: 'Reading positions before this integration, when the marks are still raw deltas, not totals.',
+          },
+        ],
       },
       testCases: [
         { input: [5, [[1, 3, 4], [2, 4, -1]]], expected: [0, 4, 3, 3, -1], label: 'two overlapping cues' },
@@ -697,6 +798,29 @@ Why not divide the grand product by each gain? Zeros. A dead pedal makes the gra
 Structurally this is the hinge-day idea — left context plus right context determines the answer at each index — but under multiplication the right side is *not* recoverable from a single grand total (you cannot "subtract" a factor), so the suffix genuinely must be swept separately. That is the tell for prefix/suffix problems: whenever the combine operation lacks a safe inverse, precompute both directions.
 `,
         complexity: 'Time O(n), Space O(1) beyond the output list',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Allocate the output as a neutral starting point',
+            acceptableKeywords: ['initialize result', 'identity element', 'output buffer', 'length setup'],
+            hint: 'Start every slot at a value that later combine steps can build on without distortion.',
+            misconception: 'Seeding the buffer with input values rather than the combine operation\'s neutral element.',
+          },
+          {
+            lineRange: [4, 11],
+            referenceLabel: 'Sweep forward accumulating the prefix context',
+            acceptableKeywords: ['left-to-right pass', 'product before index', 'running prefix accumulator', 'write before update'],
+            hint: 'Move once in one direction, writing each slot before folding the current element in.',
+            misconception: 'Updating the accumulator before writing the slot, contaminating it with the current element.',
+          },
+          {
+            lineRange: [12, 19],
+            referenceLabel: 'Sweep backward folding in the suffix context',
+            acceptableKeywords: ['right-to-left pass', 'product after index', 'combine suffix', 'no division needed'],
+            hint: 'A second pass from the opposite end merges the remaining side into what is already stored.',
+            misconception: 'Trying to divide one grand total per index instead of a separate reverse sweep, which breaks on zeros.',
+          },
+        ],
       },
       testCases: [
         { input: [[2, 3, 4, 5]], expected: [60, 40, 30, 24], label: 'all positive gains' },
@@ -782,6 +906,29 @@ A dict answers that in one pass. For each running total we store only the **firs
 The seed \`{0: -1}\` is the empty prefix in 1D clothing: the shelf's drift was 0 before day 0, so a run covering days 0 through \`i\` scores \`i - (-1)\`. Drop the seed and the single-day log \`[0]\` answers 0 instead of 1.
 `,
         complexity: 'Time O(n), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Seed first-occurrence bookkeeping for the empty prefix',
+            acceptableKeywords: ['map total to index', 'empty-prefix seed', 'running total state', 'track best so far'],
+            hint: 'Initialize the lookup so a qualifying stretch reaching back to the very start is measurable.',
+            misconception: 'Skipping the pre-start seed, so stretches anchored at index 0 are never measured.',
+          },
+          {
+            lineRange: [7, 12],
+            referenceLabel: 'When a total recurs, measure the span between sightings',
+            acceptableKeywords: ['extend running total', 'detect repeated total', 'distance between indices', 'update longest'],
+            hint: 'A total that reappears means the segment in between is neutral — gauge its width against the best.',
+            misconception: 'Counting how many times a total recurs rather than the distance between its first and current index.',
+          },
+          {
+            lineRange: [13, 17],
+            referenceLabel: 'Store only the earliest index for each total, then report',
+            acceptableKeywords: ['record first sighting', 'never overwrite', 'keep earliest index', 'return best length'],
+            hint: 'Remember a total\'s position only the first time; a later one can only shorten future spans.',
+            misconception: 'Overwriting with the latest index, which shrinks every span that total could later anchor.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, -1, -2, 5]], expected: 3, label: 'balanced run at the start' },
@@ -868,6 +1015,22 @@ The prefix table collapses the innermost loop: \`total(s..e) = prefix[e+1] - pre
 For honesty's sake: at n = 10^5 the quadratic pair loop dies, and the real fix counts, for each end, how many earlier prefixes fall in \`[prefix[end+1] - hi, prefix[end+1] - lo]\` using a sorted structure — merge-sort counting or a Fenwick tree. Same prefix insight, heavier machinery. Naming that escalation path in an interview, even while implementing the quadratic version, is exactly the kind of judgment the small constraint is probing for.
 `,
         complexity: 'Time O(n^2) after an O(n) build, Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Precompute cumulative totals with a sentinel zero',
+            acceptableKeywords: ['build prefix array', 'running totals', 'empty-prefix sentinel', 'one pass accumulate'],
+            hint: 'Lay down the cumulative table once so the inner work below reduces to a subtraction.',
+            misconception: 'Folding the summation into the inner loops instead of precomputing it a single time.',
+          },
+          {
+            lineRange: [8, 16],
+            referenceLabel: 'Enumerate endpoint pairs and test each subtotal against the band',
+            acceptableKeywords: ['iterate start and end', 'range as subtraction', 'check within bounds', 'tally qualifying'],
+            hint: 'For every pair of boundaries, derive the subtotal in constant time and test the inclusion rule.',
+            misconception: 'Reaching for monotone two-pointer shortcuts that fail once values can be negative.',
+          },
+        ],
       },
       testCases: [
         { input: [[2, -1, 3], 1, 3], expected: 4, label: 'mixed signs, tight band' },
@@ -956,6 +1119,22 @@ Prefix sums make the constraint mechanical. Any stretch total is \`prefix[end] -
 Initialization carries the edge cases. The empty prefix \`prefix[0] = 0\` is in the pool from the first valid \`end\`, which is how stretches anchored at day 0 compete; and since \`min_days <= n\` is guaranteed, the sweep always produces a candidate, so an all-negative season correctly returns the least-bad qualifying total instead of a fabricated 0. With \`min_days = 1\` the algorithm quietly degenerates into the prefix-min view of maximum subarray — a useful sanity check.
 `,
         complexity: 'Time O(n), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Precompute cumulative totals with a sentinel zero',
+            acceptableKeywords: ['build prefix array', 'running totals', 'empty-prefix sentinel', 'one pass accumulate'],
+            hint: 'Establish the cumulative table first so any window total becomes a difference of two reads.',
+            misconception: 'Recomputing window sums inside the sweep rather than reusing the precomputed totals.',
+          },
+          {
+            lineRange: [8, 19],
+            referenceLabel: 'Sweep the right end while tracking the best allowed left',
+            acceptableKeywords: ['fix right endpoint', 'running minimum of starts', 'enforce length rule', 'maximize difference'],
+            hint: 'For each end position, fold in the one newly eligible start and keep the smallest seen so far.',
+            misconception: 'Re-scanning all candidate starts per end instead of maintaining a single running minimum.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, -5, 4, 2], 2], expected: 6, label: 'short hot tail beats the full log' },

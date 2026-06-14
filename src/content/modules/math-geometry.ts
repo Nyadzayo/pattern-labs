@@ -142,6 +142,29 @@ For open intervals, "overlap" means each starts strictly before the other ends: 
 Note what we did **not** do: check whether a corner of one pad lies inside the other. That popular shortcut fails on the plus-sign configuration — a wide, short pad crossing a tall, narrow one overlaps in the middle while all eight corners sit outside the other rectangle. The axis-projection test has no such blind spot, and it runs in constant time with pure integer math.
 `,
         complexity: 'Time O(1), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Name the inputs into a usable coordinate frame',
+            acceptableKeywords: ['unpack inputs', 'destructure coordinates', 'extract corners', 'read parameters'],
+            hint: 'Before any geometry, pull the raw values apart into clearly named pieces you can reference by role.',
+            misconception: 'Mistaken as the comparison step — this only binds names; no overlap decision happens here yet.',
+          },
+          {
+            lineRange: [5, 9],
+            referenceLabel: 'Reduce the 2-D test to independent per-axis checks',
+            acceptableKeywords: ['axis projection', 'interval overlap', 'per-dimension test', 'one-dimensional comparison'],
+            hint: 'Decompose the higher-dimensional question into separate, simpler comparisons along each axis.',
+            misconception: 'Confused with the final verdict — each axis check alone is necessary but not sufficient for true overlap.',
+          },
+          {
+            lineRange: [10, 13],
+            referenceLabel: 'Combine the partial conditions into the final answer',
+            acceptableKeywords: ['conjunction of conditions', 'combine checks', 'final verdict', 'require all'],
+            hint: 'Fold the independent partial results together so the answer holds only when every dimension agrees.',
+            misconception: 'Treated as just another per-axis check rather than the conjunction that yields the actual result.',
+          },
+        ],
       },
       testCases: [
         { input: [[0, 0, 4, 4], [2, 2, 6, 6]], expected: true, label: 'classic partial overlap' },
@@ -228,6 +251,29 @@ Two details earn the follow-up points. First, the transpose loop must cover only
 Why not just swap each cell with its destination? Because the map is a 4-cycle: \`(r, c) → (c, n-1-r) → (n-1-r, n-1-c) → (n-1-c, r) → back\`. A pairwise swap breaks the cycle and corrupts the grid; you would need an explicit four-way rotation per orbit, which is exactly what the two reflections accomplish with less bookkeeping.
 `,
         complexity: 'Time O(n^2), Space O(n^2) for the returned copy (O(1) extra beyond it)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Capture size and start from an independent working copy',
+            acceptableKeywords: ['record dimension', 'deep copy', 'avoid aliasing input', 'set up buffer'],
+            hint: 'Note the grid size and make a copy you can mutate freely without disturbing the caller.',
+            misconception: 'Mistaken for transforming the data — this only prepares a safe scratch surface, no cells move yet.',
+          },
+          {
+            lineRange: [5, 10],
+            referenceLabel: 'Apply the first reflection across the diagonal',
+            acceptableKeywords: ['transpose', 'swap across diagonal', 'reflect (r,c) to (c,r)', 'upper-triangle pass'],
+            hint: 'Perform the first of two mirror reflections, swapping each pair only once so it is not undone.',
+            misconception: 'Confused with the row-reversal step; alone this mirror does not produce the rotation.',
+          },
+          {
+            lineRange: [11, 16],
+            referenceLabel: 'Apply the second reflection and return the result',
+            acceptableKeywords: ['reverse each row', 'second mirror', 'compose reflections', 'return output'],
+            hint: 'Compose the second reflection on top of the first to land each cell at its rotated destination.',
+            misconception: 'Reordering this before the diagonal mirror flips clockwise into counterclockwise — order is load-bearing.',
+          },
+        ],
       },
       testCases: [
         { input: [[[1, 2, 3], [4, 5, 6], [7, 8, 9]]], expected: [[7, 4, 1], [8, 5, 2], [9, 6, 3]], label: '3x3 basic' },
@@ -341,6 +387,36 @@ Two classic optimizations carry the proof inside them. The outer loop stops once
 Total work is \`n/2 + n/3 + n/5 + n/7 + ...\` — the harmonic sum over **primes only**, which grows like \`log log n\`. That is so close to linear that the slice-assignment trick (one bulk write per stride instead of a Python-level loop) matters more in practice than further asymptotic cleverness. Watch the boundary in the problem statement: *strictly below* \`n\` means an array of size exactly \`n\` indexes everything we need.
 `,
         complexity: 'Time O(n log log n), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Short-circuit the trivial small-input case',
+            acceptableKeywords: ['guard clause', 'edge case', 'early return', 'handle tiny input'],
+            hint: 'Dispose of inputs too small for the main machinery to apply before allocating anything.',
+            misconception: 'Mistaken for part of the counting logic — it only exits early when there is nothing to count.',
+          },
+          {
+            lineRange: [6, 10],
+            referenceLabel: 'Seed the candidacy table optimistically',
+            acceptableKeywords: ['initialize flags', 'assume all true', 'allocate boolean array', 'mark known non-members'],
+            hint: 'Build the tracking structure assuming everything qualifies, then hard-code the few you already know fail.',
+            misconception: 'Confused with elimination — this sets up the table; nothing is sieved out yet beyond the trivial pre-marks.',
+          },
+          {
+            lineRange: [11, 19],
+            referenceLabel: 'Eliminate multiples by sweeping from each survivor',
+            acceptableKeywords: ['sieve loop', 'cross off multiples', 'mark composites', 'stride elimination'],
+            hint: 'For each value still flagged, knock out everything it generates, bounding the outer scan at the square root.',
+            misconception: 'Treated as testing each number for divisibility; here survivors push outward instead of each number searching for factors.',
+          },
+          {
+            lineRange: [20, 21],
+            referenceLabel: 'Tally the survivors into the final count',
+            acceptableKeywords: ['count remaining', 'sum flags', 'aggregate result', 'collect survivors'],
+            hint: 'Collapse the table down to a single number by counting everything that was never eliminated.',
+            misconception: 'Mistaken for the sieve itself — this only reads the finished table; no marking happens here.',
+          },
+        ],
       },
       testCases: [
         { input: [10], expected: 4, label: 'primes 2, 3, 5, 7' },
@@ -444,6 +520,43 @@ All of the difficulty hides in the **degenerate final ring**. When the unvisited
 A tempting alternative is direction simulation: walk forward, and turn right whenever the next cell is out of bounds or already visited. It produces the same order but costs an \`O(m*n)\` visited matrix and a four-way direction table. The wall method keeps \`O(1)\` bookkeeping beyond the output and makes the no-duplicates argument a one-line invariant instead of a property of a state machine. Either way, every room is appended exactly once: \`O(m*n)\` time, which is optimal since the output has that many entries.
 `,
         complexity: 'Time O(m·n), Space O(1) extra beyond the output list',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Reject the empty structure before walking it',
+            acceptableKeywords: ['empty guard', 'degenerate input', 'early return', 'nothing to traverse'],
+            hint: 'Bail out on the no-elements case so later indexing never touches a missing dimension.',
+            misconception: 'Mistaken for traversal logic — it only protects against an input that has nothing to visit.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Set up the shrinking boundary markers and accumulator',
+            acceptableKeywords: ['initialize bounds', 'four walls', 'set up pointers', 'prepare output list'],
+            hint: 'Define the four edges of the region still to cover and an empty place to record the order.',
+            misconception: 'Confused with the sweeping itself — this only positions the markers; no cells are read yet.',
+          },
+          {
+            lineRange: [9, 18],
+            referenceLabel: 'Traverse the two always-safe walls and pull them inward',
+            acceptableKeywords: ['top and right sweep', 'walk the ring', 'retire walls', 'loop while bounds hold'],
+            hint: 'Open the loop and walk the two edges that never need a guard, retiring each after it is consumed.',
+            misconception: 'Treated as the whole ring; the opposite two walls still need conditional handling separately.',
+          },
+          {
+            lineRange: [19, 25],
+            referenceLabel: 'Guard the return wall against a collapsed single line',
+            acceptableKeywords: ['bottom sweep guard', 'avoid double visit', 'check row remains', 'degenerate ring'],
+            hint: 'Only walk this reversed wall when a distinct line still exists, or you re-emit what was already taken.',
+            misconception: 'Skipping the condition and always sweeping causes a lone middle row to be visited twice.',
+          },
+          {
+            lineRange: [26, 32],
+            referenceLabel: 'Guard the final wall, then return the visit order',
+            acceptableKeywords: ['left sweep guard', 'symmetric column check', 'return route', 'close the ring'],
+            hint: 'Apply the mirror-image guard for a lone column, then hand back the accumulated order.',
+            misconception: 'Mistaken for the same role as the always-safe walls; this one also needs its own boundary check.',
+          },
+        ],
       },
       testCases: [
         {
@@ -533,6 +646,29 @@ The clean construction reads the destination formula straight off: output row \`
 The one trap is the empty grid: \`len(grid[0])\` raises \`IndexError\` when there are zero rows, so guard \`not grid\` up front and return \`[]\`. With that handled the routine is \`O(m·n)\` time — optimal, since the output has \`m·n\` cells — and \`O(m·n)\` space for the returned grid.
 `,
         complexity: 'Time O(m·n), Space O(m·n) for the returned grid',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Short-circuit the empty grid before measuring it',
+            acceptableKeywords: ['empty guard', 'edge case', 'early return', 'avoid index error'],
+            hint: 'Return immediately on no rows so reading an inner dimension later cannot throw.',
+            misconception: 'Mistaken for the transform; it only prevents measuring a width that does not exist.',
+          },
+          {
+            lineRange: [5, 6],
+            referenceLabel: 'Read the source dimensions to drive the rebuild',
+            acceptableKeywords: ['record dimensions', 'count rows and columns', 'measure shape', 'capture sizes'],
+            hint: 'Pin down how many rows and columns the input has so the new shape can be sized correctly.',
+            misconception: 'Confused with constructing the result — this only measures; it produces no cells.',
+          },
+          {
+            lineRange: [7, 11],
+            referenceLabel: 'Construct the result by swapping the index roles',
+            acceptableKeywords: ['build transpose', 'swap indices', 'nested comprehension', 'rows become columns'],
+            hint: 'Generate each output position by reading the input with its two indices exchanged.',
+            misconception: 'Treated as an in-place swap; a rectangular reshape must allocate a fresh, differently-shaped grid.',
+          },
+        ],
       },
       testCases: [
         { input: [[[1, 2, 3], [4, 5, 6]]], expected: [[1, 4], [2, 5], [3, 6]], label: '2x3 to 3x2' },
@@ -626,6 +762,29 @@ Two standard tools work. A \`seen\` set is the obvious one: iterate the transfor
 The subtle correctness point is the loop guard. We stop when \`fast == 1\` (stabilized) **or** \`slow == fast\` (met inside a non-1 loop). Starting \`fast\` one step ahead of \`slow\` avoids a spurious immediate match. The transform itself is the only arithmetic: peel digits with \`divmod(x, 10)\`, square, accumulate.
 `,
         complexity: 'Time O(k) steps until stabilization or collision (k tiny in practice), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 9],
+            referenceLabel: 'Define the deterministic transition rule',
+            acceptableKeywords: ['define transform', 'helper function', 'digit processing', 'one-step rule'],
+            hint: 'Encapsulate the single deterministic step that maps one state to the next as a reusable routine.',
+            misconception: 'Mistaken for the cycle detection; this only computes a successor, it never decides termination.',
+          },
+          {
+            lineRange: [10, 18],
+            referenceLabel: 'Advance two probes at different speeds until they meet',
+            acceptableKeywords: ['tortoise and hare', 'slow and fast pointers', 'cycle detection', 'detect repetition'],
+            hint: 'Run two walkers over the transition at one and two steps so they collide inside any loop.',
+            misconception: 'Confused with the verdict — meeting proves a cycle exists but not yet which cycle it is.',
+          },
+          {
+            lineRange: [19, 21],
+            referenceLabel: 'Classify the collision as success or trap',
+            acceptableKeywords: ['check meeting value', 'final verdict', 'is fixed point', 'return result'],
+            hint: 'Inspect where the walkers stopped and report whether it is the desired terminal state.',
+            misconception: 'Treated as part of the walk; this only interprets the already-found collision point.',
+          },
+        ],
       },
       testCases: [
         { input: [19], expected: true, label: 'classic stabilizer' },
@@ -713,6 +872,29 @@ Each iteration extracts the lowest letter. If you naively took \`divmod(n, 26)\`
 Letters come out least-significant first, so reverse before joining. The loop runs once per output letter — \`O(log_26 n)\` iterations — with \`O(log_26 n)\` space for the string. Plain integer arithmetic throughout; the only "trick" is knowing where the \`- 1\` lives.
 `,
         complexity: 'Time O(log_26 n), Space O(log_26 n) for the label',
+        subgoals: [
+          {
+            lineRange: [1, 2],
+            referenceLabel: 'Prepare somewhere to collect the produced symbols',
+            acceptableKeywords: ['initialize accumulator', 'empty buffer', 'set up collection', 'prepare output store'],
+            hint: 'Start an empty container that will gather the symbols you peel off one at a time.',
+            misconception: 'Mistaken for the conversion itself; this only reserves storage, no digits are extracted yet.',
+          },
+          {
+            lineRange: [3, 11],
+            referenceLabel: 'Repeatedly extract the least-significant symbol with a base offset',
+            acceptableKeywords: ['digit-peel loop', 'bijective base', 'decrement before divmod', 'extract low symbol'],
+            hint: 'Loop while value remains, shifting by one before splitting so the zeroless numbering carries correctly.',
+            misconception: 'Treated as plain base-26; omitting the pre-shift mishandles exact multiples and emits a phantom zero.',
+          },
+          {
+            lineRange: [12, 13],
+            referenceLabel: 'Restore order and assemble the final label',
+            acceptableKeywords: ['reverse digits', 'join into string', 'most-significant first', 'build result'],
+            hint: 'The symbols emerged low-to-high, so flip them and combine into the final ordered output.',
+            misconception: 'Forgetting the order produced is least-significant-first reverses the label and yields the wrong string.',
+          },
+        ],
       },
       testCases: [
         { input: [1], expected: 'A', label: 'first aisle' },
@@ -793,6 +975,29 @@ Two small guards finish it. First, \`h % 12\` folds the \`12\` position (and any
 It is \`O(1)\` arithmetic with no loops. Floats appear, but every input is a whole minute, so each result is an exact multiple of \`0.5\` and there is no accumulation of rounding error — the \`1e-6\` judge tolerance is comfortable margin.
 `,
         complexity: 'Time O(1), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Place the simpler indicator at its absolute position',
+            acceptableKeywords: ['compute minute angle', 'linear in minutes', 'absolute position', 'constant rate'],
+            hint: 'Convert the straightforward, uniformly-moving hand to an absolute angle from the reference mark.',
+            misconception: 'Mistaken as the full answer; this is only one of two positions still to be compared.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Place the drifting indicator including its continuous creep',
+            acceptableKeywords: ['compute hour angle', 'add per-minute drift', 'continuous movement', 'fold modular position'],
+            hint: 'Position the second hand including the extra creep it picks up between marks, and wrap its index.',
+            misconception: 'Dropping the per-minute drift term snaps the hand to whole marks and corrupts in-between times.',
+          },
+          {
+            lineRange: [9, 11],
+            referenceLabel: 'Take the separation, choosing the shorter way around',
+            acceptableKeywords: ['absolute difference', 'shorter arc', 'wrap-around minimum', 'circular distance'],
+            hint: 'Subtract the two positions, then pick whichever direction around the ring gives the smaller gap.',
+            misconception: 'Returning the raw difference ignores that the dial is circular and can overstate beyond half a turn.',
+          },
+        ],
       },
       testCases: [
         { input: [3, 0], expected: 90.0, label: 'right angle at 3:00' },
@@ -905,6 +1110,43 @@ Two correctness landmines, both about representing the slope **exactly**. First,
 The last subtlety is **duplicate stakes** sitting exactly on the anchor (\`dx == dy == 0\`): they have no direction, but they lie on *every* line through the anchor, so they are counted once into \`duplicates\` and added to every candidate. That is why the per-anchor total is \`local_best + duplicates + 1\`. Pure integer arithmetic throughout keeps the whole thing exact.
 `,
         complexity: 'Time O(n^2), Space O(n) for the per-anchor slope buckets',
+        subgoals: [
+          {
+            lineRange: [1, 9],
+            referenceLabel: 'Bring in tools and dispatch the trivially-maximal small cases',
+            acceptableKeywords: ['import dependency', 'degenerate guard', 'tiny input shortcut', 'early return'],
+            hint: 'Pull in what you need and short-circuit inputs so small the answer is simply their count.',
+            misconception: 'Mistaken for the main search; these inputs are too small for grouping to ever beat the trivial count.',
+          },
+          {
+            lineRange: [10, 18],
+            referenceLabel: 'Fix one reference point and reset its per-point tally',
+            acceptableKeywords: ['choose anchor', 'reset buckets', 'per-iteration state', 'fix reference point'],
+            hint: 'Open the outer pass by pinning one element as the origin and clearing the structures that count around it.',
+            misconception: 'Confused with the global accumulator; these counters are local and reset for every anchor.',
+          },
+          {
+            lineRange: [19, 27],
+            referenceLabel: 'Scan the others, skipping self and folding in coincident points',
+            acceptableKeywords: ['inner scan', 'skip the anchor', 'count coincident', 'handle duplicate point'],
+            hint: 'Walk every other element, ignoring the anchor itself and separately counting those landing exactly on it.',
+            misconception: 'Treating a coincident point as a normal direction; with no offset it lies on every line, not one bucket.',
+          },
+          {
+            lineRange: [28, 40],
+            referenceLabel: 'Canonicalize each direction and bucket the matches',
+            acceptableKeywords: ['reduce to lowest terms', 'normalize sign', 'group by slope', 'tally largest bucket'],
+            hint: 'Turn each offset into an exact, sign-normalized direction key and grow the count for shared directions.',
+            misconception: 'Using a float slope or skipping sign-normalization splits one line into several keys and undercounts.',
+          },
+          {
+            lineRange: [41, 44],
+            referenceLabel: 'Fold the per-anchor best into the running maximum',
+            acceptableKeywords: ['combine local best', 'add anchor and coincident', 'update global max', 'return answer'],
+            hint: 'Add back the anchor and coincident points to the biggest group, then keep the best across all anchors.',
+            misconception: 'Forgetting to re-include the anchor and coincident points understates each line by at least one.',
+          },
+        ],
       },
       testCases: [
         { input: [[[1, 1], [2, 2], [3, 3]]], expected: 3, label: 'three on y = x' },

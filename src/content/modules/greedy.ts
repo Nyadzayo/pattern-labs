@@ -148,6 +148,43 @@ The invariant after processing index \`i\` is: *an index is reachable if and onl
 Note the early \`return True\`: once the frontier covers the last index, later zeros (or anything else) cannot un-reach it. The single-drone case never needs a forward and exits on the first iteration.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Initialize a single frontier number summarizing all reach so far',
+            acceptableKeywords: ['farthest reachable so far', 'track the frontier', 'reachable index summary', 'init reach to start'],
+            hint: 'What one running value captures everything the elements behind you can do?',
+            misconception: 'This is setup of the frontier, not yet the scan or any decision.',
+          },
+          {
+            lineRange: [7, 11],
+            referenceLabel: 'Scan each position and bail when it sits past the frontier',
+            acceptableKeywords: ['sweep each index', 'unreachable fails fast', 'index beyond frontier', 'stranded check returns false'],
+            hint: 'As you walk, what does it mean if the current index is past the frontier?',
+            misconception: 'This is the stranded-failure guard, not the frontier update — overtaking the frontier means a gap nothing can cross.',
+          },
+          {
+            lineRange: [12, 14],
+            referenceLabel: 'Extend the frontier using the current element',
+            acceptableKeywords: ['update farthest with reach', 'push the frontier out', 'extend reach from here', 'max of current and new reach'],
+            hint: 'How does a reachable element grow how far you can get?',
+            misconception: 'This widens the frontier; it does not decide success or failure on its own.',
+          },
+          {
+            lineRange: [15, 16],
+            referenceLabel: 'Succeed early once the frontier covers the goal',
+            acceptableKeywords: ['frontier covers target', 'reach the last index', 'early success return', 'goal in range returns true'],
+            hint: 'When can you stop scanning and declare success?',
+            misconception: 'This is the early win once coverage is proven, not the per-step extension.',
+          },
+          {
+            lineRange: [17, 18],
+            referenceLabel: 'Report failure when the scan ends uncovered',
+            acceptableKeywords: ['fall through to false', 'no path returns false', 'default failure', 'unreachable goal'],
+            hint: 'If the loop finishes without covering the goal, what is the answer?',
+            misconception: 'Reaching here means the scan ended without ever covering the goal.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 1, 0, 2, 4]], expected: true, label: 'reachable with a mid-line hop' },
@@ -232,6 +269,43 @@ Let \`g\` be the request with the earliest end time. Take any optimal schedule O
 Implementation notes: a single \`free_at\` watermark is all the state needed because accepted sessions are committed in increasing end order. The \`>=\` versus \`>\` choice encodes the problem's touching-endpoints rule — flipping it silently fails the back-to-back tests. Duplicate sessions collapse naturally: after the first copy is accepted, identical copies fail the \`start >= free_at\` check.
 `,
         complexity: 'Time O(n log n) for the sort plus an O(n) sweep, Space O(n) for the sorted copy (O(1) extra if sorting in place)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Set up an accepted count and a commitment watermark',
+            acceptableKeywords: ['count accepted starts zero', 'last committed boundary', 'watermark of past picks', 'init running tally'],
+            hint: 'What two values carry forward from the choices already committed?',
+            misconception: 'This is the running state, not yet the ordering or the test.',
+          },
+          {
+            lineRange: [4, 6],
+            referenceLabel: 'Process candidates in the proven sort order',
+            acceptableKeywords: ['sort by finishing key', 'sweep earliest finisher first', 'iterate in sorted order', 'order by end time'],
+            hint: 'Which single sort key makes the one-pass commit provably safe here?',
+            misconception: 'The sort key IS the algorithm — sorting by start or by length breaks correctness.',
+          },
+          {
+            lineRange: [7, 9],
+            referenceLabel: 'Test the candidate against the last commitment',
+            acceptableKeywords: ['compatible with last pick', 'no clash with watermark', 'fits after committed boundary', 'check overlap'],
+            hint: 'How do you tell the next candidate does not collide with what you kept?',
+            misconception: 'This is only the gating test; the boundary semantics live in the comparison operator.',
+          },
+          {
+            lineRange: [10, 11],
+            referenceLabel: 'Accept the candidate and commit irrevocably',
+            acceptableKeywords: ['increment the count', 'advance the watermark', 'commit and never revisit', 'record the new boundary'],
+            hint: 'When a candidate fits, what do you record so it is never undone?',
+            misconception: 'This is the irrevocable commit, not the compatibility check that precedes it.',
+          },
+          {
+            lineRange: [12, 12],
+            referenceLabel: 'Report the size of the committed set',
+            acceptableKeywords: ['return the count', 'final tally', 'report how many accepted', 'output the total'],
+            hint: 'After the sweep, what single number is the answer?',
+            misconception: 'This returns the accumulated count, not the schedule itself.',
+          },
+        ],
       },
       testCases: [
         { input: [[[9, 30], [25, 60], [30, 90]]], expected: 2, label: 'overlap plus a touching pair' },
@@ -317,6 +391,36 @@ Two exchange swaps justify the rule. **Swap 1 — the weakest courier should not
 The implementation is a two-pointer walk after sorting, but the engine is greedy, not the converging-pointer pattern: \`i\` only ever advances when a delivery is committed, and the loop quietly handles every edge case — empty docks, empty rosters, and the courier who fits nothing simply falls through without advancing \`i\`.
 `,
         complexity: 'Time O(n log n + m log m) for the two sorts plus a linear merge walk, Space O(n + m) for the sorted copies',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Sort both pools ascending and open a cursor on the smaller pool',
+            acceptableKeywords: ['sort both lists ascending', 'weakest and lightest first', 'pointer into the demands', 'order both pools'],
+            hint: 'What ordering of the two pools makes a weakest-first match safe?',
+            misconception: 'This is the ordered setup; no matching has happened yet.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Walk the resource pool from weakest to strongest',
+            acceptableKeywords: ['iterate weakest capacity first', 'sweep the providers', 'offer to the smallest provider', 'loop over sorted capacities'],
+            hint: 'In what order do you offer each resource the smallest remaining demand?',
+            misconception: 'This is the outer sweep; the per-step fit decision is separate.',
+          },
+          {
+            lineRange: [9, 12],
+            referenceLabel: 'Assign the smallest remaining demand when it fits, else leave the resource idle',
+            acceptableKeywords: ['lightest still fits assign', 'advance the cursor on a match', 'skip when too big', 'commit a match'],
+            hint: 'Given the smallest unmet demand, when does this resource take it?',
+            misconception: 'Only the cursor advances on a successful match — a resource that fits nothing simply passes without consuming anything.',
+          },
+          {
+            lineRange: [13, 13],
+            referenceLabel: 'Report how many demands were satisfied',
+            acceptableKeywords: ['return the match count', 'cursor is the answer', 'number assigned', 'total satisfied'],
+            hint: 'After the walk, which value counts the matches made?',
+            misconception: 'The cursor position equals the number of satisfied demands, not a remaining index.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 8, 8, 9], [8, 5, 10, 7]], expected: 3, label: 'one courier necessarily idle' },
@@ -425,6 +529,43 @@ The exchange argument seals it. Suppose some optimal plan, at the moment of its 
 The loop structure guarantees progress: each iteration either banks new stations (the inner while advances \`i\`, which never resets) or pops the heap, so the algorithm terminates after at most \`n\` pushes and \`n\` pops. The \`-1\` check falls out naturally — an empty bank during a shortfall means a gap no subset of pontoons can bridge.
 `,
         complexity: 'Time O(n log n) — each station is pushed and popped at most once at O(log n) per heap operation, Space O(n) for the heap',
+        subgoals: [
+          {
+            lineRange: [1, 10],
+            referenceLabel: 'Set up a bank of deferred options plus the reach and counters',
+            acceptableKeywords: ['empty heap of options', 'current reachable distance', 'bank passed-up choices', 'init counters and cursor'],
+            hint: 'What structure lets you defer a choice and grab it later, and what state tracks progress?',
+            misconception: 'This is setup of the deferred-options bank, not yet any commitment.',
+          },
+          {
+            lineRange: [11, 16],
+            referenceLabel: 'While short of the goal, bank every option now within reach',
+            acceptableKeywords: ['loop until reach covers goal', 'bank all reachable options', 'collect without committing', 'push everything in range'],
+            hint: 'Before deciding anything, which options should you record as available?',
+            misconception: 'Banking only records options; it does not yet spend a stop or extend reach.',
+          },
+          {
+            lineRange: [17, 20],
+            referenceLabel: 'Fail when stuck with no banked option to draw on',
+            acceptableKeywords: ['empty bank means stranded', 'no option returns negative one', 'unbridgeable gap fails', 'dead end check'],
+            hint: 'You are short of the goal and the bank is empty — what does that mean?',
+            misconception: 'An empty bank during a shortfall is the impossibility signal, not a reason to keep scanning.',
+          },
+          {
+            lineRange: [21, 25],
+            referenceLabel: 'Retroactively commit the single best banked option and count it',
+            acceptableKeywords: ['pop the largest banked', 'extend reach by best option', 'commit one stop', 'take the most valuable'],
+            hint: 'When forced to act, which banked option do you finally spend?',
+            misconception: 'Only the maximum banked option is taken — the physical order you passed them in no longer matters.',
+          },
+          {
+            lineRange: [26, 26],
+            referenceLabel: 'Report the minimum number of commitments made',
+            acceptableKeywords: ['return the stop count', 'number of commitments', 'total options used', 'final tally'],
+            hint: 'Once the goal is covered, what is the answer?',
+            misconception: 'This returns the count of committed options, reached only after the goal is covered.',
+          },
+        ],
       },
       testCases: [
         {
@@ -514,6 +655,43 @@ The exchange argument is one swap long. Suppose some optimal loading flies a cra
 The early \`break\` is more than politeness — with up to 10^6 crates per group, looping per crate instead of per group would blow the time budget; arithmetic on whole groups keeps the sweep linear in the number of groups.
 `,
         complexity: 'Time O(n log n) for the sort plus an O(n) sweep over groups, Space O(n) for the sorted copy',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Initialize the running total and the remaining budget',
+            acceptableKeywords: ['accumulate the value', 'remaining capacity left', 'start total at zero', 'track free budget'],
+            hint: 'What two quantities do you carry while filling a fixed budget?',
+            misconception: 'This is the running state, not the ordering or the take logic.',
+          },
+          {
+            lineRange: [4, 6],
+            referenceLabel: 'Process groups from densest to least dense',
+            acceptableKeywords: ['sort by value descending', 'richest items first', 'iterate by density', 'highest payoff per slot first'],
+            hint: 'When every item costs the same one unit, which order maximizes value?',
+            misconception: 'Equal-size items make value-per-item the only sort key; order is the whole proof.',
+          },
+          {
+            lineRange: [7, 8],
+            referenceLabel: 'Stop early once the budget is fully spent',
+            acceptableKeywords: ['break when budget empty', 'no capacity left stop', 'budget exhausted', 'early termination'],
+            hint: 'Once no budget remains, why keep looping?',
+            misconception: 'This is an early exit on a full budget, not a per-group take.',
+          },
+          {
+            lineRange: [9, 11],
+            referenceLabel: 'Take as many of this group as fit and charge them to the budget',
+            acceptableKeywords: ['take min of count and slots', 'add value times taken', 'spend the budget', 'load what fits'],
+            hint: 'How many of this group do you take, and how does that update total and budget?',
+            misconception: 'The take is capped by both the group size and the remaining budget — not the whole group blindly.',
+          },
+          {
+            lineRange: [12, 12],
+            referenceLabel: 'Report the maximized total value',
+            acceptableKeywords: ['return the total', 'final accumulated value', 'output the sum', 'report the maximum'],
+            hint: 'After filling the budget, what is the answer?',
+            misconception: 'This returns the accumulated value, not a count of items.',
+          },
+        ],
       },
       testCases: [
         { input: [[[3, 50], [2, 80], [4, 20]], 5], expected: 310, label: 'mixed manifest, slots run out' },
@@ -599,6 +777,36 @@ The greedy claim: the first nozzle may as well sit at the right end of the **ear
 Correctness of the sweep hinges on a quiet invariant: when a tray is examined, \`nozzle\` is the right end of some earlier-ending tray, so \`nozzle <= right\` always holds. That is why a single comparison \`left > nozzle\` decides coverage — no need to check the other side. The inclusive boundary is encoded in the strict \`>\`; flipping it to \`>=\` would wrongly buy a second nozzle for trays that merely touch, exactly the kind of off-by-one the hidden tests probe.
 `,
         complexity: 'Time O(n log n) for the sort plus an O(n) sweep, Space O(n) for the sorted copy',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Initialize the point count and the last-placed position',
+            acceptableKeywords: ['count of points placed', 'most recent stab position', 'start count at zero', 'remember last point'],
+            hint: 'What two values track how many points you have placed and where the latest one sits?',
+            misconception: 'This is the running state, not the sort order or the coverage test.',
+          },
+          {
+            lineRange: [4, 6],
+            referenceLabel: 'Process intervals ordered by their right end',
+            acceptableKeywords: ['sort by right end', 'earliest finisher first', 'iterate by closing edge', 'order by upper bound'],
+            hint: 'Which endpoint do you sort on so the tightest interval dictates placement?',
+            misconception: 'Sorting by right end is what makes the single-comparison coverage test valid.',
+          },
+          {
+            lineRange: [7, 14],
+            referenceLabel: 'Place a point at the right edge of any still-uncovered interval',
+            acceptableKeywords: ['uncovered interval needs a point', 'place at the right end', 'commit a new point', 'skip already-covered intervals'],
+            hint: 'When an interval is not yet hit, where do you put the new point to also catch the most future intervals?',
+            misconception: 'A point goes only at the right edge of a dry interval; intervals already containing the last point are silently covered.',
+          },
+          {
+            lineRange: [15, 15],
+            referenceLabel: 'Report the minimum number of points placed',
+            acceptableKeywords: ['return the count', 'number of points', 'final tally', 'output the minimum'],
+            hint: 'After the sweep, what single number is the answer?',
+            misconception: 'This returns the count of points, not their positions.',
+          },
+        ],
       },
       testCases: [
         { input: [[[1, 6], [2, 8], [7, 12], [10, 16]]], expected: 2, label: 'two clusters' },
@@ -687,6 +895,36 @@ Why is the earliest cut safe rather than short-sighted? Two observations. First,
 The mechanism is the same frontier number as a reach scan, but pointed at a different job: \`reach\` tracks not "how far *can* I go" but "how far *must* I go" — an obligation horizon. When the sweep index catches the horizon, the piece has discharged every promise it made, and committing the cut is final. One subtlety worth internalizing: \`reach\` never resets between pieces, but it never needs to — at a cut point \`i == reach\`, every later letter's first occurrence is past \`i\`, so the next piece's first metre immediately pushes \`reach\` beyond it.
 `,
         complexity: 'Time O(n) — one pass to map last occurrences, one pass to cut, Space O(1) beyond the output (at most 26 map entries)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Record each symbol\'s final position and open the first segment',
+            acceptableKeywords: ['last index of each symbol', 'map final occurrences', 'init segment start', 'precompute obligations'],
+            hint: 'Before cutting, what do you need to know about how far each symbol reaches?',
+            misconception: 'This precomputes the obligation horizons and segment state; no cut is made yet.',
+          },
+          {
+            lineRange: [8, 11],
+            referenceLabel: 'Sweep, pushing the obligation horizon to each symbol\'s last occurrence',
+            acceptableKeywords: ['extend the required reach', 'farthest last index so far', 'grow the obligation horizon', 'update how far the piece must go'],
+            hint: 'As you read each position, how far is the current segment now forced to extend?',
+            misconception: 'This tracks how far the segment MUST reach, distinct from the cut decision itself.',
+          },
+          {
+            lineRange: [12, 17],
+            referenceLabel: 'Cut at the first index where the segment owes nothing further right',
+            acceptableKeywords: ['index meets the horizon cut', 'close the piece here', 'record the length', 'start the next segment'],
+            hint: 'When the scan index catches the horizon, what can you finally do?',
+            misconception: 'The cut is legal only when index equals the horizon — cutting earlier would split a symbol across pieces.',
+          },
+          {
+            lineRange: [18, 18],
+            referenceLabel: 'Report the ordered segment lengths',
+            acceptableKeywords: ['return the piece lengths', 'output the segments in order', 'list of lengths', 'final result'],
+            hint: 'After the sweep, what collection is the answer?',
+            misconception: 'This returns the ordered lengths, not the cut positions themselves.',
+          },
+        ],
       },
       testCases: [
         { input: ['srsrtt'], expected: [4, 2], label: 'interleaved codes then a clean pair' },
@@ -773,6 +1011,36 @@ The pull toward simulating generator assignments is strong — track machines, h
 The half-open semantics live entirely in the tie-break. Python's tuple sort puts \`(t, -1)\` before \`(t, 1)\`, so a stall unplugging at minute \`t\` decrements \`live\` before the minute-\`t\` plug-in increments it — back-to-back bookings cost one machine, not two. Flip that order and every clean handoff phantom-rents an extra generator; this single comparison is where most wrong submissions die. The sweep is \`O(n log n)\` against \`O(n^2)\` for pairwise overlap counting, and unlike the pairwise approach it directly produces the *simultaneous* maximum rather than a tangle of overlap pairs.
 `,
         complexity: 'Time O(n log n) for sorting 2n events plus a linear sweep, Space O(n) for the event list',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Split each interval into a start (+1) and an end (−1) event',
+            acceptableKeywords: ['expand intervals into events', 'plus one on start', 'minus one on end', 'build delta events'],
+            hint: 'How do you turn each interval into two timeline markers?',
+            misconception: 'This only generates the events; the concurrency count is computed later.',
+          },
+          {
+            lineRange: [6, 9],
+            referenceLabel: 'Order events by time, breaking ties so releases precede starts',
+            acceptableKeywords: ['sort events by time', 'ends before starts on ties', 'tuple order encodes handoff', 'order the timeline'],
+            hint: 'At the same instant, should an ending or a starting event be processed first?',
+            misconception: 'The tie-break is the whole half-open semantics — ends must land before starts or handoffs double-count.',
+          },
+          {
+            lineRange: [10, 14],
+            referenceLabel: 'Sweep the timeline tracking concurrency and its maximum',
+            acceptableKeywords: ['running live count', 'track the peak', 'accumulate the deltas', 'maximum overlap so far'],
+            hint: 'As you walk the events, what running value and what high-water mark do you keep?',
+            misconception: 'The answer is the peak of the running count, not the final running count.',
+          },
+          {
+            lineRange: [15, 15],
+            referenceLabel: 'Report the peak concurrency',
+            acceptableKeywords: ['return the peak', 'maximum simultaneous count', 'highest overlap', 'output the max'],
+            hint: 'After the sweep, which value is the required minimum?',
+            misconception: 'This returns the peak overlap, which equals the minimum resources needed.',
+          },
+        ],
       },
       testCases: [
         { input: [[[0, 30], [5, 10], [15, 20]]], expected: 2, label: 'one long booking under two short ones' },
@@ -869,6 +1137,36 @@ Why \`max\` rather than sum or anything cleverer: a student who tops an ascent o
 The greedy fingerprint here is unusual: not one sort-and-sweep but two opposing sweeps, each carrying one number of state, combined by \`max\`. Forgetting the \`max\` (overwriting pass 1 at peaks) is the classic bug — it satisfies the right side while silently un-satisfying the left.
 `,
         complexity: 'Time O(n) — two linear passes plus a sum, Space O(n) for the per-student counts',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Handle the empty case and start every element at the mandatory floor',
+            acceptableKeywords: ['guard empty input', 'everyone gets the minimum', 'init all to one', 'baseline allocation'],
+            hint: 'Before applying any neighbour rule, what does every element get, and what trivial input exits early?',
+            misconception: 'This is the floor allocation and empty guard, before any neighbour constraint is enforced.',
+          },
+          {
+            lineRange: [6, 11],
+            referenceLabel: 'Left-to-right pass: raise on a strict rise over the previous element',
+            acceptableKeywords: ['forward pass settles left side', 'increase over the left neighbour', 'climb on a left ascent', 'one more than predecessor'],
+            hint: 'Sweeping forward, when must an element exceed the one before it, and by how much?',
+            misconception: 'The forward pass only satisfies left-neighbour constraints; the right side is unsettled until the next pass.',
+          },
+          {
+            lineRange: [12, 19],
+            referenceLabel: 'Right-to-left pass: raise over the next element while keeping the forward result',
+            acceptableKeywords: ['backward pass settles right side', 'take the max of both requirements', 'climb on a right ascent', 'preserve the earlier pass'],
+            hint: 'Sweeping backward, how do you enforce the right-neighbour rule without undoing the forward pass?',
+            misconception: 'The max is essential — overwriting instead of maxing un-satisfies the left side at peaks.',
+          },
+          {
+            lineRange: [20, 20],
+            referenceLabel: 'Report the total allocation',
+            acceptableKeywords: ['sum the allocations', 'return the total', 'add up every count', 'final aggregate'],
+            hint: 'After both passes, what aggregate is the answer?',
+            misconception: 'This sums the per-element counts; it is not itself one of the constraint passes.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 6, 4]], expected: 4, label: 'single peak' },

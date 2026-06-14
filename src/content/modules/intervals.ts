@@ -159,6 +159,36 @@ Why is comparing against only the **last** block enough? The finished blocks are
 The two classic traps both live in the extend branch. First, the condition is \`start <= last[1]\`, not \`<\` — the statement says back-to-back bookings fuse. Second, the new end is \`max(last[1], end)\`, not just \`end\`: a 3–4 session inside a 2–8 session must not truncate the block to end at 4. The empty input short-circuits before the loop, and a single booking simply becomes a single block.
 `,
         complexity: 'Time O(n log n) for the sort + O(n) sweep, Space O(n) for the output',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Return an empty result immediately on empty input',
+            acceptableKeywords: ['guard empty list', 'nothing to merge', 'short-circuit base case', 'return empty'],
+            hint: 'With no intervals at all, what comes back before any sweeping?',
+            misconception: 'This is only the empty-input base case, separate from the merging loop.',
+          },
+          {
+            lineRange: [5, 9],
+            referenceLabel: 'Sort by start, then seed the first open block from a copy',
+            acceptableKeywords: ['sort by start', 'seed first block', 'copy to avoid mutating input', 'open the first block'],
+            hint: 'What ordering makes overlaps adjacent, and how do you start the block list without aliasing the input?',
+            misconception: 'This prepares ordering and the first block; copying avoids mutating the caller, and nothing is merged yet.',
+          },
+          {
+            lineRange: [10, 16],
+            referenceLabel: 'Extend the open block when the next interval reaches it',
+            acceptableKeywords: ['overlaps or touches', 'extend the open block', 'max to keep the far end', 'fold into current block'],
+            hint: 'When the next interval starts at or before the open block ends, how does the block grow?',
+            misconception: 'Using max stops an interval nested inside the block from pulling its end leftward.',
+          },
+          {
+            lineRange: [17, 20],
+            referenceLabel: 'On a strict gap, open a fresh block, then return',
+            acceptableKeywords: ['strict gap', 'append a new block', 'start fresh interval', 'return merged blocks'],
+            hint: 'If the next interval starts past the open block, what happens, and what is finally returned?',
+            misconception: 'A new block opens only on a real gap; the comparison is at-or-before for touching, so back-to-back still merges.',
+          },
+        ],
       },
       testCases: [
         { input: [[[9, 11], [13, 14], [10, 12]]], expected: [[9, 12], [13, 14]], label: 'overlap merges' },
@@ -255,6 +285,36 @@ That observation turns the problem into three pointer-free phases. Phase 1's con
 The phase conditions also handle every edge case for free: an empty calendar skips phases 1 and 3 and emits just the new window; a new window past the end leaves phase 2 empty; a new window nested inside one giant window gets absorbed *by* it (min/max leave the big window's bounds intact).
 `,
         complexity: 'Time O(n) single pass, Space O(n) for the output',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Prepare the output and unpack the new interval bounds',
+            acceptableKeywords: ['initialize output list', 'unpack the new bounds', 'set the cursor', 'capture mutable edges'],
+            hint: 'Before walking the sorted list, what container and which working edges do you set up?',
+            misconception: 'This is just setup; the working bounds will grow later, they are not final here.',
+          },
+          {
+            lineRange: [5, 11],
+            referenceLabel: 'Copy through every interval that ends entirely before the new one',
+            acceptableKeywords: ['emit intervals before', 'ends strictly before start', 'pass through untouched', 'too early to merge'],
+            hint: 'Which intervals are provably untouched by the new one, and what do you do with them?',
+            misconception: 'A strict comparison matters — an interval ending exactly at the new start touches it and belongs to the merge phase, not here.',
+          },
+          {
+            lineRange: [12, 18],
+            referenceLabel: 'Absorb the overlapping run by widening the bounds, then emit it once',
+            acceptableKeywords: ['merge the overlapping run', 'grow left and right edges', 'min start max end', 'place the merged interval'],
+            hint: 'For the contiguous block that touches the new interval, how do its edges expand, and how many times is the result emitted?',
+            misconception: 'The merged interval is appended exactly once after the run, not once per absorbed interval.',
+          },
+          {
+            lineRange: [19, 25],
+            referenceLabel: 'Copy through the remaining later intervals and return',
+            acceptableKeywords: ['emit intervals after', 'starts strictly after end', 'pass through the tail', 'return the result'],
+            hint: 'Everything left starts past the new interval — what happens to it?',
+            misconception: 'These trailing intervals are untouched copies, distinct from the merge that already finished.',
+          },
+        ],
       },
       testCases: [
         { input: [[[1, 2], [6, 9]], [3, 5]], expected: [[1, 2], [3, 5], [6, 9]], label: 'fits in the gap' },
@@ -347,6 +407,36 @@ Pairing starts with ends from *different* events feels wrong at first — but a 
 The single subtle line is \`ends[freed] <= s\`. With \`<=\`, an event ending at time \`s\` releases its encoder before the event starting at \`s\` is counted — the half-open hand-off the statement demands, and what makes the perfect-relay example need only one encoder. Flip it to \`<\` and that example would wrongly need two. When the convention is closed intervals instead, \`<\` is precisely the change you'd make: the tie-break *is* the semantics.
 `,
         complexity: 'Time O(n log n) for the two sorts + O(n) sweep, Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Return zero immediately on empty input',
+            acceptableKeywords: ['guard empty list', 'no events return zero', 'short-circuit base case', 'handle nothing'],
+            hint: 'With no events at all, what is the answer before any sweeping?',
+            misconception: 'This is only the empty-input base case, not part of the overlap counting.',
+          },
+          {
+            lineRange: [4, 12],
+            referenceLabel: 'Separate starts and ends into two sorted streams and zero the trackers',
+            acceptableKeywords: ['split starts and ends', 'two sorted timelines', 'discard identity', 'initialize counters'],
+            hint: 'You only need WHEN things begin and finish — what two ordered lists capture that, and what counters start at zero?',
+            misconception: 'Decoupling starts from ends loses the pairing on purpose; this setup does no counting yet.',
+          },
+          {
+            lineRange: [13, 21],
+            referenceLabel: 'Sweep starts, releasing finished events before each claim, tracking the high-water mark',
+            acceptableKeywords: ['release ended events first', 'then claim a resource', 'update running count', 'track the maximum overlap'],
+            hint: 'At each start, what must you do with already-finished events before you add the new one, and what do you record?',
+            misconception: 'Releasing must precede claiming so an end at the same instant frees a slot — the peak is the max concurrency, not the final count.',
+          },
+          {
+            lineRange: [22, 23],
+            referenceLabel: 'Return the peak concurrency',
+            acceptableKeywords: ['return the maximum', 'report peak overlap', 'final answer', 'output high-water mark'],
+            hint: 'After the sweep, which tracked value is the answer?',
+            misconception: 'The answer is the maximum simultaneous count, not the count still running at the end.',
+          },
+        ],
       },
       testCases: [
         { input: [[[2, 40], [6, 14], [18, 27]]], expected: 2, label: 'long event spans two short ones' },
@@ -439,6 +529,36 @@ Why sort by **end** and not start? The exchange argument: suppose some optimal k
 Two details carry the half-open rule. The keep test is \`start >= runway_free_at\` — \`>=\`, not \`>\` — so back-to-back landings chain for free. And initializing \`runway_free_at\` to the first slot's own start guarantees the earliest-ending slot is always kept, which the exchange argument requires. Each slot is visited once after sorting, and only two integers of state survive between iterations.
 `,
         complexity: 'Time O(n log n) for the sort + O(n) sweep, Space O(1) extra (beyond the sort)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Return zero immediately on empty input',
+            acceptableKeywords: ['guard empty list', 'nothing to cancel', 'short-circuit base case', 'return zero'],
+            hint: 'With no requests at all, how many must be dropped?',
+            misconception: 'This is just the empty-input base case, not part of the greedy selection.',
+          },
+          {
+            lineRange: [4, 10],
+            referenceLabel: 'Order by earliest finish and seed the free-after marker',
+            acceptableKeywords: ['sort by end time', 'greedy earliest finish', 'initialize kept count', 'set free-after marker'],
+            hint: 'Which endpoint do you sort on so the most compatible pick comes first, and what tracker starts the sweep?',
+            misconception: 'Sorting by end (not start) is the crux; this only sets up the greedy, it does not yet keep anything.',
+          },
+          {
+            lineRange: [11, 19],
+            referenceLabel: 'Keep each non-conflicting request and advance the free marker',
+            acceptableKeywords: ['accept compatible slot', 'starts at or after free', 'count kept', 'move the free marker'],
+            hint: 'A request survives only if it starts no earlier than the last kept one finished — then what updates?',
+            misconception: 'A conflicting request is silently dropped here; only compatible ones advance the marker and the kept count.',
+          },
+          {
+            lineRange: [20, 21],
+            referenceLabel: 'Convert kept count into cancellations',
+            acceptableKeywords: ['total minus kept', 'count cancellations', 'complement of kept', 'return removed count'],
+            hint: 'You counted survivors — how do you turn that into the number removed?',
+            misconception: 'The answer is the dropped count, the complement of what was kept, not the kept count itself.',
+          },
+        ],
       },
       testCases: [
         { input: [[[1, 2], [2, 3], [3, 4], [1, 3]]], expected: 1, label: 'one conflicting request' },
@@ -530,6 +650,36 @@ Sorting by start is what makes a single open block sufficient: once a report sta
 The final \`total += block_end - block_start\` after the loop is the classic forgotten line — the last block is always still open when the input runs out.
 `,
         complexity: 'Time O(n log n) for the sort + O(n) sweep, Space O(1) extra (beyond the sort)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Return zero immediately on empty input',
+            acceptableKeywords: ['guard empty list', 'no data return zero', 'short-circuit base case', 'handle nothing'],
+            hint: 'With nothing to process, what value falls out before any sweeping?',
+            misconception: 'This is only the empty-input base case, separate from the running total below.',
+          },
+          {
+            lineRange: [5, 9],
+            referenceLabel: 'Sort by start, then seed the open stretch and the accumulator',
+            acceptableKeywords: ['sort by start', 'initialize running total', 'seed first block', 'set the open stretch'],
+            hint: 'What order makes overlaps adjacent, and what two trackers do you start before the loop?',
+            misconception: 'This prepares ordering and the first block; no stretch has been measured or banked yet.',
+          },
+          {
+            lineRange: [10, 18],
+            referenceLabel: 'Either extend the open stretch or bank it at a gap',
+            acceptableKeywords: ['extend on overlap', 'max to keep the far end', 'add length on a gap', 'start a new stretch'],
+            hint: 'For each next piece, when do you stretch the current block versus close it and tally its length?',
+            misconception: 'Banking happens only at a real gap; using max while extending stops a nested piece from shrinking the block.',
+          },
+          {
+            lineRange: [19, 21],
+            referenceLabel: 'Flush the final open stretch into the total',
+            acceptableKeywords: ['add the last block', 'final stretch length', 'tally after the loop', 'return the total'],
+            hint: 'When the input runs out, what is still uncounted?',
+            misconception: 'The last stretch is never banked inside the loop, so it must be added once afterward.',
+          },
+        ],
       },
       testCases: [
         { input: [[[0, 30], [20, 50]]], expected: 50, label: 'overlap counted once' },
@@ -622,6 +772,29 @@ The instinct is to intersect the lines' idle times pairwise, but idle time is aw
 From there it is the standard merge: sort the pile, extend-or-append, and the shared idle windows fall out as the gaps between consecutive merged blocks. Two details earn their keep. First, merging with \`start <= end\` (touching fuses) guarantees consecutive blocks are separated by *strictly* positive space, so every emitted gap automatically satisfies the positive-length requirement — no post-filter needed. Second, the unbounded quiet time before the first block and after the last is excluded simply by emitting only *between* consecutive pairs, which is also why an empty pile or a single merged block yields no windows at all.
 `,
         complexity: 'Time O(n log n) where n is the total busy-interval count, Space O(n) for the pile and output',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Pool every busy span into one sorted list, short-circuiting if empty',
+            acceptableKeywords: ['flatten all sources', 'drop ownership', 'guard empty input', 'sort the combined spans'],
+            hint: 'Whose schedule a span came from does not matter; what single ordered collection do you need first?',
+            misconception: 'This consolidates raw busy spans; it has not yet merged overlaps or found any free gaps.',
+          },
+          {
+            lineRange: [8, 15],
+            referenceLabel: 'Fuse the pooled spans into disjoint occupied blocks',
+            acceptableKeywords: ['merge overlapping spans', 'extend the open block', 'max on the end', 'coalesce busy intervals'],
+            hint: 'Sweeping the sorted pile, how do touching or overlapping spans become single solid blocks?',
+            misconception: 'This produces the busy blocks; the idle answer is their complement, computed later, not here.',
+          },
+          {
+            lineRange: [16, 22],
+            referenceLabel: 'Read off the gaps between consecutive blocks as the answer',
+            acceptableKeywords: ['gaps between blocks', 'end of one to start of next', 'complement of busy', 'pair adjacent blocks'],
+            hint: 'Once the solid blocks are known, where does shared free time live relative to them?',
+            misconception: 'The free windows are the spaces between blocks, not the blocks themselves.',
+          },
+        ],
       },
       testCases: [
         {
@@ -740,6 +913,36 @@ Second, the argmax update. \`running > peak\` with a **strict** inequality recor
 A useful sanity check falls out of the sweep: only a \`+1\` event can push the count to a new maximum, so the reported moment is always some shift's start time. If your candidate answer is not a start time, something is wrong.
 `,
         complexity: 'Time O(n log n) to sort 2n events + O(n) sweep, Space O(n) for the event list',
+        subgoals: [
+          {
+            lineRange: [1, 10],
+            referenceLabel: 'Split each span into ordered start and end markers',
+            acceptableKeywords: ['build boundary events', 'plus one on start minus one on end', 'sort the markers', 'enter and leave deltas'],
+            hint: 'Turn each interval into the two moments that change the count, then put them in time order.',
+            misconception: 'This only generates and orders the change-points; no running total exists yet.',
+          },
+          {
+            lineRange: [11, 15],
+            referenceLabel: 'Initialize the live count, best-seen total, and its moment',
+            acceptableKeywords: ['running counter zero', 'track the maximum', 'remember best time', 'set up trackers'],
+            hint: 'What three values do you carry to know both the peak and where it happened?',
+            misconception: 'This seeds the bookkeeping; it is not the sweep that actually changes the count.',
+          },
+          {
+            lineRange: [16, 23],
+            referenceLabel: 'Apply each marker and record a new strict maximum',
+            acceptableKeywords: ['accumulate the deltas', 'update running total', 'new strict peak', 'capture the moment'],
+            hint: 'As each marker is applied, when do you update both the peak and the moment it occurs?',
+            misconception: 'Updating only on a strictly larger count keeps the earliest peak — using >= would drift to a later tie.',
+          },
+          {
+            lineRange: [24, 25],
+            referenceLabel: 'Return the busiest moment with its count',
+            acceptableKeywords: ['return moment and peak', 'final answer pair', 'report the busiest time', 'output count'],
+            hint: 'After the sweep, what pair describes the busiest instant?',
+            misconception: 'This is the final report, not part of the running accumulation.',
+          },
+        ],
       },
       testCases: [
         { input: [[[2, 10], [4, 8], [6, 12]]], expected: [6, 3], label: 'triple stack' },
@@ -841,6 +1044,36 @@ The interesting question is how to avoid testing all \`m * n\` pairs. Sortedness
 Each loop iteration permanently retires one interval, so the loop runs at most \`m + n\` times — the linear bound the statement demands, with no sorting and no nested scans. Note that the output inherits its sorted order from the inputs: windows are emitted left to right as the pointers advance.
 `,
         complexity: 'Time O(m + n) single pass, Space O(m + n) for the output',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Open one cursor into each sorted list and walk in lockstep',
+            acceptableKeywords: ['two pointers', 'one index per list', 'loop while both remain', 'parallel walk'],
+            hint: 'How many positions do you track to march through two sorted lists together?',
+            misconception: 'This is the dual-cursor scaffold, not yet any overlap test.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Compute the shared span of the current pair',
+            acceptableKeywords: ['latest start', 'earliest end', 'max of starts min of ends', 'candidate intersection'],
+            hint: 'Given the two intervals under the cursors, how do you bound where they could possibly overlap?',
+            misconception: 'This only measures a potential overlap — it does not decide whether the span is real.',
+          },
+          {
+            lineRange: [9, 12],
+            referenceLabel: 'Keep the span only when it has positive duration',
+            acceptableKeywords: ['emit valid overlap', 'strictly positive span', 'lo less than hi', 'record the window'],
+            hint: 'A span that merely touches at a single point — should it be recorded?',
+            misconception: 'This filters and records; a touching span (lo == hi) is rejected, not kept.',
+          },
+          {
+            lineRange: [13, 20],
+            referenceLabel: 'Retire the interval that ends first and continue',
+            acceptableKeywords: ['advance the earlier-ending side', 'drop the smaller end', 'move one pointer forward', 'return collected windows'],
+            hint: 'After handling a pair, which cursor must move so no future overlap is missed?',
+            misconception: 'Only the interval ending soonest is exhausted — advancing the wrong cursor skips real intersections.',
+          },
+        ],
       },
       testCases: [
         {
@@ -963,6 +1196,36 @@ Impossibility detection falls out of the same loop: if no eligible offer pushes 
 The shape looks like a nested loop, but the inner scan pointer \`i\` never rewinds: each offer is examined exactly once across the entire run, so the sweep is \`O(n)\` after the \`O(n log n)\` sort.
 `,
         complexity: 'Time O(n log n) for the sort + O(n) sweep, Space O(1) extra (beyond the sort)',
+        subgoals: [
+          {
+            lineRange: [1, 10],
+            referenceLabel: 'Order by start and seed the coverage frontier at zero',
+            acceptableKeywords: ['sort by start', 'initialize frontier', 'covered starts at zero', 'set up counters'],
+            hint: 'Before pushing forward, what order lets you grab reachable pieces, and where does the covered edge begin?',
+            misconception: 'This only prepares the frontier and ordering — no piece has been chosen yet.',
+          },
+          {
+            lineRange: [11, 19],
+            referenceLabel: 'Sweep every piece that begins within reach for the farthest extension',
+            acceptableKeywords: ['scan eligible offers', 'starts at or before frontier', 'track farthest reach', 'advance non-rewinding pointer'],
+            hint: 'Among the pieces that start at or before the current edge, which single value are you hunting for?',
+            misconception: 'This gathers candidates and finds the best stretch; it does not yet commit a choice or count it.',
+          },
+          {
+            lineRange: [20, 23],
+            referenceLabel: 'Bail out when no eligible piece pushes past the frontier',
+            acceptableKeywords: ['no progress possible', 'gap cannot be covered', 'reach equals covered', 'return impossible'],
+            hint: 'If the best reachable piece does not extend the edge at all, what does that say about the next point?',
+            misconception: 'This is the unreachable-gap exit, distinct from the normal advance of the frontier.',
+          },
+          {
+            lineRange: [24, 27],
+            referenceLabel: 'Commit the farthest reach and count it, then return the total',
+            acceptableKeywords: ['advance the frontier', 'increment chosen count', 'jump to farthest reach', 'return total picks'],
+            hint: 'Having found the best stretch, what two updates happen before the next round?',
+            misconception: 'One commit equals exactly one accepted piece — this is the accounting step, not the candidate scan.',
+          },
+        ],
       },
       testCases: [
         { input: [10, [[0, 4], [3, 10], [4, 6]]], expected: 2, label: 'two offers suffice' },
