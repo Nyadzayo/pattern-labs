@@ -86,14 +86,23 @@ New `Subgoal` type on `ReferenceSolution`; a new **`label` rung** between roles 
 rungs). Pure reducers `src/lib/subgoalGrade.ts` + `src/lib/calibration.ts` (unit-tested).
 
 Build steps (commit per verified step):
-- **0 Docs + schema + state scaffolding** — ✅ done (this checkpoint): CLAUDE.md/PROGRESS.md/design doc,
-  `Subgoal` type + `subgoals?` on `ReferenceSolution`, 4 storage keys + writers + sanitize.
-- **1 Labeling exercise** on 5 primitives end-to-end (grade reducer + `label` rung + `SubgoalLabeler` +
-  Practice-tab action). ⏳
-- **2 Misconception feedback + per-chunk hints + SM-2** (hint-XOR-feedback). ⏳
-- **3 Confidence calibration** (ConfidencePrompt at quiz/solution/kata/subgoal + Dashboard card). ⏳
-- **4 Productive failure** (attempt-first gate + attempt-vs-worked diff). ⏳
-- **5 Integrations + annotate first-3 modules + all-40 primitives** (workflow fan-out). ⏳
+- **0 Docs + schema + state scaffolding** — ✅ committed: `Subgoal` type + `subgoals?` on
+  `ReferenceSolution`, 4 storage keys + writers + sanitize.
+- **1-2 Labeling exercise** — ✅ committed + browser-verified: `subgoalGrade` pure reducer (13 vitest:
+  lenient grade, `bestChunkMatch` swapped-role, `labelingComplete`); new `label` rung (ladder typed
+  `CoreLadder|LabeledLadder`, 6 or 7, write/label by kind); `SubgoalLabeler` (chunked solution,
+  per-chunk hint pre-submit, reveal + role-aware misconception feedback post-submit); Practice-tab
+  action; 5 primitives + two-pointers voltage-pair annotated.
+- **3 Confidence calibration** — ✅ committed + browser-verified: `calibration` pure reducer (6 vitest);
+  `confidence.ts` askConfidence singleton + `ConfidenceHost` modal wired before quiz/solution/kata/
+  subgoal reveals; Dashboard `CalibrationCard`.
+- **4 Productive failure** — ✅ committed + browser-verified: `FirstAttemptGate` on first module open,
+  `AttemptVsWorked` Learn-tab side-by-side, Settings `attemptFirst` toggle.
+- **5a Integrations** — ✅ committed: auto subgoal flashcards (Review deck), cheat-sheet Structure
+  skeleton, mock-report Structure check, visualizer `Frame.subgoal` chips (two-pointers wired).
+  Parsons label-mode deferred (redundant with the label rung).
+- **5b Annotate all 40 primitives** — ✅ committed: 6-agent workflow, all 40 carry a label rung.
+- **5c Annotate first-3 modules** — 🚧 workflow running (two-pointers/hash-maps-sets/sliding-windows).
 - **6 (deferred)** annotate the 16 remaining modules (~144 solutions), resumable workflow. ⏳
 
 ## Resilient-workflow conventions (learned the hard way — quota walls killed mid-runs)
