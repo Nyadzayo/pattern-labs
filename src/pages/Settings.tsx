@@ -5,6 +5,7 @@ import {
   importStateJson,
   resetAllProgress,
   setTheme,
+  setAttemptFirst,
 } from '@/lib/storage'
 
 export function Settings() {
@@ -57,6 +58,33 @@ export function Settings() {
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-faint">Learning</h2>
+        <label className="mt-3 flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-edge bg-surface-raised p-4">
+          <div>
+            <div className="text-sm font-medium">Attempt-first (productive failure)</div>
+            <p className="mt-0.5 text-sm text-ink-muted">
+              The first time you open a module, try one problem before the lesson unlocks. Struggling
+              first makes the explanation stick. You can always skip straight to the teaching.
+            </p>
+          </div>
+          <button
+            role="switch"
+            aria-checked={state.attemptFirst}
+            onClick={() => setAttemptFirst(!state.attemptFirst)}
+            className={`mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors ${
+              state.attemptFirst ? 'bg-accent' : 'bg-surface-sunken'
+            }`}
+          >
+            <span
+              className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                state.attemptFirst ? 'translate-x-5' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </label>
       </section>
 
       <section className="mt-8">

@@ -8,6 +8,8 @@ import { Markdown } from '@/components/markdown/Markdown'
 import { VisualizerHost } from '@/components/visualizers/VisualizerHost'
 import { QuizTab } from '@/components/quiz/QuizTab'
 import { FlashcardsTab } from '@/components/flashcards/FlashcardsTab'
+import { FirstAttemptGate } from '@/components/practice/FirstAttemptGate'
+import { AttemptVsWorked } from '@/components/practice/AttemptVsWorked'
 import { primitivesForModule } from '@/content/primitives/registry'
 
 export const MODULE_TABS = ['learn', 'visualize', 'practice', 'quiz', 'flashcards'] as const
@@ -30,6 +32,7 @@ const DIFFICULTY_STYLE: Record<Difficulty, string> = {
 export function ModulePage() {
   const { moduleId } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
+  const state = useAppState()
   const valid = MODULE_IDS.includes(moduleId as ModuleId)
   const meta = valid ? getModuleMeta(moduleId as ModuleId) : undefined
   const content = valid ? getModuleContent(moduleId as ModuleId) : undefined
@@ -62,6 +65,11 @@ export function ModulePage() {
         <div className="mt-8 rounded-xl border border-dashed border-edge p-8 text-center text-sm text-ink-muted">
           Content for this module is coming in Phase 6.
         </div>
+      ) : state.attemptFirst &&
+        !state.productiveFailure[meta.id] &&
+        !state.conceptRead[meta.id] &&
+        content.problems.length > 0 ? (
+        <FirstAttemptGate meta={meta} content={content} />
       ) : (
         <>
           <div className="no-print mt-6 flex gap-1 border-b border-edge">
@@ -106,6 +114,7 @@ function LearnTab({ meta, content }: { meta: ModuleMeta; content: ModuleContent 
   const primitives = primitivesForModule(meta.id)
   return (
     <div>
+      <AttemptVsWorked moduleId={meta.id} content={content} />
       <Markdown>{content.concept}</Markdown>
 
       <h2 className="mb-3 mt-10 text-lg font-semibold tracking-tight">In the wild</h2>
