@@ -288,6 +288,36 @@ The \`read\` pointer visits every sample once. The only question per sample is "
 There's no shifting, no per-value counter, no second pass. Each pointer moves monotonically forward, giving one \`O(n)\` sweep, and the only extra memory is the output copy itself. The same skeleton solves "keep at most k copies" by changing the lookback from 2 to k.
 `,
         complexity: 'Time O(n), Space O(1) extra (beyond the returned copy)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Set up a private buffer and a write cursor at the start',
+            acceptableKeywords: ['copy the input', 'write pointer at zero', 'fresh buffer', 'initialize the kept region'],
+            hint: 'Before scanning, what do you allocate to hold the kept items?',
+            misconception: 'This only prepares storage and the cursor; no element has been examined yet.',
+          },
+          {
+            lineRange: [5, 7],
+            referenceLabel: 'Scan every element with a fast read cursor',
+            acceptableKeywords: ['iterate over each element', 'fast read pointer', 'visit every item once', 'single forward pass'],
+            hint: 'How do you reach each candidate value in turn?',
+            misconception: 'This is the traversal that surfaces candidates, not the rule that decides them.',
+          },
+          {
+            lineRange: [8, 10],
+            referenceLabel: 'Keep an element only when the cap is not yet hit',
+            acceptableKeywords: ['check against the cap', 'compare to two back', 'keep and advance write', 'append when allowed'],
+            hint: 'What test decides whether the current item survives, and what follows a yes?',
+            misconception: 'The lookback compares against the kept region, not the raw neighbors — this is the keep decision, not the traversal.',
+          },
+          {
+            lineRange: [11, 12],
+            referenceLabel: 'Return only the populated prefix of the buffer',
+            acceptableKeywords: ['slice up to write', 'return the kept prefix', 'trim the leftover tail', 'output the filled region'],
+            hint: 'After the pass, which portion of the buffer is the real answer?',
+            misconception: 'This discards the stale tail and emits the result; it is not part of the keep loop.',
+          },
+        ],
       },
       testCases: [
         { input: [[1, 1, 1, 2, 2, 3]], expected: [1, 1, 2, 2, 3], label: 'one excess copy' },
@@ -376,6 +406,36 @@ Each iteration retires exactly one pylon, so the loop runs at most \`n - 1\` tim
 The pitfall this problem punishes: moving the taller pointer "to see what's there." That breaks the proof and fails layouts like \`[2, 10, 10, 1]\`: move-taller scores 3, then 2, then 1 and returns 3, but the true answer is 10 — the adjacent pair of tens, which that policy never scores.
 `,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Start at the widest span and track the best score so far',
+            acceptableKeywords: ['pointers at both ends', 'widest pair first', 'initialize the best', 'start from the extremes'],
+            hint: 'Which span do you begin with, and what running value do you keep?',
+            misconception: 'This only sets the starting span and the answer-so-far; no capacity is measured yet.',
+          },
+          {
+            lineRange: [4, 8],
+            referenceLabel: 'Score the current pair from its width and shorter side',
+            acceptableKeywords: ['width times shorter side', 'compute the capacity', 'update the running best', 'evaluate this pair'],
+            hint: 'For the two boundaries you are on, how is their score formed and recorded?',
+            misconception: 'This measures and books the current pair; it does not yet decide which pointer moves.',
+          },
+          {
+            lineRange: [9, 15],
+            referenceLabel: 'Retire the weaker boundary and step it inward',
+            acceptableKeywords: ['move the shorter side', 'advance the weaker boundary', 'retire the smaller end', 'step the limiting pointer'],
+            hint: 'Which of the two ends is safe to give up after scoring?',
+            misconception: 'Only the shorter side is retired — moving the taller one cannot raise the score and breaks the proof.',
+          },
+          {
+            lineRange: [16, 16],
+            referenceLabel: 'Report the best score after the pointers meet',
+            acceptableKeywords: ['return the best', 'final maximum capacity', 'report the answer', 'output the best score'],
+            hint: 'When the two ends converge, what do you hand back?',
+            misconception: 'This is the terminal result, reached only once every pair worth scoring has been seen.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 9, 4, 7, 12, 2, 6]], expected: 30, label: 'best pair is not the tallest pair' },
@@ -476,6 +536,43 @@ The rescue is noticing the recursion only ever asks about **contiguous spans** \
 This is a recurring interview escalation: pattern (two pointers) gives the *shape* of the recursion, dynamic programming makes it *affordable*. Recognizing the seam between the two is the skill being tested.
 `,
         complexity: 'Time O(n^2), Space O(n^2)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Normalize the input and clear the trivial cases',
+            acceptableKeywords: ['filter and lowercase', 'strip the junk characters', 'handle empty or single', 'normalize then base case'],
+            hint: 'What cleanup turns the messy input into a pure symmetry question, and which sizes are answered immediately?',
+            misconception: 'This is preprocessing plus the trivial base case, not the deletion logic itself.',
+          },
+          {
+            lineRange: [7, 13],
+            referenceLabel: 'Tabulate every span from shortest to longest',
+            acceptableKeywords: ['table over all spans', 'iterate by increasing length', 'enumerate substrings', 'fill subproblems bottom up'],
+            hint: 'What structure holds the cost of each subrange, and in what order are subranges solved?',
+            misconception: 'This frames the subproblems and their solving order; the per-span cost rules come next.',
+          },
+          {
+            lineRange: [14, 16],
+            referenceLabel: 'When the two ends agree, charge nothing and look inward',
+            acceptableKeywords: ['matching ends cost zero', 'recurse on the interior', 'ends agree no deletion', 'inherit the inner cost'],
+            hint: 'If the boundary characters already match, what does this span cost relative to its interior?',
+            misconception: 'A match defers entirely to the inside — it never adds a deletion.',
+          },
+          {
+            lineRange: [17, 19],
+            referenceLabel: 'On a clash, spend one deletion on the cheaper end',
+            acceptableKeywords: ['mismatch costs one deletion', 'drop one of the two ends', 'take the cheaper subproblem', 'one plus the minimum'],
+            hint: 'When the ends differ, what do you pay and which two smaller spans do you compare?',
+            misconception: 'Both ways must be compared; greedily fixing one side is wrong — this is the branch the match case avoids.',
+          },
+          {
+            lineRange: [20, 21],
+            referenceLabel: 'Decide whether the whole-string cost fits the budget',
+            acceptableKeywords: ['compare against the budget', 'whole span within k', 'final feasibility check', 'total deletions allowed'],
+            hint: 'With the full table filled, how do you turn the top-level cost into a yes or no?',
+            misconception: 'This is the single feasibility comparison, not another span computation.',
+          },
+        ],
       },
       testCases: [
         { input: ['G7--7g', 0], expected: true, label: 'already a palindrome after filtering' },
@@ -571,6 +668,43 @@ The move is **fix-one, converge-two**. Sort the impulses, then let an outer loop
 Two details earn the hidden cases. First, **seed \`best\` with a genuine triple** (\`arr[0]+arr[1]+arr[2]\`) rather than a sentinel like infinity, so the very first comparison is against a feasible answer. Second, the **tie-break**: when a new sum is exactly as far from the target as the incumbent, the problem asks for the smaller sum, so the update guard includes \`total < best\`. Sorting also guarantees determinism — the same multiset of impulses always explores triples in the same order.
 `,
         complexity: 'Time O(n^2), Space O(1) extra (O(n) if the sort is counted)',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Sort the data and seed the best with a real candidate',
+            acceptableKeywords: ['sort to enable scanning', 'seed best with a real triple', 'order the input', 'initialize from a feasible answer'],
+            hint: 'What preparation makes the converging scan valid, and what should the running best start as?',
+            misconception: 'Seeding with a genuine combination, not infinity, means the first comparison is already against a feasible answer.',
+          },
+          {
+            lineRange: [6, 8],
+            referenceLabel: 'Pin one element, then bracket the rest from both ends',
+            acceptableKeywords: ['fix the outer element', 'set converging pointers on the suffix', 'anchor one choice', 'bracket the remaining range'],
+            hint: 'To collapse three free choices, which one do you nail down before scanning the rest?',
+            misconception: 'This is the fix-one outer loop plus its inner brackets, not the comparison that updates the answer.',
+          },
+          {
+            lineRange: [9, 14],
+            referenceLabel: 'Measure each candidate and keep the closest, breaking ties low',
+            acceptableKeywords: ['compute the combined value', 'keep the closest to target', 'update on a better distance', 'tie break to the smaller'],
+            hint: 'For the current bracketed pair, what do you compute and under what condition is it the new best?',
+            misconception: 'The tie-break favoring the smaller sum lives here; this is the scoring step, not the pointer move.',
+          },
+          {
+            lineRange: [15, 20],
+            referenceLabel: 'Exit early on a perfect hit, else step toward the target',
+            acceptableKeywords: ['stop on an exact match', 'advance toward the target', 'move the lower or upper end', 'shrink or grow the sum'],
+            hint: 'After scoring, when can you stop immediately, and otherwise which bracket end advances?',
+            misconception: 'Direction depends on whether the running value sits under or over the target; this is the convergence move, not the scoring.',
+          },
+          {
+            lineRange: [21, 21],
+            referenceLabel: 'Return the closest combination found',
+            acceptableKeywords: ['return the best', 'report the closest sum', 'final answer', 'output the kept value'],
+            hint: 'Once every anchor has been tried, what do you hand back?',
+            misconception: 'This is the terminal result after all anchors are exhausted, not an early exit.',
+          },
+        ],
       },
       testCases: [
         { input: [[-1, 2, 1, -4], 1], expected: 2, label: 'classic closest, not exact' },
@@ -658,6 +792,36 @@ The invariant: everything already pushed into \`merged\` is sorted and is smalle
 Concatenating then sorting would cost \`O((m+n) log(m+n))\` and throw away the gift of pre-sorted inputs; this merge is \`O(m+n)\` because each timestamp is touched exactly once. The \`<=\` (rather than \`<\`) in the comparison is what makes the merge **stable**: on a tie we drain \`lane_a\` first, so equal timestamps keep their lane order. When either pointer reaches its end, the other stream's remaining suffix is already sorted and strictly later, so it appends verbatim — no further comparisons needed.
 `,
         complexity: 'Time O(m + n), Space O(m + n) for the output',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Start a read cursor at the head of each ordered source',
+            acceptableKeywords: ['pointer at each list head', 'empty output buffer', 'cursor per stream', 'initialize the merge'],
+            hint: 'Before merging, where does each cursor sit and what collects the result?',
+            misconception: 'This only positions the two read cursors and the output; nothing is compared yet.',
+          },
+          {
+            lineRange: [5, 12],
+            referenceLabel: 'Repeatedly emit the smaller head and advance only that side',
+            acceptableKeywords: ['take the smaller head', 'append and advance one pointer', 'compare the two fronts', 'pick the lesser front'],
+            hint: 'While both sources still have items, which one contributes next and which cursor moves?',
+            misconception: 'Only the pointer that supplied the emitted value advances; the tie rule keeps the merge stable, this is the core interleave.',
+          },
+          {
+            lineRange: [13, 15],
+            referenceLabel: 'Flush the leftover tail of whichever source remains',
+            acceptableKeywords: ['append the remaining tail', 'drain the leftover stream', 'copy the rest verbatim', 'flush what is left'],
+            hint: 'When one source is exhausted, what do you do with the other?',
+            misconception: 'The surviving suffix is already sorted and later, so it appends without further comparison — this is cleanup, not the main loop.',
+          },
+          {
+            lineRange: [16, 16],
+            referenceLabel: 'Return the combined ordered timeline',
+            acceptableKeywords: ['return the merged list', 'output the combined timeline', 'hand back the result', 'final merged sequence'],
+            hint: 'After both sources are drained, what is the answer?',
+            misconception: 'This is simply the finished result; all the work happened above.',
+          },
+        ],
       },
       testCases: [
         { input: [[1, 3, 5], [2, 4, 6]], expected: [1, 2, 3, 4, 5, 6], label: 'clean interleave' },
@@ -745,6 +909,36 @@ A single-pass swap-based partition (the Lomuto/Hoare style used inside quicksort
 The shared \`write\` pointer is the elegant part. After pass one it sits exactly at the boundary between the critical block and the empty tail; pass two simply keeps advancing it, laying the non-criticals down immediately after. Because every element is copied exactly once across the two passes, total work is \`O(n)\` with \`O(n)\` output space. The output is fully deterministic: it depends only on the input order and the threshold, with no tie-break ambiguity since equal values within a group never change places. Edge inputs — empty list, everyone critical, no one critical — all fall out correctly: one of the passes simply contributes nothing.
 `,
         complexity: 'Time O(n), Space O(n) for the output',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Allocate an output buffer and a shared write cursor',
+            acceptableKeywords: ['fresh output buffer', 'write pointer at zero', 'separate destination', 'initialize the cursor'],
+            hint: 'What do you set up so the original arrival log is never disturbed?',
+            misconception: 'This prepares the destination and the single cursor both passes will share; no element is placed yet.',
+          },
+          {
+            lineRange: [5, 9],
+            referenceLabel: 'First sweep lays down the qualifying group in order',
+            acceptableKeywords: ['pack the matching group first', 'keep in arrival order', 'first pass appends qualifiers', 'collect the priority items'],
+            hint: 'In the first scan, which elements get written and in what order?',
+            misconception: 'This pass only emits one group; preserving arrival order is the point, so no swapping.',
+          },
+          {
+            lineRange: [10, 15],
+            referenceLabel: 'Second sweep appends the remaining group right after',
+            acceptableKeywords: ['append the other group', 'continue the same cursor', 'second pass for the rest', 'lay down the remainder'],
+            hint: 'In the second scan, who is written and where does the cursor pick up from?',
+            misconception: 'The same cursor continues from the boundary; this is the complementary group, not a re-scan of the first.',
+          },
+          {
+            lineRange: [16, 16],
+            referenceLabel: 'Return the regrouped buffer',
+            acceptableKeywords: ['return the partitioned output', 'hand back the buffer', 'final reordered list', 'output the result'],
+            hint: 'After both sweeps, what do you return?',
+            misconception: 'This is the finished stable partition; both groups are already in place.',
+          },
+        ],
       },
       testCases: [
         { input: [[3, 9, 1, 8, 2], 7], expected: [9, 8, 3, 1, 2], label: 'mixed, both groups non-empty' },
@@ -835,6 +1029,36 @@ The exchange argument: suppose \`freqs_a[i] < freqs_b[j]\`. Every B-frequency fr
 Determinism comes from two design choices spelled out in the statement: both pointers start low and we advance the smaller side, and the update uses a **strict** \`<\` so the *first* pair achieving the minimum gap wins any tie. Each iteration advances exactly one pointer, bounding the loop at \`m + n\` steps with only a couple of scalars of state.
 `,
         complexity: 'Time O(m + n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Start both cursors low and prepare the best-so-far slots',
+            acceptableKeywords: ['pointer at each list low end', 'track the best gap', 'initialize the trackers', 'cursors and best holders'],
+            hint: 'Where do the two cursors begin and what running record do you keep?',
+            misconception: 'This only positions the cursors and the best-pair holders; no gap is measured yet.',
+          },
+          {
+            lineRange: [5, 11],
+            referenceLabel: 'Measure the current cross gap and keep the tightest',
+            acceptableKeywords: ['compute the absolute gap', 'keep the smallest gap', 'update the best pair', 'record the closest so far'],
+            hint: 'For the two values under the cursors, what do you compute and when does it replace the best?',
+            misconception: 'The strict comparison keeps the first-reached pair on ties; this is the scoring, not the cursor move.',
+          },
+          {
+            lineRange: [12, 18],
+            referenceLabel: 'Stop on a perfect lock, else advance the smaller value',
+            acceptableKeywords: ['return on equality', 'advance the smaller side', 'move the lesser value', 'step the closing pointer'],
+            hint: 'After scoring, when can you stop, and otherwise which cursor moves to tighten the gap?',
+            misconception: 'Only the pointer on the smaller value can shrink the gap; moving the larger one provably widens it.',
+          },
+          {
+            lineRange: [19, 19],
+            referenceLabel: 'Return the closest pair found',
+            acceptableKeywords: ['return the best pair', 'report the tightest lock', 'final closest pair', 'output the kept pair'],
+            hint: 'When one catalogue is exhausted, what do you hand back?',
+            misconception: 'This is the terminal answer reached without ever finding an exact match.',
+          },
+        ],
       },
       testCases: [
         { input: [[1, 4, 7], [3, 8, 12]], expected: [4, 3], label: 'tightest lock is interior' },
@@ -918,6 +1142,36 @@ So put a pointer at each end and **fill the output from the back**, where the bi
 This is \`O(n)\` time and \`O(n)\` space (just the output), versus \`O(n log n)\` for square-then-sort. The comparison uses \`>\` so ties (e.g. \`-2\` and \`2\`) take the high end first, but since their squares are identical the output is the same either way — fully deterministic. Empty and single-element inputs need no special casing: the fill loop runs zero or one times. Reading right-to-left is essential; trying to fill front-to-back would force you to find the *smallest* square, which can sit anywhere the magnitudes bottom out, defeating the clean end-pointer rule.
 `,
         complexity: 'Time O(n), Space O(n) for the output',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Allocate the result and put a cursor at each end',
+            acceptableKeywords: ['preallocate the output', 'pointer at each end', 'cursors on the extremes', 'initialize the buffer'],
+            hint: 'Where must the cursors sit if the largest magnitudes live at the ends?',
+            misconception: 'This only sizes the output and places the two end cursors; nothing is squared yet.',
+          },
+          {
+            lineRange: [5, 6],
+            referenceLabel: 'Fill the output positions from the back forward',
+            acceptableKeywords: ['write from the back', 'iterate positions in reverse', 'fill largest slots first', 'reverse output index'],
+            hint: 'In which direction do you fill the result so the biggest values land first?',
+            misconception: 'Filling back-to-front is essential; the biggest square is easy to find, the smallest is not.',
+          },
+          {
+            lineRange: [7, 12],
+            referenceLabel: 'Place the larger-magnitude end and pull it inward',
+            acceptableKeywords: ['pick the bigger magnitude', 'square the larger end', 'place then move that pointer', 'compare absolute values'],
+            hint: 'At each slot, which end supplies the value and which cursor then advances?',
+            misconception: 'The choice is by absolute value, not raw value; only the chosen end moves inward, this is the placement step.',
+          },
+          {
+            lineRange: [13, 13],
+            referenceLabel: 'Return the fully sorted energies',
+            acceptableKeywords: ['return the output', 'report the sorted squares', 'final ordered result', 'hand back the buffer'],
+            hint: 'Once every slot is filled, what do you return?',
+            misconception: 'This is the finished sorted output; the converging cursors have already placed every value.',
+          },
+        ],
       },
       testCases: [
         { input: [[-4, -1, 0, 3, 10]], expected: [0, 1, 9, 16, 100], label: 'mixed signs' },

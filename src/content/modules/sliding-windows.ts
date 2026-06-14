@@ -154,6 +154,36 @@ A brute force would sum every one of the \`n - k + 1\` windows independently, co
 
 The loop body is the whole algorithm: update the window sum, compare against \`best\`. Negative readings need no special handling — the maximum of all window sums is well-defined either way, which is why the all-negative test still works. Note that \`best\` is initialized to the first window's sum (not 0), so the function is correct even when every window is negative.`,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Seed the running total from the first fixed-width block',
+            acceptableKeywords: ['sum the first window', 'initialize the running total', 'seed best from first block', 'compute the opening sum'],
+            hint: 'Before sliding, what value does the window already hold at its starting position?',
+            misconception: 'This pays the one-time full cost up front; it is setup, not the per-step slide.',
+          },
+          {
+            lineRange: [5, 9],
+            referenceLabel: 'Slide one step, adding the entrant and dropping the leaver',
+            acceptableKeywords: ['add entering subtract leaving', 'slide the window one step', 'update total in constant time', 'incremental window update'],
+            hint: 'How can you correct the total in O(1) instead of re-summing the block?',
+            misconception: 'This reuses overlap via add-one/drop-one; it is not a fresh re-sum of the window.',
+          },
+          {
+            lineRange: [10, 12],
+            referenceLabel: 'Keep the best total seen across positions',
+            acceptableKeywords: ['track the maximum', 'update best if larger', 'record the running best', 'keep the largest sum'],
+            hint: 'After each slide, what single fact about the window do you want to remember?',
+            misconception: 'This compares against the running best; it does not modify the window itself.',
+          },
+          {
+            lineRange: [13, 14],
+            referenceLabel: 'Report the recorded optimum',
+            acceptableKeywords: ['return the best', 'output the answer', 'yield the recorded maximum', 'final result'],
+            hint: 'Once every position has been scanned, what do you hand back?',
+            misconception: 'This is the exit returning the accumulated best, not part of the sliding loop.',
+          },
+        ],
       },
       testCases: [
         {
@@ -269,6 +299,43 @@ Rather than crawling \`left\` forward one step at a time, we jump it directly pa
 
 Each index enters the window once and \`left\` only moves forward, so the whole scan is linear. The dict can hold one entry per distinct visitor, giving \`O(d)\` space.`,
         complexity: 'Time O(n), Space O(d) for d distinct IDs',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Set up the lookup memory and the window edge',
+            acceptableKeywords: ['initialize the seen map', 'set left edge to start', 'prepare last-position table', 'init best length'],
+            hint: 'What two pieces of state do you need before scanning: a memory of positions and a window boundary?',
+            misconception: 'This is bookkeeping setup; the duplicate logic has not run yet.',
+          },
+          {
+            lineRange: [5, 10],
+            referenceLabel: 'On a repeat inside the window, jump the left edge past it',
+            acceptableKeywords: ['detect duplicate in window', 'move left past previous index', 'jump the start forward', 'restore uniqueness'],
+            hint: 'When the incoming element was already seen inside the current window, where must the window now begin?',
+            misconception: 'This only advances the left edge to kill the duplicate; the right edge already moved via the loop.',
+          },
+          {
+            lineRange: [11, 13],
+            referenceLabel: 'Stamp the current element with its newest position',
+            acceptableKeywords: ['record the latest index', 'update last seen position', 'remember where this element is', 'store current index'],
+            hint: 'After handling a possible repeat, what must you write down about the element you just absorbed?',
+            misconception: 'This updates the memory for future lookups; it does not itself move any boundary.',
+          },
+          {
+            lineRange: [14, 16],
+            referenceLabel: 'Record the length of the now-valid window',
+            acceptableKeywords: ['measure the window length', 'update best with current span', 'track longest valid run', 'record right minus left'],
+            hint: 'With the window guaranteed duplicate-free, what quantity competes for the answer?',
+            misconception: 'This measures and stores the span; it is a comparison, not a shrink step.',
+          },
+          {
+            lineRange: [17, 18],
+            referenceLabel: 'Return the longest span found',
+            acceptableKeywords: ['return the best length', 'output the longest run', 'final answer', 'yield recorded maximum'],
+            hint: 'After the full scan, what value carries the result?',
+            misconception: 'This is the exit; it returns the accumulated best, not a freshly computed value.',
+          },
+        ],
       },
       testCases: [
         {
@@ -392,6 +459,43 @@ The single counter \`zeros\` is the entire window state; checking validity is on
 
 \`k = 0\` needs no special case — the while-loop simply forbids any zero in the window, degrading gracefully to "longest run of 1s". Each element enters once and leaves at most once, so despite the nested loop the time is linear.`,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Initialize the window edge and the budget counter',
+            acceptableKeywords: ['set left to start', 'zero the violation count', 'init the budget tally', 'prepare best length'],
+            hint: 'What state tracks both the window boundary and how much of the budget is spent?',
+            misconception: 'This only prepares counters; nothing has entered or left the window yet.',
+          },
+          {
+            lineRange: [5, 10],
+            referenceLabel: 'Grow the window by absorbing the next element',
+            acceptableKeywords: ['extend window to the right', 'count the entering item', 'absorb new element', 'update budget on entry'],
+            hint: 'As the right edge advances, what about the new element might consume the budget?',
+            misconception: 'This widens the window and updates the cost; it never shrinks anything.',
+          },
+          {
+            lineRange: [11, 17],
+            referenceLabel: 'Shrink from the left until the budget is respected again',
+            acceptableKeywords: ['shrink while over budget', 'advance left to restore validity', 'trim until constraint holds', 'release elements from the left'],
+            hint: 'When the budget is exceeded, which edge moves and how far?',
+            misconception: 'This restores the invariant by contracting the left edge; it is the inverse of the grow step.',
+          },
+          {
+            lineRange: [18, 19],
+            referenceLabel: 'Capture the widest valid window at this position',
+            acceptableKeywords: ['record the window width', 'update best with current span', 'track longest valid window', 'measure right minus left'],
+            hint: 'Once the window is legal again, what value competes for the answer?',
+            misconception: 'This records the span of an already-valid window; it does not adjust either edge.',
+          },
+          {
+            lineRange: [20, 21],
+            referenceLabel: 'Return the widest span seen',
+            acceptableKeywords: ['return the best width', 'output the longest window', 'final answer', 'yield recorded maximum'],
+            hint: 'After scanning everything, what holds the result?',
+            misconception: 'This is the exit returning the accumulated best, not a loop step.',
+          },
+        ],
       },
       testCases: [
         {
@@ -537,6 +641,43 @@ The tie-break falls out of the strict \`<\` comparison. Windows are discovered i
 
 Each character of \`shelf\` is absorbed once and released at most once, so the scan is \`O(n)\` with \`O(u)\` space for the counter (u = distinct codes, bounded by the alphabet).`,
         complexity: 'Time O(n + m), Space O(u) — n = len(shelf), m = len(order), u = distinct codes',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Reject impossible inputs before scanning',
+            acceptableKeywords: ['early return on impossible', 'guard against too-short source', 'short-circuit edge cases', 'impossibility check'],
+            hint: 'Before any window work, what cheap check rules out a hopeless case?',
+            misconception: 'This is a fast-fail guard, not part of the window scan.',
+          },
+          {
+            lineRange: [7, 13],
+            referenceLabel: 'Build the requirement tally and the search trackers',
+            acceptableKeywords: ['count required characters', 'initialize the deficit', 'set up best-window trackers', 'seed the need map'],
+            hint: 'What state captures what the window still owes and where the best answer sits?',
+            misconception: 'This seeds the requirement counter and trackers; nothing slides yet.',
+          },
+          {
+            lineRange: [14, 19],
+            referenceLabel: 'Absorb the next element and update what is still owed',
+            acceptableKeywords: ['extend window to the right', 'decrement remaining need', 'absorb entering character', 'reduce the deficit'],
+            hint: 'When a new character enters, when does it actually reduce what the window still lacks?',
+            misconception: 'This grows the window and lowers the deficit only for genuinely needed copies.',
+          },
+          {
+            lineRange: [20, 31],
+            referenceLabel: 'While fully covered, shrink and record the shortest span',
+            acceptableKeywords: ['shrink while valid', 'record shorter covering window', 'trim from the left when covered', 'tighten the satisfied window'],
+            hint: 'Once the window covers the whole requirement, which edge moves to hunt for something tighter?',
+            misconception: 'This contracts a valid window to minimize it; it is the opposite of a longest-window grow loop.',
+          },
+          {
+            lineRange: [32, 33],
+            referenceLabel: 'Return the shortest covering slice, or empty if none',
+            acceptableKeywords: ['return the best slice', 'output shortest window', 'empty string when impossible', 'final substring result'],
+            hint: 'After the scan, what do you slice out, and what if nothing ever covered?',
+            misconception: 'This is the exit; it reconstructs the answer from the recorded span rather than scanning further.',
+          },
+        ],
       },
       testCases: [
         {
@@ -654,6 +795,36 @@ From there it is the plain fixed-size machinery: sum the first \`k\` days once (
 
 A zero threshold needs no special case: the target becomes 0 and every window (sums are non-negative here) qualifies, which is the correct reading of "average at least 0".`,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Convert the average test into an integer sum threshold',
+            acceptableKeywords: ['turn average into sum', 'precompute integer target', 'avoid division', 'fixed-width comparison threshold'],
+            hint: 'Because every window has the same width, how can you compare sums instead of averages?',
+            misconception: 'This is an algebraic rewrite of the test, not yet any window computation.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Seed the first window sum and its qualifying count',
+            acceptableKeywords: ['sum the first block', 'initialize the count', 'seed running total', 'test the opening window'],
+            hint: 'Before sliding, compute the opening window once and decide if it already qualifies.',
+            misconception: 'This pays the one-time full cost and seeds the tally; it is setup, not the slide.',
+          },
+          {
+            lineRange: [9, 14],
+            referenceLabel: 'Slide across the rest, counting each qualifying window',
+            acceptableKeywords: ['add entering subtract leaving', 'increment count when over threshold', 'slide and test each window', 'tally passing windows'],
+            hint: 'After each O(1) slide, what do you do every time the window meets the target?',
+            misconception: 'This counts every qualifying overlapping window; it does not track a maximum.',
+          },
+          {
+            lineRange: [15, 16],
+            referenceLabel: 'Return how many windows qualified',
+            acceptableKeywords: ['return the count', 'output total qualifying', 'final tally', 'yield recorded count'],
+            hint: 'After the scan, what number is the answer?',
+            misconception: 'This is the exit returning the accumulated count, not a window operation.',
+          },
+        ],
       },
       testCases: [
         {
@@ -771,6 +942,36 @@ Strict positivity is the load-bearing assumption. Extending the window can only 
 
 The sentinel \`len(donations) + 1\` doubles as the "not found" flag: no real run can be that long, so if it survives the scan the function returns 0 without a separate found-flag. As always, \`left\` only moves forward, so despite the nested loop every pledge is absorbed once and released at most once — amortized \`O(n)\`.`,
         complexity: 'Time O(n), Space O(1)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Initialize the window edge, the total, and a sentinel best',
+            acceptableKeywords: ['set left to start', 'zero the running total', 'seed best as unreachable sentinel', 'init window state'],
+            hint: 'What starting values let an unmatched scan signal "no valid run"?',
+            misconception: 'The sentinel best is impossibly large on purpose; this is setup, not a computed answer.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Grow the window by absorbing the next element',
+            acceptableKeywords: ['extend window to the right', 'add the entering value', 'accumulate into total', 'absorb new element'],
+            hint: 'As the right edge advances, how does the running total change?',
+            misconception: 'This only enlarges the window; the shortening decision happens elsewhere.',
+          },
+          {
+            lineRange: [9, 17],
+            referenceLabel: 'While the goal still holds, record and trim from the left',
+            acceptableKeywords: ['shrink while valid', 'record shorter run then trim', 'contract while goal met', 'minimize the qualifying window'],
+            hint: 'Once the window meets the goal, which edge moves to search for a shorter qualifier?',
+            misconception: 'This shrinks a valid window to minimize length; it is the opposite of shrinking a broken one.',
+          },
+          {
+            lineRange: [18, 20],
+            referenceLabel: 'Return the shortest run, or zero if none qualified',
+            acceptableKeywords: ['return the best length', 'zero when sentinel survives', 'output shortest run', 'final answer with not-found fallback'],
+            hint: 'After scanning, how do you tell apart a real answer from "never reached the goal"?',
+            misconception: 'This is the exit; the surviving sentinel maps to 0 rather than a real length.',
+          },
+        ],
       },
       testCases: [
         {
@@ -917,6 +1118,50 @@ The naive check — rebuild or fully compare the maps each step — costs \`O(26
 
 One subtlety makes \`Counter\` the right container: missing keys read as 0 without being inserted, so "the window holds zero of this letter" and "the riff requires zero of this letter" compare equal automatically — surplus letters that drain back to zero never need deleting for the comparison to stay honest (contrast with distinct-count problems, where stale zero keys are a bug).`,
         complexity: 'Time O(n + m), Space O(1) — counts bounded by the 26-letter alphabet',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Set the window width and reject impossible inputs',
+            acceptableKeywords: ['fix the window length', 'guard against too-short text', 'early return on edge case', 'impossibility check'],
+            hint: 'What single width drives the whole scan, and what trivial case can you bail on first?',
+            misconception: 'This pins the fixed width and fast-fails; no counting has happened yet.',
+          },
+          {
+            lineRange: [7, 14],
+            referenceLabel: 'Build the target and first-window tallies and a mismatch count',
+            acceptableKeywords: ['count required characters', 'tally the opening window', 'count mismatched letters', 'seed the match flag'],
+            hint: 'Before sliding, how do you summarize the required counts versus the first window in one number?',
+            misconception: 'The mismatch counter lets equality be an O(1) check; this is setup, not a slide.',
+          },
+          {
+            lineRange: [15, 23],
+            referenceLabel: 'On each slide, fold in the entering element and adjust the mismatch count',
+            acceptableKeywords: ['add entering character', 'update mismatch on entry', 'incremental count on the right', 'absorb new letter'],
+            hint: 'When a letter enters, how does its count crossing the required value flip the mismatch tally?',
+            misconception: 'This maintains the mismatch count for the entrant only; the leaver is handled separately.',
+          },
+          {
+            lineRange: [24, 31],
+            referenceLabel: 'Remove the exiting element and adjust the mismatch count',
+            acceptableKeywords: ['drop leaving character', 'update mismatch on exit', 'incremental count on the left', 'release stale letter'],
+            hint: 'When a letter leaves, how does its count crossing the required value flip the mismatch tally?',
+            misconception: 'This mirrors the entry update for the departing letter; it keeps both edges in sync.',
+          },
+          {
+            lineRange: [32, 35],
+            referenceLabel: 'Count this window when no letter mismatches',
+            acceptableKeywords: ['test zero mismatches', 'increment count on a match', 'tally an exact-match window', 'detect equal counts'],
+            hint: 'A window qualifies precisely when which derived quantity hits zero?',
+            misconception: 'This counts a matching window; it does not modify the window or its tallies.',
+          },
+          {
+            lineRange: [36, 37],
+            referenceLabel: 'Return how many matching windows were found',
+            acceptableKeywords: ['return the count', 'output total matches', 'final tally', 'yield recorded count'],
+            hint: 'After the scan, what number is the answer?',
+            misconception: 'This is the exit returning the accumulated count, not a window step.',
+          },
+        ],
       },
       testCases: [
         {
@@ -1043,6 +1288,43 @@ The one trap is the zero-count key. \`counts[leave] -= 1\` leaving a 0 behind ke
 
 Output order is fully determined: one value per window, earliest start first, so the result is reproducible without any tie-breaking rules. Time is \`O(n)\` (each sighting enters and leaves the dict once); the dict never holds more than \`k\` keys.`,
         complexity: 'Time O(n), Space O(k)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Reject impossible widths and set up the state',
+            acceptableKeywords: ['guard when window too wide', 'early return on bad size', 'initialize the count map', 'prepare the output list'],
+            hint: 'What check rules out a window wider than the data, and what state do you need before scanning?',
+            misconception: 'This guards and initializes; the per-window measurement has not started.',
+          },
+          {
+            lineRange: [8, 12],
+            referenceLabel: 'Build the first window and emit its property',
+            acceptableKeywords: ['tally the first block', 'count distinct in opening window', 'seed the running counts', 'record first window result'],
+            hint: 'Before sliding, populate the opening window once and append its answer.',
+            misconception: 'This pays the one-time full build and emits the first result; it is setup, not the slide.',
+          },
+          {
+            lineRange: [13, 22],
+            referenceLabel: 'Slide one step, updating counts and pruning emptied keys',
+            acceptableKeywords: ['add entering subtract leaving', 'increment then decrement counts', 'delete keys that hit zero', 'maintain distinct set on slide'],
+            hint: 'When sliding, why must a count that drops to zero be removed rather than left at zero?',
+            misconception: 'Deleting zero-count keys keeps the distinct count honest; this is the add-one/drop-one update, not the emit.',
+          },
+          {
+            lineRange: [23, 24],
+            referenceLabel: 'Emit the window property after each slide',
+            acceptableKeywords: ['append distinct count', 'record per-window result', 'emit current property', 'measure the window'],
+            hint: 'After each slide settles, what single value do you push onto the output series?',
+            misconception: 'This reads the settled window state and appends it; it does not change any count.',
+          },
+          {
+            lineRange: [25, 26],
+            referenceLabel: 'Return the full series of results',
+            acceptableKeywords: ['return the series', 'output all window values', 'final result list', 'yield collected answers'],
+            hint: 'After scanning every position, what collection is the answer?',
+            misconception: 'This is the exit returning the accumulated list, not a per-window step.',
+          },
+        ],
       },
       testCases: [
         {
@@ -1179,6 +1461,43 @@ Maintaining \`max_freq\` *exactly* is the expensive part — when the dominant c
 
 In effect the window's width never shrinks — it slides at the largest size validated so far and waits to be stretched by a better dominant count. That is also why the \`while\` runs at most one iteration per step. Each segment enters once and leaves at most once: \`O(n)\` time, and the counts dict holds at most 26 keys.`,
         complexity: 'Time O(n), Space O(1) — at most 26 color counts',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Initialize the frequency map, edge, and dominant count',
+            acceptableKeywords: ['set up the count map', 'left edge at start', 'track the peak frequency', 'init best width'],
+            hint: 'What state lets you ask, in O(1), how many changes a window would need?',
+            misconception: 'The peak-frequency tracker is seeded here but not yet meaningful; this is pure setup.',
+          },
+          {
+            lineRange: [6, 11],
+            referenceLabel: 'Absorb the next element and update the dominant frequency',
+            acceptableKeywords: ['extend window to the right', 'increment this elements count', 'update the max frequency', 'absorb new element'],
+            hint: 'When a new element enters, which running statistic about the most common value may rise?',
+            misconception: 'This only grows the window and bumps the peak count; it never lowers it.',
+          },
+          {
+            lineRange: [12, 18],
+            referenceLabel: 'Shrink while the change budget is exceeded',
+            acceptableKeywords: ['shrink while over budget', 'advance left when too costly', 'trim until within k changes', 'contract on budget violation'],
+            hint: 'When width minus the dominant count exceeds the budget, which edge moves?',
+            misconception: 'The peak count is intentionally left stale here; this contracts the window to restore the invariant.',
+          },
+          {
+            lineRange: [19, 21],
+            referenceLabel: 'Record the widest valid window so far',
+            acceptableKeywords: ['record the window width', 'update best with current span', 'track longest valid window', 'measure right minus left'],
+            hint: 'After the shrink settles, what value competes for the answer?',
+            misconception: 'This records the span; because the peak is never lowered, the width here only ever undercounts, never over.',
+          },
+          {
+            lineRange: [22, 23],
+            referenceLabel: 'Return the widest span found',
+            acceptableKeywords: ['return the best width', 'output the longest band', 'final answer', 'yield recorded maximum'],
+            hint: 'After scanning everything, what holds the result?',
+            misconception: 'This is the exit returning the accumulated best, not a loop step.',
+          },
+        ],
       },
       testCases: [
         {

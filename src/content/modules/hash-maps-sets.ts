@@ -157,6 +157,36 @@ So we make a single left-to-right pass. The dictionary \`seen\` holds every pric
 The tie-breaking rule falls out of the structure for free. Because we return on the *first* \`j\` whose complement exists, \`j\` is minimal; because we never overwrite an existing key, the stored index for the complement is its earliest occurrence, so \`i\` is minimal for that \`j\`. If the loop ends without a hit, no valid pair exists and we return \`[]\`.
 `.trim(),
         complexity: 'Time O(n), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 3],
+            referenceLabel: 'Open an empty memory of values already walked past',
+            acceptableKeywords: ['initialize a lookup map', 'empty dictionary of seen values', 'remember earlier elements', 'value to index store'],
+            hint: 'What do you set up before the scan so you can recall earlier elements?',
+            misconception: 'This only prepares the memory — nothing has been checked or recorded yet.',
+          },
+          {
+            lineRange: [4, 6],
+            referenceLabel: 'Scan each element and derive the partner it needs',
+            acceptableKeywords: ['loop over the input', 'compute the complement', 'value needed to reach target', 'iterate with index'],
+            hint: 'For the current element, what other value would complete the goal?',
+            misconception: 'This computes the missing partner; it does not yet look it up.',
+          },
+          {
+            lineRange: [7, 10],
+            referenceLabel: 'Ask the memory whether the partner already appeared',
+            acceptableKeywords: ['check before insert', 'is complement in the map', 'return the matching pair', 'lookup the partner'],
+            hint: 'Before recording anything, query the memory for the needed partner.',
+            misconception: 'This is the lookup-and-return step, distinct from storing the current element.',
+          },
+          {
+            lineRange: [11, 17],
+            referenceLabel: 'Record the current element, then report no pair if exhausted',
+            acceptableKeywords: ['store first occurrence', 'insert after checking', 'remember this value', 'return empty when none'],
+            hint: 'After the query fails, how do you make the current element available to later steps?',
+            misconception: 'This is the insert-and-finish step, not the lookup — recording too early would let an element match itself.',
+          },
+        ],
       },
       testCases: [
         { input: [[12, 7, 3, 9], 10], expected: [1, 2], label: 'basic pair' },
@@ -246,6 +276,29 @@ With the key in hand, grouping is one pass: \`defaultdict(list)\` means we never
 The last two lines exist purely for determinism. Hash maps make no ordering promises useful here, so we impose one: sort each bucket, then sort the buckets by their first element (which, post-sort, is each group's lexicographic minimum). An alternative canonical key — a 26-tuple of letter counts — avoids the per-tag sort and drops the key cost from \`O(k log k)\` to \`O(k)\`, worth mentioning in an interview.
 `.trim(),
         complexity: 'Time O(n · k log k) for n tags of max length k (plus output sorting), Space O(n · k)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Prepare an auto-growing table keyed by canonical form',
+            acceptableKeywords: ['default dictionary of lists', 'buckets keyed by canonical form', 'group container setup', 'auto-vivifying map'],
+            hint: 'What container lets you append into a group without first checking it exists?',
+            misconception: 'This only declares the grouping table — no items have been bucketed yet.',
+          },
+          {
+            lineRange: [8, 10],
+            referenceLabel: 'Collapse each item to a shared key and drop it in its bucket',
+            acceptableKeywords: ['sort letters into a key', 'canonical key for each item', 'append original to its group', 'equivalent items collide'],
+            hint: 'What single value do all rearrangements of one item share, and where does the item go?',
+            misconception: 'This builds the groups — it keeps the original spelling, not the key, and never deduplicates.',
+          },
+          {
+            lineRange: [11, 16],
+            referenceLabel: 'Impose a deterministic order on members and on groups',
+            acceptableKeywords: ['sort within each group', 'sort the groups', 'deterministic output order', 'order by first member'],
+            hint: 'Hash buckets carry no useful order — how do you make the output reproducible?',
+            misconception: 'This is pure ordering for determinism, not part of the grouping logic.',
+          },
+        ],
       },
       testCases: [
         {
@@ -351,6 +404,29 @@ The insight that kills the simulation approach: parts are independent. The bolts
 Two details earn their keep in the code. First, \`Counter\` returns \`0\` for missing keys instead of raising, so a part with zero stock naturally produces \`0 // need = 0\` and drags the min to zero — the "can't build even one" case needs no special branch. Second, we iterate over \`need\`, not \`have\`: parts the order never mentions must not influence the answer. The yes/no containment question is just \`max_kits(...) >= 1\`.
 `.trim(),
         complexity: 'Time O(n + m) for order length n and inventory length m, Space O(n + m)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Tally what one unit of demand consumes',
+            acceptableKeywords: ['frequency table of requirements', 'count demand per item', 'multiset of what is needed', 'tally the recipe'],
+            hint: 'Turn the requirement list into per-item counts before reasoning about supply.',
+            misconception: 'This counts the demand side only — supply has not been considered yet.',
+          },
+          {
+            lineRange: [7, 8],
+            referenceLabel: 'Tally what supply has available',
+            acceptableKeywords: ['frequency table of stock', 'count items in inventory', 'multiset of what is on hand', 'tally the supply'],
+            hint: 'Build the matching count table for everything available.',
+            misconception: 'This is the supply tally, parallel to the demand tally — not yet a comparison.',
+          },
+          {
+            lineRange: [9, 12],
+            referenceLabel: 'Take the bottleneck ratio across all required items',
+            acceptableKeywords: ['minimum over required items', 'supply divided by demand', 'limiting item caps the answer', 'floor divide and take the min'],
+            hint: 'Each required item caps the count independently — which one limits everything?',
+            misconception: 'This is the reduce step over demand keys; iterating supply keys would wrongly let unrelated items influence the answer.',
+          },
+        ],
       },
       testCases: [
         {
@@ -474,6 +550,29 @@ The fix is the gatekeeper check, and it's the whole problem: \`if n - 1 not in p
 Why is the total \`O(n)\`? Amortize: every element is touched at most twice — once by its own gatekeeper probe, and once when the walk from its streak's start steps over it. Two touches per element is \`O(n)\` overall, even though the code has a loop inside a loop. The nesting is real; the re-work isn't. Duplicates, negatives, and the empty log all fall out for free: the set collapses repeats, integers don't care about sign, and an empty set just never enters the loop, leaving \`best = 0\`.
 `.trim(),
         complexity: 'Time O(n), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 5],
+            referenceLabel: 'Load values into a fast membership structure',
+            acceptableKeywords: ['build a set for o(1) lookup', 'deduplicate into a set', 'membership probe structure', 'initialize the best length'],
+            hint: 'What structure lets you ask "is this value present?" in constant time?',
+            misconception: 'This only sets up instant membership tests and the running best — no streaks are measured yet.',
+          },
+          {
+            lineRange: [6, 10],
+            referenceLabel: 'Visit each value but only act from a run start',
+            acceptableKeywords: ['iterate distinct values', 'skip mid-run elements', 'gatekeeper on the predecessor', 'only the left end qualifies'],
+            hint: 'How do you avoid re-walking the same run from every member of it?',
+            misconception: 'This is the gatekeeper that admits only run starts, not the walk itself.',
+          },
+          {
+            lineRange: [11, 17],
+            referenceLabel: 'Extend rightward and keep the longest run',
+            acceptableKeywords: ['walk while next exists', 'count consecutive values', 'update the best length', 'expand the run'],
+            hint: 'From a confirmed start, how far can you march while the next value exists?',
+            misconception: 'This is the expansion-and-record step, reached only after the gatekeeper admits a true start.',
+          },
+        ],
       },
       testCases: [
         { input: [[4, 1, 3, 2, 10]], expected: 4, label: 'streak with outlier' },
@@ -563,6 +662,29 @@ Notice how this flips what the complement-search move stores. There we kept the 
 The check-before-overwrite order matters too: probing first guarantees the stored index is a strictly earlier position, so \`j - last_seen[sensor]\` is a genuine gap. The \`w = 0\` setting then falls out correctly with no special case — two distinct positions are at least 1 apart, so the test never fires and the answer is \`False\`. An alternative is a sliding set holding exactly the last \`w\` IDs (add on arrival, evict the one that just fell out of range); same complexity, more bookkeeping to get wrong.
 `.trim(),
         complexity: 'Time O(n), Space O(min(n, d)) for d distinct sensor IDs',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Open a memory of each key\'s most recent position',
+            acceptableKeywords: ['map key to last index', 'initialize the position store', 'remember latest occurrence', 'empty recency dictionary'],
+            hint: 'What do you set up to recall where each key last appeared?',
+            misconception: 'This only prepares the recency memory — no distance has been measured yet.',
+          },
+          {
+            lineRange: [5, 9],
+            referenceLabel: 'For each item, test the nearest earlier match against the limit',
+            acceptableKeywords: ['scan with index', 'check distance to last seen', 'compare gap to window', 'nearest prior occurrence'],
+            hint: 'Only the freshest earlier copy can be close enough — how do you test its gap?',
+            misconception: 'This is the proximity test; it relies on the stored index being the most recent, not the first.',
+          },
+          {
+            lineRange: [10, 15],
+            referenceLabel: 'Refresh the stored position, then report none found',
+            acceptableKeywords: ['overwrite with current index', 'update to latest position', 'store after checking', 'return false when clean'],
+            hint: 'After the test, how do you keep the freshest position for future comparisons?',
+            misconception: 'This always overwrites because fresher is closer — unlike the first-index version used for complement search.',
+          },
+        ],
       },
       testCases: [
         { input: [['a7', 'b2', 'a7'], 2], expected: true, label: 'repeat inside window' },
@@ -649,6 +771,36 @@ The single-map version is the classic near-miss — it catches the first failure
 Each position costs two \`O(1)\` probes and two \`O(1)\` writes. A neat alternative with the same spirit is the positional fingerprint — replace every symbol with the index of its first occurrence and compare the two fingerprint sequences — but the two-map walk is the version that is easiest to write and justify out loud under interview pressure.
 `.trim(),
         complexity: 'Time O(n), Space O(k) for alphabet size k (at most 26 entries per direction)',
+        subgoals: [
+          {
+            lineRange: [1, 4],
+            referenceLabel: 'Reject inputs that cannot possibly align',
+            acceptableKeywords: ['length mismatch guard', 'early return on unequal sizes', 'precondition check', 'cannot map different lengths'],
+            hint: 'What cheap structural mismatch rules out any pairing before you start?',
+            misconception: 'This is a guard clause only — it filters impossible cases, not the mapping itself.',
+          },
+          {
+            lineRange: [5, 8],
+            referenceLabel: 'Set up two opposite-direction commitment maps',
+            acceptableKeywords: ['forward and backward maps', 'two directions of mapping', 'source-to-target and target-to-source', 'bijection bookkeeping'],
+            hint: 'A one-to-one rule can break two ways — how many maps track it?',
+            misconception: 'This only declares the two ledgers; no commitments are recorded or checked yet.',
+          },
+          {
+            lineRange: [9, 16],
+            referenceLabel: 'Walk paired symbols and reject any broken commitment',
+            acceptableKeywords: ['zip the two sequences', 'check existing promise holds', 'detect conflicting mapping', 'enforce one-to-one'],
+            hint: 'At each aligned pair, what two prior promises must still hold?',
+            misconception: 'This is the conflict-detection step in both directions — checking only one direction misses collapsing.',
+          },
+          {
+            lineRange: [17, 21],
+            referenceLabel: 'Record the consistent pairing and accept if all held',
+            acceptableKeywords: ['store both directions', 'commit the mapping', 'return true at the end', 'finalize the bijection'],
+            hint: 'Once a pair is consistent, what do you write down before moving on?',
+            misconception: 'This is the commit-and-succeed step, reached only after both conflict checks pass.',
+          },
+        ],
       },
       testCases: [
         { input: ['egg', 'add'], expected: true, label: 'simple substitution' },
@@ -729,6 +881,29 @@ The part interviewers actually probe is the tie-break. "Most pickups first, alph
 Sorting all \`d\` stations costs \`O(d log d)\`. When \`k\` is tiny and \`d\` is huge, a size-\`k\` heap keyed the same way drops selection to \`O(d log k)\` — worth saying out loud in an interview, followed by the observation that the plain sort is shorter, simpler, and entirely defensible at these input sizes.
 `.trim(),
         complexity: 'Time O(n + d log d) for n rides and d distinct stations, Space O(d)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Collapse the raw log into per-key totals',
+            acceptableKeywords: ['count occurrences per key', 'frequency table pass', 'tally the events', 'build the count map'],
+            hint: 'The raw log has no totals — what one sweep produces them?',
+            misconception: 'This counting pass is forced; the rest of the work runs on the distinct keys, not the raw events.',
+          },
+          {
+            lineRange: [7, 11],
+            referenceLabel: 'Rank keys with a composite primary/tie-break ordering',
+            acceptableKeywords: ['sort by count then name', 'composite sort key', 'descending count ascending tie-break', 'order by frequency'],
+            hint: 'How do you express "most frequent first, then alphabetical" in a single sort?',
+            misconception: 'This is the ordering step; encoding both rules in one key keeps ties deterministic rather than left to chance.',
+          },
+          {
+            lineRange: [12, 14],
+            referenceLabel: 'Return the top portion of the ranking',
+            acceptableKeywords: ['slice the first k', 'take the top entries', 'truncate the ranking', 'return the busiest'],
+            hint: 'After ranking, how do you hand back only the requested number?',
+            misconception: 'This is just the truncation of an already-ordered list — no further comparison happens here.',
+          },
+        ],
       },
       testCases: [
         {
@@ -828,6 +1003,29 @@ With both stocks counted, the whole computation is a per-key minimum over shared
 \`.elements()\` re-expands the intersected counter into individual units, and the final \`sorted(...)\` is not decoration: dict iteration order reflects insertion history, which depends on how the inputs happened to be laid out, and the problem demands an order that does not. Counting is \`O(n + m)\`; sorting the \`t\` crate units adds \`O(t log t)\`, with \`t\` never exceeding the smaller stock.
 `.trim(),
         complexity: 'Time O(n + m + t log t) for stock sizes n, m and crate size t, Space O(n + m)',
+        subgoals: [
+          {
+            lineRange: [1, 7],
+            referenceLabel: 'Count each collection into a multiset',
+            acceptableKeywords: ['frequency table per list', 'count units per item', 'two multisets from inputs', 'tally both collections'],
+            hint: 'To compare quantities, what do you build from each raw list first?',
+            misconception: 'This counting preserves multiplicities — a plain set here would discard the quantities the problem needs.',
+          },
+          {
+            lineRange: [8, 11],
+            referenceLabel: 'Combine the multisets by per-key minimum',
+            acceptableKeywords: ['multiset intersection', 'keep min of both counts', 'shared keys only', 'matched pairs per item'],
+            hint: 'For each shared item, how many matched units survive?',
+            misconception: 'This is the per-key minimum reduction; a different story would call for a different combiner over the same counts.',
+          },
+          {
+            lineRange: [12, 15],
+            referenceLabel: 'Expand the result and impose a stable order',
+            acceptableKeywords: ['expand counts into units', 'flatten the multiset', 'sort for determinism', 'one entry per unit'],
+            hint: 'The intersected counts must become individual units in a reproducible order — how?',
+            misconception: 'This is the output-shaping step; sorting is required because map order is not stable across inputs.',
+          },
+        ],
       },
       testCases: [
         {
@@ -944,6 +1142,29 @@ Two details carry the correctness. The seed \`{0: -1}\` declares that the empty 
 The template generalizes well beyond win/loss logs: any "longest span where X and Y balance" yields to it once you find a running quantity that is equal at the ends exactly when the property holds inside. One probe and at most one insert per match — \`O(n)\` time, \`O(n)\` space for the distinct totals.
 `.trim(),
         complexity: 'Time O(n), Space O(n)',
+        subgoals: [
+          {
+            lineRange: [1, 6],
+            referenceLabel: 'Seed a map of first positions for each running quantity',
+            acceptableKeywords: ['prefix value to first index', 'seed the empty prefix', 'initialize running total', 'first-seen map'],
+            hint: 'What running quantity will you track, and why must its starting value be pre-seeded?',
+            misconception: 'The seed entry handles a balanced block that begins at the very start — omitting it silently misses that case.',
+          },
+          {
+            lineRange: [7, 9],
+            referenceLabel: 'Sweep the input updating the running quantity',
+            acceptableKeywords: ['encode outcomes as plus minus', 'accumulate the running total', 'scan with index', 'update the prefix value'],
+            hint: 'How does each element nudge the running total up or down?',
+            misconception: 'This is the accumulation step; the balance test on the total comes after, not here.',
+          },
+          {
+            lineRange: [10, 20],
+            referenceLabel: 'On a repeated quantity, measure the span; else record its first index',
+            acceptableKeywords: ['seen this total before', 'span between equal totals', 'store earliest index only', 'update the best length'],
+            hint: 'A repeated running total marks a balanced span — what distance does it give, and what do you store otherwise?',
+            misconception: 'Store only the first index of each total — overwriting yields short answers, not wrong-shaped ones.',
+          },
+        ],
       },
       testCases: [
         { input: [['W', 'L']], expected: 2, label: 'minimal balanced log' },
