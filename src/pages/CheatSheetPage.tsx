@@ -23,6 +23,9 @@ export function CheatSheetPage() {
   }
 
   const cs = content.cheatSheet
+  const skeleton = content.problems.find(
+    (p) => p.solution.subgoals && p.solution.subgoals.length > 0,
+  )?.solution.subgoals
   return (
     <div className="mx-auto max-w-3xl px-8 py-8 print:max-w-none print:px-0 print:py-0">
       <div className="no-print mb-4 flex items-center justify-between">
@@ -63,6 +66,22 @@ export function CheatSheetPage() {
         <div className="mt-1.5">
           <CodeBlock code={cs.template} />
         </div>
+
+        {skeleton && (
+          <>
+            <h2 className="mt-5 text-sm font-semibold uppercase tracking-wider text-ink-faint">
+              Structure skeleton
+            </h2>
+            <p className="mt-1 text-xs text-ink-faint">
+              The transferable shape — the roles, in order, that this pattern always follows.
+            </p>
+            <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-[15px] leading-6">
+              {skeleton.map((s, i) => (
+                <li key={i}>{s.referenceLabel}</li>
+              ))}
+            </ol>
+          </>
+        )}
 
         <h2 className="mt-5 text-sm font-semibold uppercase tracking-wider text-ink-faint">
           Complexity

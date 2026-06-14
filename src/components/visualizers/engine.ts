@@ -14,10 +14,16 @@ export interface Frame<T> {
   caption: string
   /** 1-based line of the pseudocode panel to highlight. */
   codeLine?: number
+  /**
+   * Optional active subgoal label for this step — the role this move plays in
+   * the pattern's structure. Surfaced as a chip so the animation and the
+   * transferable skeleton reinforce each other (dual coding).
+   */
+  subgoal?: string
 }
 
-export function frame<T>(data: T, caption: string, codeLine?: number): Frame<T> {
-  return { data, caption, codeLine }
+export function frame<T>(data: T, caption: string, codeLine?: number, subgoal?: string): Frame<T> {
+  return { data, caption, codeLine, subgoal }
 }
 
 export interface VisualizerProps {

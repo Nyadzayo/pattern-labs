@@ -516,6 +516,18 @@ export function MockInterviewPage() {
                       </span>
                     ))}
                 </div>
+                {run?.problem.solution.subgoals && run.problem.solution.subgoals.length > 0 && (
+                  <details className="mt-3 rounded-lg border border-edge bg-surface-sunken p-3">
+                    <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-ink-faint">
+                      Structure check — did your solution follow this skeleton?
+                    </summary>
+                    <ol className="mt-2 list-decimal space-y-0.5 pl-5 text-sm text-ink-muted">
+                      {run.problem.solution.subgoals.map((s, k) => (
+                        <li key={k}>{s.referenceLabel}</li>
+                      ))}
+                    </ol>
+                  </details>
+                )}
               </motion.div>
             )
           })}

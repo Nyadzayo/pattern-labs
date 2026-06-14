@@ -39,6 +39,7 @@ function buildFrames(sorted: number[], target: number): Frame<TPData>[] {
       { array: sorted, left, right, sum: null, status: 'start' },
       `Start with left at index 0 and right at index ${right}. The array must be sorted for this to work.`,
       1,
+      'Anchor a pointer at each end',
     ),
   )
   while (left < right) {
@@ -48,6 +49,7 @@ function buildFrames(sorted: number[], target: number): Frame<TPData>[] {
         { array: sorted, left, right, sum, status: 'searching' },
         `a[${left}] + a[${right}] = ${sorted[left]} + ${sorted[right]} = ${sum}. Target is ${target}.`,
         3,
+        'Walk inward, summing the two ends',
       ),
     )
     if (sum === target) {
@@ -56,6 +58,7 @@ function buildFrames(sorted: number[], target: number): Frame<TPData>[] {
           { array: sorted, left, right, sum, status: 'found' },
           `Found it: ${sorted[left]} + ${sorted[right]} = ${target}. Pair at indices ${left} and ${right}.`,
           5,
+          'On an exact match, return the pair',
         ),
       )
       return frames
@@ -67,6 +70,7 @@ function buildFrames(sorted: number[], target: number): Frame<TPData>[] {
           { array: sorted, left, right, sum, status: 'searching' },
           `${sum} < ${target}: the sum is too small, and only moving left rightward can increase it.`,
           7,
+          'Sum too small — advance left',
         ),
       )
     } else {
@@ -76,6 +80,7 @@ function buildFrames(sorted: number[], target: number): Frame<TPData>[] {
           { array: sorted, left, right, sum, status: 'searching' },
           `${sum} > ${target}: the sum is too big, and only moving right leftward can decrease it.`,
           9,
+          'Sum too big — retreat right',
         ),
       )
     }
@@ -85,6 +90,7 @@ function buildFrames(sorted: number[], target: number): Frame<TPData>[] {
       { array: sorted, left, right, sum: null, status: 'not-found' },
       'Pointers met without hitting the target — no such pair exists.',
       10,
+      'Pointers met — no pair',
     ),
   )
   return frames

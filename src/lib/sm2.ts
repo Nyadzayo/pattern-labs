@@ -8,6 +8,7 @@
 import { allLoadedContent } from '@/content'
 import type { AppState, CardSchedule, DrillProgress } from './storage'
 import { setState, todayISO } from './storage'
+import { subgoalSkeletonCards } from './subgoalCards'
 
 export type Grade = 'again' | 'hard' | 'good' | 'easy'
 
@@ -84,6 +85,14 @@ export function dueCards(state: AppState): DueCard[] {
       if (!schedule || schedule.due <= today) {
         out.push({ moduleId: mod.id, cardId: card.id, front: card.front, back: card.back, schedule })
       }
+    }
+  }
+  // Auto-generated "subgoals of the <pattern> idiom" recall cards.
+  for (const card of subgoalSkeletonCards()) {
+    const key = `${card.moduleId}/${card.cardId}`
+    const schedule = state.cards[key]
+    if (!schedule || schedule.due <= today) {
+      out.push({ moduleId: card.moduleId, cardId: card.cardId, front: card.front, back: card.back, schedule })
     }
   }
   return out

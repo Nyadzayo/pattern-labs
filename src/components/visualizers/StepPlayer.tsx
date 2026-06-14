@@ -119,6 +119,13 @@ export function StepPlayer<T>({ frames, renderFrame, pseudocode, resetKey }: Ste
       </div>
 
       <div className="border-t border-edge px-5 py-3">
+        {current.subgoal && (
+          <div className="mb-1.5">
+            <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-accent">
+              {current.subgoal}
+            </span>
+          </div>
+        )}
         <div className="min-h-[20px] text-sm text-ink-muted" aria-live="polite">
           {current.caption}
         </div>
