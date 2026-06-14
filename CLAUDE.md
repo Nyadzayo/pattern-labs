@@ -3,8 +3,9 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > **Resuming work?** Read `PROGRESS.md` first — it's the live checkpoint of what's done and
-> what's next. All 7 phases plus Phase 5.5 (Primitives Lab) and Phase 5.6 (Mastery & Recall) are
-> complete. Detailed designs: `docs/PRIMITIVES_LAB_PLAN.md`, `docs/MASTERY_RECALL_PLAN.md`.
+> what's next. All 7 phases plus Phase 5.5 (Primitives Lab), Phase 5.6 (Mastery & Recall), and
+> Phase 5.7 (Subgoal & Metacognition) are in progress/complete. Detailed designs:
+> `docs/PRIMITIVES_LAB_PLAN.md`, `docs/MASTERY_RECALL_PLAN.md`, `docs/SUBGOAL_METACOGNITION_PLAN.md`.
 
 ## Project Overview
 
@@ -65,6 +66,7 @@ Step-engine contract in `engine.ts`: each visualizer is a **pure function** `inp
 5. **Quiz, flashcards, mock interview** — instant-feedback quiz + sparkline history, SM-2 review deck, 45-min mock with report ✅ verified
 5.5 **Primitives Lab** — Brilliant-style faded-scaffolding drills (**40** micro-pattern primitives, 6-rung ladder: predict→order→fade→cloze→roles→write), pure reducer engine, SM-2 per primitive, Daily Drill, Learn-tab strips, mock-report tells. ✅ verified (34 vitest, `validate-primitives:full` 0 errors). Design in `docs/PRIMITIVES_LAB_PLAN.md`; authoring contract in the `write-primitive` skill.
 5.6 **Mastery & Recall** — two skills the rest of the app under-trains: motor memory and pattern recognition. **Code Katas** (timed typing of the 40 primitive write-rung solutions — guided / fading / blank-page recall, char-level diff, hesitation map, WPM trend, "automatic" badge) + **Pattern Sprint** (timed recognition game over ~80 original problem-stem cards: Warmup / Sprint / Sudden-Death, 6-option discriminator grid from each stem's tagged look-alikes, SM-2 per stem) + a mixed **Daily Warm-up**. Pure deterministic diff/score reducers. Design in `docs/MASTERY_RECALL_PLAN.md`; stem-authoring contract in the `write-sprint-card` skill. ✅ verified (61 vitest, validate-sprint --full + validate-katas 0 errors, browser-swept)
+5.7 **Subgoal & Metacognition** — the transfer-to-novel-problems gap. Core: **self-generated subgoal labeling** — solutions chunked into purpose-labeled steps; the learner types their *own* label per chunk (lenient keyword grading), then the canonical label is revealed for comparison with misconception feedback (**generate-then-reveal, never read-the-labels**). A new **`label` rung** sits between Roles and Write in the Primitives-Lab ladder (now 7 rungs: predict→order→fade→cloze→roles→label→write). Plus **productive failure** (attempt-first before instruction unlocks, with an attempt-vs-worked diff) and **confidence calibration** (1-tap predict-then-check before each reveal/submit → Dashboard Calibration card flagging overconfidence by module). Integrations: visualizer subgoal captions, Parsons label-mode, auto subgoal flashcards, mock-report structure check, cheat-sheet skeletons. Pure unit-tested `subgoalGrade`/`calibration` reducers. Design in `docs/SUBGOAL_METACOGNITION_PLAN.md`. 🚧 in progress
 6. **Full content pass** — all 19 modules, expanded to 9 problems each, validated ✅ verified
 7. **Polish & package** — keyboard shortcuts, printable cheat sheets, decision-tree page, Tauri desktop build, README ✅ verified
 
@@ -75,6 +77,7 @@ Step-engine contract in `engine.ts`: each visualizer is a **pure function** `inp
 3. **Commit with a descriptive message at the end of each verified phase.**
 4. Content changes must pass `npm run validate-content` before a phase is considered done.
 5. **Mastery & Recall (Phase 5.6) invariants:** kata diff and sprint scoring are **pure, deterministic, unit-tested reducers** (no `Date`/`Math.random`/judge inside — pass timestamps and seeds in). **Disable paste in kata editors** — typing is the point. The keystroke timer feeding the hesitation map **must not drop events under fast typing** (capture per input event; paste is off so one char per event). Pattern-Sprint stems are **original writing** and must pass `npm run validate-sprint`; kata entries must pass `npm run validate-katas`.
+6. **Subgoal & Metacognition (Phase 5.7) invariants:** the labeling exercise is **generate-then-reveal** — the learner types their own label *before* any reference label is shown; never render the canonical labels as readable text up front. Per chunk, show **a hint OR feedback, never both in the same attempt** (hint is pre-submission only, reference/feedback post-submission only). `subgoalGrade` (lenient keyword match + which-chunk-it-matched) and `calibration` (predicted-vs-actual aggregation) are **pure, deterministic, unit-tested reducers** (no `Date`/`Math.random` inside). Subgoal labels are **abstract/context-free** (role, not variable names) and **original writing**; every chunk needs `lineRange` + `referenceLabel` + non-empty `acceptableKeywords`, ranges contiguous/non-overlapping/in-bounds — enforced by `validate-content` / `validate-primitives`. Confidence capture fires **before** the reveal/submit it measures.
 
 ## Multi-agent workflow conventions (learned from quota-wall failures)
 

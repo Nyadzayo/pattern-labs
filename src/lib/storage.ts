@@ -94,6 +94,36 @@ export interface SprintStats {
   bestSuddenDeath: number
 }
 
+/**
+ * One-tap confidence prediction recorded immediately before a reveal/submit,
+ * paired with the actual outcome. Feeds the Dashboard Calibration card.
+ */
+export interface CalibrationEntry {
+  /** ISO timestamp (passed in — reducers never call Date themselves). */
+  at: string
+  surface: 'quiz' | 'solution' | 'kata' | 'subgoal'
+  moduleId?: string
+  /** 0 Guessing · 1 Unsure · 2 Confident · 3 Certain. */
+  confidence: 0 | 1 | 2 | 3
+  correct: boolean
+}
+
+/** Self-generated subgoal-labeling progress for one annotated solution. */
+export interface SubgoalProgress {
+  /** Lenient grade (0..1) per chunk from the last submitted attempt. */
+  perChunk: number[]
+  /** True once every chunk was labeled acceptably ("structure understood"). */
+  understood: boolean
+  attempts: { at: string; scores: number[] }[]
+}
+
+/** Productive-failure first attempt captured before a module's instruction unlocks. */
+export interface FirstAttempt {
+  attemptCode: string
+  attemptedAt: string
+  skipped: boolean
+}
+
 export interface AppState {
   version: 1
   theme: Theme
@@ -120,6 +150,14 @@ export interface AppState {
   katas: Record<string, KataProgress>
   /** ISO date the Daily Warm-up was last completed (caps it to once/day). */
   lastWarmup: string
+  /** "moduleId/problemId" or "primitive:<id>" → subgoal-labeling progress. */
+  subgoals: Record<string, SubgoalProgress>
+  /** Confidence predictions vs outcomes, oldest first (trimmed to last ~200). */
+  calibration: CalibrationEntry[]
+  /** moduleId → productive-failure first attempt. No entry until first opened. */
+  productiveFailure: Record<string, FirstAttempt>
+  /** Productive-failure attempt-first flow: gate one problem before Learn unlocks. */
+  attemptFirst: boolean
 }
 
 export function defaultState(): AppState {
@@ -139,6 +177,10 @@ export function defaultState(): AppState {
     sprintStats: { bestSprint: 0, bestSuddenDeath: 0 },
     katas: {},
     lastWarmup: '',
+    subgoals: {},
+    calibration: [],
+    productiveFailure: {},
+    attemptFirst: true,
   }
 }
 
@@ -164,6 +206,8 @@ export function sanitizeState(raw: unknown): AppState {
     'drills',
     'sprint',
     'katas',
+    'subgoals',
+    'productiveFailure',
   ] as const) {
     if (isObject(raw[key])) base[key] = raw[key] as never
   }
@@ -182,6 +226,8 @@ export function sanitizeState(raw: unknown): AppState {
   }
   if (Array.isArray(raw.mockReports)) base.mockReports = raw.mockReports as MockReport[]
   if (typeof raw.lastWarmup === 'string') base.lastWarmup = raw.lastWarmup
+  if (Array.isArray(raw.calibration)) base.calibration = raw.calibration as CalibrationEntry[]
+  if (typeof raw.attemptFirst === 'boolean') base.attemptFirst = raw.attemptFirst
   if (
     isObject(raw.sprintStats) &&
     typeof raw.sprintStats.bestSprint === 'number' &&
@@ -346,4 +392,47 @@ export function updateProblemProgress(
     if (existing.status === 'solved-clean') merged.status = 'solved-clean'
     return { ...prev, problems: { ...prev.problems, [problemKey]: merged } }
   })
+}
+
+/** Append a confidence prediction + its outcome; keep the last 200 entries. */
+export function recordCalibration(entry: Omit<CalibrationEntry, 'at'>): void {
+  setState((prev) => {
+    const next: CalibrationEntry = { ...entry, at: new Date().toISOString() }
+    return { ...prev, calibration: [...prev.calibration, next].slice(-200) }
+  })
+}
+
+/**
+ * Record one subgoal-labeling attempt for a solution key. `understood` is
+ * sticky (once the structure is grasped it stays grasped); attempts trim to 20.
+ */
+export function recordSubgoalAttempt(key: string, scores: number[], understood: boolean): void {
+  setState((prev) => {
+    const existing = prev.subgoals[key]
+    const next: SubgoalProgress = {
+      perChunk: scores,
+      understood: understood || (existing?.understood ?? false),
+      attempts: [...(existing?.attempts ?? []), { at: new Date().toISOString(), scores }].slice(-20),
+    }
+    return { ...prev, subgoals: { ...prev.subgoals, [key]: next } }
+  })
+}
+
+/** Capture (or skip) a module's productive-failure first attempt before instruction unlocks. */
+export function recordFirstAttempt(
+  moduleId: string,
+  data: { attemptCode: string; skipped: boolean },
+): void {
+  setState((prev) => ({
+    ...prev,
+    productiveFailure: {
+      ...prev.productiveFailure,
+      [moduleId]: { ...data, attemptedAt: new Date().toISOString() },
+    },
+  }))
+}
+
+/** Toggle the attempt-first (productive-failure) flow. */
+export function setAttemptFirst(on: boolean): void {
+  setState((prev) => ({ ...prev, attemptFirst: on }))
 }

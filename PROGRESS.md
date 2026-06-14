@@ -17,6 +17,7 @@
 | — | Expand every module to **9 problems** (was 4) | ✅ committed (this checkpoint) |
 | **5.5** | **Primitives Lab** (40 primitives, 6-rung ladder) | ✅ **committed** |
 | **5.6** | **Mastery & Recall** (Code Katas + Pattern Sprint + Daily Warm-up) | ✅ **committed** |
+| **5.7** | **Subgoal & Metacognition** (subgoal labeling + productive failure + calibration) | 🚧 **in progress** |
 | 7 | Polish & package (cheat sheets, decision tree, shortcuts, Tauri) | ✅ done |
 
 Content now: 19 modules × **9 problems** (171 total), 8 quiz Qs each, 10 flashcards each.
@@ -75,6 +76,25 @@ Build steps (commit per step): 0 docs/scaffolding → 1 Sprint MVP → 2 Sudden-
 3 Katas guided → 4 fading+blank-page → 5 metrics+warm-up+mock-links. New state keys `sprint`,
 `sprintStats`, `katas` (whitelisted in `sanitizeState`). New validators `validate-sprint`,
 `validate-katas`. Stem-authoring contract: the `write-sprint-card` skill.
+
+## IN PROGRESS: Subgoal & Metacognition (Phase 5.7)
+
+Closes the transfer gap with **self-generated subgoal labeling** (generate-then-reveal) + productive
+failure + confidence calibration. Design: `docs/SUBGOAL_METACOGNITION_PLAN.md`. New state keys
+`subgoals`, `calibration`, `productiveFailure`, `attemptFirst` (whitelisted/defaulted in `storage.ts`).
+New `Subgoal` type on `ReferenceSolution`; a new **`label` rung** between roles and write (ladder → 7
+rungs). Pure reducers `src/lib/subgoalGrade.ts` + `src/lib/calibration.ts` (unit-tested).
+
+Build steps (commit per verified step):
+- **0 Docs + schema + state scaffolding** — ✅ done (this checkpoint): CLAUDE.md/PROGRESS.md/design doc,
+  `Subgoal` type + `subgoals?` on `ReferenceSolution`, 4 storage keys + writers + sanitize.
+- **1 Labeling exercise** on 5 primitives end-to-end (grade reducer + `label` rung + `SubgoalLabeler` +
+  Practice-tab action). ⏳
+- **2 Misconception feedback + per-chunk hints + SM-2** (hint-XOR-feedback). ⏳
+- **3 Confidence calibration** (ConfidencePrompt at quiz/solution/kata/subgoal + Dashboard card). ⏳
+- **4 Productive failure** (attempt-first gate + attempt-vs-worked diff). ⏳
+- **5 Integrations + annotate first-3 modules + all-40 primitives** (workflow fan-out). ⏳
+- **6 (deferred)** annotate the 16 remaining modules (~144 solutions), resumable workflow. ⏳
 
 ## Resilient-workflow conventions (learned the hard way — quota walls killed mid-runs)
 

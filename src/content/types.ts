@@ -75,6 +75,24 @@ export interface WorkedExample {
   explanation?: string
 }
 
+/**
+ * One labeled chunk of a reference solution, used by the self-generated
+ * subgoal-labeling exercise. Labels are abstract/context-free (describe the
+ * role, not the specific variable names) since context-free subgoals aid
+ * transfer best. The learner types their own label; we grade leniently against
+ * `acceptableKeywords` and only then reveal `referenceLabel` for comparison.
+ */
+export interface Subgoal {
+  /** Contiguous 1-based inclusive line span into the solution `code` string. */
+  lineRange: [number, number]
+  /** Canonical purpose label, short + imperative. Original writing. */
+  referenceLabel: string
+  /** Concept keywords for lenient grading of the learner's free-typed label. */
+  acceptableKeywords: string[]
+  /** Common confusion for this chunk, surfaced when a label fits the wrong chunk. */
+  misconception?: string
+}
+
 export interface ReferenceSolution {
   /** Complete Python solution, commented line by line. */
   code: string
@@ -82,6 +100,12 @@ export interface ReferenceSolution {
   commentary: string
   /** e.g. "Time O(n), Space O(1)" */
   complexity: string
+  /**
+   * Optional subgoal annotation: contiguous, non-overlapping chunks covering
+   * the solution, each with a context-free purpose label. Drives the "Label the
+   * subgoals" exercise. Present on the first 3 modules now; rest authored later.
+   */
+  subgoals?: Subgoal[]
 }
 
 export interface Problem {
