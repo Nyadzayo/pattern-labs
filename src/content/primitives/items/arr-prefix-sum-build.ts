@@ -97,6 +97,39 @@ for x in nums:
       roleBank: ['prefix array', 'current element', 'running maximum', 'window size'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Seed the accumulator with an empty-prefix value',
+          acceptableKeywords: ['seed with zero', 'leading empty total', 'start the accumulator', 'initial empty prefix'],
+          hint: 'What value represents the sum of nothing before any element is added?',
+          misconception: 'This only plants the starting total — no real elements have been folded in yet.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Walk through each incoming value',
+          acceptableKeywords: ['iterate the values', 'for each element', 'loop over input', 'visit every item'],
+          hint: 'What drives one accumulation step per element?',
+          misconception: 'This only sequences the work; the running total is computed inside.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Extend by the previous total plus the new value',
+          acceptableKeywords: ['previous total plus value', 'running sum extend', 'carry the accumulator', 'add to last entry'],
+          hint: 'How does each new entry build on the one before it?',
+          misconception: 'This stores a cumulative total, not the raw element on its own.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Return the completed cumulative table',
+          acceptableKeywords: ['return the array', 'give back prefixes', 'yield the totals', 'final result'],
+          hint: 'After every value is folded in, what gets handed back?',
+          misconception: 'This is the exit after the loop, not part of the accumulation.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'prefix_sums',
       starterCode: `def prefix_sums(nums):

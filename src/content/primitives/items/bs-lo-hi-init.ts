@@ -103,6 +103,32 @@ width = hi - lo + 1`,
       roleBank: ['low bound', 'high bound', 'window size', 'midpoint', 'target value'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Frame the range with inclusive edges',
+          acceptableKeywords: ['set inclusive bounds', 'last valid index', 'low and high edges', 'span every element'],
+          hint: 'For an inclusive window, does the top edge sit on a real element?',
+          misconception: 'This only positions the edges — it has not yet checked whether the range is real.',
+        },
+        {
+          lineRange: [4, 5],
+          referenceLabel: 'Bail out when the range is empty',
+          acceptableKeywords: ['guard empty input', 'high below low', 'return sentinel', 'nothing to index'],
+          hint: 'What ordering of the two edges signals there is no element at all?',
+          misconception: 'This is the empty-case escape, not the normal answer.',
+        },
+        {
+          lineRange: [6, 6],
+          referenceLabel: 'Hand back the top inclusive edge',
+          acceptableKeywords: ['return the high bound', 'give back last index', 'final position', 'report the edge'],
+          hint: 'When the range is non-empty, which edge already names the final element?',
+          misconception: 'This returns a valid index only because the empty case was filtered first.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'last_index',
       starterCode: `def last_index(nums):

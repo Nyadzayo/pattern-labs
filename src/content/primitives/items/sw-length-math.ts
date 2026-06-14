@@ -131,6 +131,46 @@ for right in range(len(starts)):
       roleBank: ['longest length seen', 'window right end', 'window left end', 'element value'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Seed the best length at nothing-seen-yet',
+          acceptableKeywords: ['initialize the best', 'start best at zero', 'no window yet', 'seed the maximum'],
+          hint: 'Before any window is measured, what is the largest length known?',
+          misconception: 'This sets the floor for the answer; it has not measured any window.',
+        },
+        {
+          lineRange: [3, 4],
+          referenceLabel: 'Scan each right end and recover its matching left end',
+          acceptableKeywords: ['advance the right end', 'look up the left end', 'iterate the right edge', 'find window start'],
+          hint: 'For each ending position, where does its window begin?',
+          misconception: 'This locates the two endpoints; the count itself comes next.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Count the elements inside the inclusive span',
+          acceptableKeywords: ['compute the length', 'right minus left plus one', 'inclusive element count', 'size of the window'],
+          hint: 'Both endpoints belong to the window — how many elements is that?',
+          misconception: 'This is the span size, not yet compared against the best.',
+        },
+        {
+          lineRange: [6, 6],
+          referenceLabel: 'Keep the longest span observed so far',
+          acceptableKeywords: ['update the best', 'take the maximum', 'keep the longest', 'raise the running max'],
+          hint: 'After measuring this window, when should the record change?',
+          misconception: 'This compares against the running best; it does not compute the span.',
+        },
+        {
+          lineRange: [7, 7],
+          referenceLabel: 'Return the longest span found',
+          acceptableKeywords: ['return the best', 'report the longest', 'give back the maximum', 'final answer'],
+          hint: 'Once every window is measured, what is reported?',
+          misconception: 'This reports the result after the scan; it tracks nothing itself.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'longest_window',
       starterCode: `def longest_window(starts):

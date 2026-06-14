@@ -92,6 +92,32 @@ for ch in text:
       roleBank: ['frequency map', 'current element', 'running total', 'seen set'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Start an empty tally to collect counts into',
+          acceptableKeywords: ['create an empty map', 'start the tally', 'empty dictionary', 'somewhere to count'],
+          hint: 'Before counting anything, what container do you need ready?',
+          misconception: 'This only prepares the storage; no counting has happened yet.',
+        },
+        {
+          lineRange: [3, 4],
+          referenceLabel: 'Walk each item and bump its count, defaulting new keys to zero',
+          acceptableKeywords: ['increment the count', 'default missing to zero', 'add one per item', 'tally each element'],
+          hint: 'How do you add one even the very first time a key appears?',
+          misconception: 'This builds the counts; the default keeps a first sighting from crashing, but it does not reset the tally.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Hand back the completed tally',
+          acceptableKeywords: ['return the map', 'give back the counts', 'return the result', 'output the tally'],
+          hint: 'Once every item is counted, what does the caller get?',
+          misconception: 'This only returns the finished map; it does no counting itself.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'char_counts',
       starterCode: `def char_counts(text):

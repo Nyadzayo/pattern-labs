@@ -127,6 +127,46 @@ while l < r:
       roleBank: ['left pointer', 'right pointer', 'swap temporary', 'element count'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Place a pointer at each boundary',
+          acceptableKeywords: ['pointer at each end', 'start at the ends', 'left and right bounds', 'anchor both ends'],
+          hint: 'Where do the two markers begin before any work happens?',
+          misconception: 'This only fixes the starting positions — no element has moved yet.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Keep going while the ends have not met',
+          acceptableKeywords: ['loop until they cross', 'while ends apart', 'until pointers meet', 'continue while unmet'],
+          hint: 'What condition lets the work continue, and when must it stop?',
+          misconception: 'This gates the work; it does not perform the swap.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Exchange the two boundary elements',
+          acceptableKeywords: ['swap the ends', 'exchange both values', 'trade outer elements', 'mirror the pair'],
+          hint: 'What single action mirrors the outermost pair?',
+          misconception: 'This is the mutation itself, not the bound or the advance.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Close the gap from both sides',
+          acceptableKeywords: ['move both inward', 'advance the pointers', 'step toward center', 'left up right down'],
+          hint: 'After a swap, how do the markers approach each other?',
+          misconception: 'The pointers only move after a swap — this is not the exchange step.',
+        },
+        {
+          lineRange: [7, 7],
+          referenceLabel: 'Hand back the now-mirrored container',
+          acceptableKeywords: ['return the list', 'give back result', 'yield reversed array', 'final answer'],
+          hint: 'Once the pointers have met, what gets handed back?',
+          misconception: 'Reaching here means every pair has been swapped — this is the exit, not the loop body.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'reverse_in_place',
       starterCode: `def reverse_in_place(a):

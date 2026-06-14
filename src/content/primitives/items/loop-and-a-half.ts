@@ -136,6 +136,53 @@ while True:
       roleBank: ['step counter', 'moving cursor', 'exit target', 'loop bound'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Seed the tally and the moving position',
+          acceptableKeywords: ['initialize counter', 'set starting value', 'seed the cursor', 'start at zero'],
+          hint: 'What two pieces of state need a starting value before the loop?',
+          misconception: 'This only primes the state; no step has been taken or counted yet.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Spin unconditionally and decide inside',
+          acceptableKeywords: ['loop forever', 'while true', 'unconditional loop', 'break decides exit'],
+          hint: 'Why is there no test in the loop header here?',
+          misconception: 'The header never stops on its own; the exit decision lives in the body.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Do the per-step work before checking the exit',
+          acceptableKeywords: ['count this step', 'do work first', 'tally before test', 'always runs'],
+          hint: 'What must happen on every pass, including the final one?',
+          misconception: 'This always-runs work is not the exit test — it precedes it deliberately.',
+        },
+        {
+          lineRange: [6, 7],
+          referenceLabel: 'Bail out the moment the target is reached',
+          acceptableKeywords: ['break on target', 'exit when reached', 'stop at the goal', 'leave the loop'],
+          hint: 'What condition, checked mid-body, ends the loop?',
+          misconception: 'This is the exit gate; it fires after the work above, not before.',
+        },
+        {
+          lineRange: [8, 8],
+          referenceLabel: 'Otherwise step the position onward',
+          acceptableKeywords: ['advance the cursor', 'move toward target', 'increment value', 'progress one step'],
+          hint: 'When the goal is not yet hit, how does the loop make progress?',
+          misconception: 'This advance only runs when no break happened; without it the loop never ends.',
+        },
+        {
+          lineRange: [9, 9],
+          referenceLabel: 'Report the accumulated count',
+          acceptableKeywords: ['return count', 'give back tally', 'output the steps', 'return the total'],
+          hint: 'Once the loop breaks, what value is the answer?',
+          misconception: 'Reaching here means the target was hit; this just surfaces the count.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'steps_to_reach',
       starterCode: `def steps_to_reach(start, target):

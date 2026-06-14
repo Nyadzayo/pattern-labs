@@ -109,6 +109,32 @@ for right in range(len(a)):
       roleBank: ['running aggregate', 'right edge index', 'left edge index', 'window length'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Start the running aggregate at its empty value',
+          acceptableKeywords: ['initialize the accumulator', 'start total at zero', 'empty running sum', 'seed the aggregate'],
+          hint: 'Before anything is folded in, what should the accumulator hold?',
+          misconception: 'This sets the starting point; it does not yet visit any element.',
+        },
+        {
+          lineRange: [3, 4],
+          referenceLabel: 'Sweep the right edge and fold each new element in',
+          acceptableKeywords: ['advance the right edge', 'add each element', 'fold in new value', 'accumulate while scanning'],
+          hint: 'As the edge moves forward, what happens to each freshly exposed value?',
+          misconception: 'This grows the window and accumulates; it is not the final answer being returned.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Hand back the fully accumulated total',
+          acceptableKeywords: ['return the total', 'give back the sum', 'report the aggregate', 'final accumulated value'],
+          hint: 'Once the edge has covered everything, what gets reported?',
+          misconception: 'This reports the result after the sweep; it does no accumulating itself.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'window_sum',
       starterCode: `def window_sum(a):

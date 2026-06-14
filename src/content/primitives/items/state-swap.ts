@@ -106,6 +106,39 @@ nums[i], nums[j] = nums[j], nums[i]`,
       roleBank: ['first index', 'last index', 'temp holder', 'loop bound'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Bail out when there is nothing to exchange',
+          acceptableKeywords: ['guard the edge case', 'too few elements', 'return early', 'nothing to swap'],
+          hint: 'What sizes make a swap pointless or impossible?',
+          misconception: 'This is the early guard, not the exchange that follows.',
+        },
+        {
+          lineRange: [4, 5],
+          referenceLabel: 'Pin the two positions to exchange',
+          acceptableKeywords: ['choose the indices', 'first and last position', 'mark the slots', 'set the endpoints'],
+          hint: 'Which two slots are about to trade contents?',
+          misconception: 'This only locates the slots — neither value has moved yet.',
+        },
+        {
+          lineRange: [6, 6],
+          referenceLabel: 'Exchange both slots simultaneously',
+          acceptableKeywords: ['swap the two slots', 'simultaneous exchange', 'trade the values', 'tuple swap'],
+          hint: 'How do both slots change value without losing one to the other?',
+          misconception: 'This is the swap itself, distinct from picking the indices above.',
+        },
+        {
+          lineRange: [7, 7],
+          referenceLabel: 'Hand back the mutated list',
+          acceptableKeywords: ['return the list', 'give back the result', 'output the array', 'final list'],
+          hint: 'After the in-place change, what gets returned?',
+          misconception: 'This reports the result; it does not perform the exchange.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'swap_ends',
       starterCode: `def swap_ends(nums):

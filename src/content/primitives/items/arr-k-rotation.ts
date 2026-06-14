@@ -118,6 +118,46 @@ const primitive: Primitive = {
       roleBank: ['list being rotated', 'rotation amount', 'loop index', 'accumulator'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Work on a private copy of the input',
+          acceptableKeywords: ['copy the input', 'avoid mutating caller', 'duplicate the list', 'fresh working list'],
+          hint: 'Why touch a duplicate rather than the argument directly?',
+          misconception: 'This protects the caller; it does not yet rotate anything.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Skip work that would be empty or a no-op',
+          acceptableKeywords: ['guard empty list', 'skip when nothing to do', 'avoid divide by zero', 'only when rotation matters'],
+          hint: 'What two situations make any rotation pointless or unsafe?',
+          misconception: 'This is the safety gate, not the rotation itself.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Fold an oversized shift back into range',
+          acceptableKeywords: ['reduce modulo length', 'wrap the amount', 'normalize the shift', 'collapse big k'],
+          hint: 'How is a shift bigger than the list brought down to size?',
+          misconception: 'This only tames the amount — the elements have not moved yet.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Splice the tail in front of the head',
+          acceptableKeywords: ['tail before head', 'move last part to front', 'concatenate the slices', 'rebuild rotated'],
+          hint: 'Which segment leads the result, and which follows it?',
+          misconception: 'This is the actual rearrangement, distinct from normalizing the amount.',
+        },
+        {
+          lineRange: [6, 6],
+          referenceLabel: 'Return the rearranged container',
+          acceptableKeywords: ['return the list', 'give back result', 'yield rotated array', 'final answer'],
+          hint: 'After the splice, what gets handed back?',
+          misconception: 'This hands back the result whether or not the guard fired — it is the exit, not the splice.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'rotate_right',
       starterCode: `def rotate_right(nums, k):

@@ -144,6 +144,53 @@ while lo < hi:
       roleBank: ['inclusive lower bound', 'exclusive upper bound', 'midpoint probe', 'match counter'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Open a half-open search window',
+          acceptableKeywords: ['set the bounds', 'exclusive upper edge', 'initialize the range', 'span the whole array'],
+          hint: 'Where do the two edges start, and is the top edge inside the range?',
+          misconception: 'This only frames the window — the search has not begun probing yet.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Shrink while two candidates remain',
+          acceptableKeywords: ['loop until one survivor', 'while range nonempty', 'until edges collide', 'keep narrowing'],
+          hint: 'What keeps the search alive, and what collision ends it?',
+          misconception: 'This bounds the search; the actual halving happens in the body.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Pick the middle candidate to test',
+          acceptableKeywords: ['compute the midpoint', 'middle index', 'probe the center', 'split the range'],
+          hint: 'Which position is examined on each pass?',
+          misconception: 'This only chooses where to look — it does not decide which half to drop.',
+        },
+        {
+          lineRange: [6, 7],
+          referenceLabel: 'Discard everything at or below the probe',
+          acceptableKeywords: ['drop the left half', 'move lower edge past mid', 'too small so advance', 'reject below target'],
+          hint: 'When the probe is short of target, which side is hopeless?',
+          misconception: 'This raises the floor past mid; it never keeps mid as a candidate.',
+        },
+        {
+          lineRange: [8, 9],
+          referenceLabel: 'Retain the probe as a possible answer',
+          acceptableKeywords: ['keep the upper edge at mid', 'mid still in range', 'shrink without dropping mid', 'candidate stays live'],
+          hint: 'When the probe could be the answer, how far does the top edge drop?',
+          misconception: 'This pulls the ceiling down to mid but keeps mid itself, unlike the reject side.',
+        },
+        {
+          lineRange: [10, 10],
+          referenceLabel: 'Return the lone surviving position',
+          acceptableKeywords: ['return the index', 'give back the boundary', 'leftmost position', 'final survivor'],
+          hint: 'When the edges meet, what does their shared spot represent?',
+          misconception: 'The survivor is a position, not the value stored there.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'lower_bound',
       starterCode: `def lower_bound(nums, target):

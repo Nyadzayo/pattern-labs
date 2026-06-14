@@ -109,6 +109,32 @@ for x in nums:
       roleBank: ['running product', 'current element', 'loop index', 'identity seed'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Seed the fold with its neutral value',
+          acceptableKeywords: ['identity seed', 'neutral starting value', 'initialize accumulator', 'start at the identity'],
+          hint: 'What starting value does the combining operation leave untouched?',
+          misconception: 'This only sets the seed — no element has been folded in yet.',
+        },
+        {
+          lineRange: [3, 4],
+          referenceLabel: 'Fold each element into the accumulator',
+          acceptableKeywords: ['combine each element', 'fold into accumulator', 'apply the operation', 'walk every value'],
+          hint: 'How does each item get merged into the running result?',
+          misconception: 'This is the per-element combine, not the seed that precedes it.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Hand back the folded result',
+          acceptableKeywords: ['return the result', 'final accumulator', 'give back the total', 'output the fold'],
+          hint: 'Once every element is folded in, what gets returned?',
+          misconception: 'This reports the finished fold; it does not perform the combining.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'product',
       starterCode: `def product(nums):

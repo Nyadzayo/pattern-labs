@@ -124,6 +124,46 @@ for r in range(len(a)):
       roleBank: ['write pointer', 'read pointer', 'running total', 'loop bound'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Place the write cursor at the front',
+          acceptableKeywords: ['initialize the write index', 'start write at zero', 'set up the slow cursor', 'write position at front'],
+          hint: 'Before any element is kept, where does the destination cursor sit?',
+          misconception: 'This sets the destination; the scan has not started.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Walk the read cursor across every slot',
+          acceptableKeywords: ['scan every index', 'advance the read pointer', 'iterate all elements', 'visit each slot'],
+          hint: 'Which positions does the reading pointer have to examine?',
+          misconception: 'This visits every element; it does not decide what survives.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Decide whether this element is worth keeping',
+          acceptableKeywords: ['test what to keep', 'check the keep condition', 'filter the elements', 'is it non-zero'],
+          hint: 'What property separates the values you save from the ones you drop?',
+          misconception: 'This selects survivors; the copy and advance happen only when it passes.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Copy the kept value forward and advance the write cursor',
+          acceptableKeywords: ['copy to write slot', 'advance the write index', 'overwrite at the cursor', 'keep then step'],
+          hint: 'When a value is kept, where does it go and how does the cursor react?',
+          misconception: 'The write cursor moves only on a keep — this is not part of the read scan.',
+        },
+        {
+          lineRange: [7, 7],
+          referenceLabel: 'Return the count of kept elements',
+          acceptableKeywords: ['return the write index', 'report the new length', 'count of survivors', 'kept element count'],
+          hint: 'After compaction, what does the write cursor now represent?',
+          misconception: 'The write index doubles as the new length; this reports it, it does not advance.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'remove_zeros',
       starterCode: `def remove_zeros(a):

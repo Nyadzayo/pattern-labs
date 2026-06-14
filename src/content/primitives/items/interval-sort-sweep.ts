@@ -148,6 +148,53 @@ for s, e in intervals:
       roleBank: ['kept intervals', 'current start', 'current end', 'sort key'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Order the inputs so overlaps become neighbors',
+          acceptableKeywords: ['sort by start', 'order the intervals', 'make overlaps adjacent', 'sort first'],
+          hint: 'What arrangement guarantees overlapping pieces sit next to each other?',
+          misconception: 'This only reorders the data; nothing has been merged or stored yet.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Start an empty bucket of kept results',
+          acceptableKeywords: ['initialize output', 'empty result list', 'bucket of kept intervals', 'start accumulator'],
+          hint: 'Where will the surviving intervals be collected?',
+          misconception: 'This prepares the output container — it does not yet decide overlaps.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Walk each piece left to right',
+          acceptableKeywords: ['loop over intervals', 'sweep one at a time', 'visit each piece', 'iterate in order'],
+          hint: 'How does the single pass move through the ordered pieces?',
+          misconception: 'This drives the sweep; it does not itself test for overlap.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Overlap with the last kept piece, so stretch its far edge',
+          acceptableKeywords: ['extend the last end', 'merge overlap', 'stretch the interval', 'absorb into previous'],
+          hint: 'When the current piece touches the one already kept, what changes?',
+          misconception: 'This grows an existing interval — it is not the case that opens a new one.',
+        },
+        {
+          lineRange: [7, 8],
+          referenceLabel: 'No overlap, so begin a fresh kept piece',
+          acceptableKeywords: ['open new interval', 'append fresh piece', 'start a separate interval', 'add as new'],
+          hint: 'When the current piece sits past everything kept, what should happen?',
+          misconception: 'This records a disjoint interval — it is the opposite of extending the previous one.',
+        },
+        {
+          lineRange: [9, 9],
+          referenceLabel: 'Hand back the settled collection',
+          acceptableKeywords: ['return merged', 'give back result', 'return the kept list', 'output the answer'],
+          hint: 'After the sweep is done, what does the function produce?',
+          misconception: 'Reaching here means every piece has been placed; this is just the handoff.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'merge_intervals',
       starterCode: `def merge_intervals(intervals):

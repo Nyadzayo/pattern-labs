@@ -105,6 +105,46 @@ while x:
       roleBank: ['set-bit tally', 'value being cleared', 'loop index', 'bit width'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Start the tally at zero',
+          acceptableKeywords: ['initialize counter', 'start at zero', 'set up the tally', 'seed accumulator'],
+          hint: 'What needs a starting value before any bit is cleared?',
+          misconception: 'This only primes the count; nothing has been scanned yet.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Keep going while any marker remains',
+          acceptableKeywords: ['loop while nonzero', 'until value is zero', 'while bits remain', 'run until empty'],
+          hint: 'When should the loop stop spinning?',
+          misconception: 'This is the loop guard; it does not by itself remove anything.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Erase the lowest remaining marker',
+          acceptableKeywords: ['clear lowest set bit', 'drop the low bit', 'remove one marker', 'turn off lowest'],
+          hint: 'What single operation jumps straight to the next marker?',
+          misconception: 'This clears one marker per pass — it is not where the count is updated.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Record that one marker was handled',
+          acceptableKeywords: ['increment count', 'tally a bit', 'add one', 'record the clear'],
+          hint: 'After clearing a marker, what bookkeeping happens?',
+          misconception: 'This bumps the tally; without it the markers vanish uncounted.',
+        },
+        {
+          lineRange: [6, 6],
+          referenceLabel: 'Hand back the total tally',
+          acceptableKeywords: ['return count', 'give back total', 'output the tally', 'return the answer'],
+          hint: 'Once the value is empty, what is the result?',
+          misconception: 'Reaching here means all markers were cleared; this just returns the count.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'count_set_bits',
       starterCode: `def count_set_bits(x):

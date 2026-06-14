@@ -160,6 +160,46 @@ backtrack(0, [])`,
       roleBank: ['start cursor', 'current path', 'candidate index', 'result collection'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Open a place to collect finished results',
+          acceptableKeywords: ['create the results list', 'set up the accumulator', 'where answers are stored', 'initialize the collection'],
+          hint: 'Before any exploration, what holds the answers found along the way?',
+          misconception: 'This only prepares storage — no candidate has been explored yet.',
+        },
+        {
+          lineRange: [3, 4],
+          referenceLabel: 'On each entry, snapshot the partial path',
+          acceptableKeywords: ['record a copy of the path', 'capture this partial result', 'snapshot on entry', 'store a copy not a reference'],
+          hint: 'Why save a copy at the top of every call rather than after the loop?',
+          misconception: 'This captures the current state as a copy; storing the live list would let later mutations corrupt it.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Choose the next candidate to extend the path',
+          acceptableKeywords: ['pick the next candidate', 'append a choice', 'extend the path', 'iterate from the cursor'],
+          hint: 'How is one more element added before going deeper, and where does the cursor start?',
+          misconception: 'This makes a choice; it does not yet explore the consequences of that choice.',
+        },
+        {
+          lineRange: [7, 8],
+          referenceLabel: 'Explore deeper, then undo the choice',
+          acceptableKeywords: ['recurse then pop', 'explore and backtrack', 'undo the last pick', 'restore the path for siblings'],
+          hint: 'After recursing, what must happen so the next sibling starts from a clean path?',
+          misconception: 'The pop restores shared state — without it, siblings inherit a path that never resets.',
+        },
+        {
+          lineRange: [9, 10],
+          referenceLabel: 'Kick off the search and return everything found',
+          acceptableKeywords: ['start the recursion', 'launch from empty path', 'return the results', 'hand back all answers'],
+          hint: 'What starts the whole process, and what is finally returned?',
+          misconception: 'This launches the traversal and returns the collected answers — it is not part of one recursive step.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'subsets',
       starterCode: `def subsets(nums):

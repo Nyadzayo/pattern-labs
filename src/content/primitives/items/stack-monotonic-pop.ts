@@ -130,6 +130,46 @@ for i in range(len(a)):
       roleBank: ['monotonic stack of indices', 'current index', 'running maximum', 'output array'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Prepare the answers and an empty stack',
+          acceptableKeywords: ['default the results', 'start an empty stack', 'fill with the not-found value', 'initialize the structures'],
+          hint: 'What default answer and what empty helper must exist before the scan?',
+          misconception: 'This only sets up storage — nothing has been compared yet.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Sweep every position left to right',
+          acceptableKeywords: ['scan each index', 'iterate left to right', 'visit every position', 'single pass over the array'],
+          hint: 'In what order are positions visited?',
+          misconception: 'This drives the pass; it does not itself resolve any pending answer.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Resolve everyone the new element dominates',
+          acceptableKeywords: ['pop while smaller', 'resolve dominated indices', 'answer those the new value beats', 'drain the stack while broken'],
+          hint: 'While the top of the stack is beaten by the current value, what gets settled?',
+          misconception: 'This empties out indices the new element exceeds; using if instead of while would leave some unresolved.',
+        },
+        {
+          lineRange: [7, 7],
+          referenceLabel: 'Park the current index awaiting its answer',
+          acceptableKeywords: ['push the index', 'store position not value', 'wait for a greater later', 'add to the stack'],
+          hint: 'What gets set aside, still unanswered, after the popping settles?',
+          misconception: 'This stows the index for later — it pushes the position, not the value.',
+        },
+        {
+          lineRange: [8, 8],
+          referenceLabel: 'Return the resolved answers',
+          acceptableKeywords: ['return the results', 'hand back the array', 'leftovers stay at default', 'final answers'],
+          hint: 'After the sweep, what is returned, and what value do still-on-the-stack positions keep?',
+          misconception: 'This returns the result array — indices never resolved keep the default not-found value.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'next_greater',
       starterCode: `def next_greater(a):

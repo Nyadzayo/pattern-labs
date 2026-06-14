@@ -96,6 +96,39 @@ for i in range(len(a) - 1, -1, -1):
       roleBank: ['result accumulator', 'descending index', 'input collection', 'loop bound'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Start an empty collector for results',
+          acceptableKeywords: ['initialize output', 'empty result list', 'start accumulator', 'fresh collection'],
+          hint: 'Where will the reversed elements be gathered?',
+          misconception: 'This only prepares the container; nothing has been placed in it yet.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Walk the positions from last down to first',
+          acceptableKeywords: ['count down', 'loop right to left', 'descend through indices', 'iterate backward'],
+          hint: 'How does the loop reach the last index first and index zero last?',
+          misconception: 'This sets the descending traversal; it does not itself store any element.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Append each visited element in order',
+          acceptableKeywords: ['append the element', 'add to result', 'collect this item', 'push onto output'],
+          hint: 'What happens to each element as the loop visits it?',
+          misconception: 'This builds the reversed list; it reads from the source, not the result.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Return the reversed collection',
+          acceptableKeywords: ['return output', 'give back the list', 'output the result', 'return reversed'],
+          hint: 'Once every position is visited, what is produced?',
+          misconception: 'Reaching here means the full reverse is built; this just hands it back.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'reverse_list',
       starterCode: `def reverse_list(a):

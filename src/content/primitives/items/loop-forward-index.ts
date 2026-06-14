@@ -95,6 +95,39 @@ for i in range(len(nums)):
       roleBank: ['loop index', 'input collection', 'running total', 'sentinel value'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Seed the running accumulator',
+          acceptableKeywords: ['initialize total', 'start at zero', 'seed accumulator', 'set up running sum'],
+          hint: 'What needs a starting value before the fold begins?',
+          misconception: 'This only primes the accumulator; nothing has been added yet.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Visit every position once, front to back',
+          acceptableKeywords: ['loop over indices', 'visit each position', 'scan left to right', 'iterate all elements'],
+          hint: 'How does the loop reach each element exactly once?',
+          misconception: 'This drives the walk; it does not itself combine any values.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Fold the current element into the accumulator',
+          acceptableKeywords: ['add the element', 'accumulate the value', 'fold into total', 'sum this item'],
+          hint: 'What happens to each element as it is visited?',
+          misconception: 'This combines values, not counts steps — it must read the element, not add one.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Return the folded result',
+          acceptableKeywords: ['return total', 'give back the sum', 'output the accumulator', 'return the answer'],
+          hint: 'After the whole array is folded, what is produced?',
+          misconception: 'Reaching here means every element was folded; this just surfaces the total.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'array_sum',
       starterCode: `def array_sum(nums):

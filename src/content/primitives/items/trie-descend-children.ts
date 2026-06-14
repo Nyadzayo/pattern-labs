@@ -152,6 +152,46 @@ word = 'car'`,
       roleBank: ['current trie node', 'current character', 'end marker', 'child count'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Begin at the root assuming success',
+          acceptableKeywords: ['start at the root', 'assume found', 'initialize the cursor', 'optimistic flag'],
+          hint: 'Where does the descent start, and what do we presume until proven otherwise?',
+          misconception: 'This sets the starting node and assumption; no character has been checked.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Walk one character at a time',
+          acceptableKeywords: ['loop over characters', 'iterate the word', 'step through each letter', 'for each character'],
+          hint: 'In what order are the letters of the query consumed?',
+          misconception: 'This drives the walk; the per-step check comes inside it.',
+        },
+        {
+          lineRange: [5, 7],
+          referenceLabel: 'Bail out when the next character has no child',
+          acceptableKeywords: ['missing child fails', 'no edge stop', 'mark not found', 'break on absence'],
+          hint: 'What does it mean if the current node has no edge for this letter?',
+          misconception: 'This is the failure exit, not the normal step deeper.',
+        },
+        {
+          lineRange: [8, 8],
+          referenceLabel: 'Descend into the matching child',
+          acceptableKeywords: ['move to the child', 'descend the trie', 'follow the edge', 'advance the node'],
+          hint: 'After confirming the letter exists, where does the cursor move?',
+          misconception: 'This advances deeper; it runs only after the presence check passes.',
+        },
+        {
+          lineRange: [9, 9],
+          referenceLabel: 'Confirm a whole word, not just a prefix',
+          acceptableKeywords: ['check the end marker', 'require a full word', 'verify terminal node', 'reject bare prefix'],
+          hint: 'Reaching the last letter is not enough — what extra condition proves a real word?',
+          misconception: 'This demands the end marker; landing on a node alone only proves a prefix.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'trie_has_word',
       starterCode: `def trie_has_word(root, word):

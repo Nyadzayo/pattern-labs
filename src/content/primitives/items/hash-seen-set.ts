@@ -131,6 +131,39 @@ for x in a:
       roleBank: ['set of seen values', 'current element', 'running total', 'loop bound'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Start an empty record of what has been observed',
+          acceptableKeywords: ['create an empty set', 'start the seen record', 'somewhere to remember', 'fast membership store'],
+          hint: 'What container lets you ask "have I met this before?" in constant time?',
+          misconception: 'This only prepares the memory; nothing has been examined yet.',
+        },
+        {
+          lineRange: [3, 5],
+          referenceLabel: 'For each item, fail fast if it was already observed',
+          acceptableKeywords: ['check before recording', 'already seen means repeat', 'test membership', 'return on first repeat'],
+          hint: 'When does the membership test prove you have found a repeat?',
+          misconception: 'This is the early exit on a repeat; it must run before the item is recorded.',
+        },
+        {
+          lineRange: [6, 6],
+          referenceLabel: 'Record the current item as now observed',
+          acceptableKeywords: ['remember this item', 'add to the record', 'mark as seen', 'store the element'],
+          hint: 'After confirming it is new, what keeps it from being missed next time?',
+          misconception: 'This logs the item only after the repeat check; it is not the check itself.',
+        },
+        {
+          lineRange: [7, 7],
+          referenceLabel: 'No repeat ever fired, so report none found',
+          acceptableKeywords: ['return false no duplicate', 'all unique', 'no repeat found', 'survived the scan'],
+          hint: 'If the loop finishes without an early exit, what does that mean?',
+          misconception: 'Reaching here means every item was distinct; it is the clean-finish case.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'has_duplicate',
       starterCode: `def has_duplicate(a):

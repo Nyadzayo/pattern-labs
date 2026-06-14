@@ -136,6 +136,39 @@ result = dp[-1]`,
       roleBank: ['dp table', 'loop index', 'input collection', 'accumulator'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 5],
+          referenceLabel: 'Short-circuit the inputs too small for the recurrence',
+          acceptableKeywords: ['handle the base cases', 'guard tiny inputs', 'too small to recurse', 'edge cases first'],
+          hint: 'Which inputs are too short for a transition that reaches back two steps?',
+          misconception: 'These guards answer the trivial sizes directly; the real recurrence has not started.',
+        },
+        {
+          lineRange: [6, 8],
+          referenceLabel: 'Allocate the table and seed its first two cells',
+          acceptableKeywords: ['set up the table', 'seed the first cells', 'initialize the base values', 'prime the recurrence'],
+          hint: 'What must already hold a value before the loop can look two steps back?',
+          misconception: 'This primes the starting states; the loop, not this block, fills the rest.',
+        },
+        {
+          lineRange: [9, 10],
+          referenceLabel: 'Resolve each cell by choosing skip versus take',
+          acceptableKeywords: ['choose skip or take', 'best of two options', 'apply the transition', 'reach back two cells'],
+          hint: 'For each position, what two competing choices are being compared?',
+          misconception: 'This is the decision per cell; it is not the base-case seeding nor the final read.',
+        },
+        {
+          lineRange: [11, 11],
+          referenceLabel: 'Return the best total at the last state',
+          acceptableKeywords: ['return the last cell', 'final best total', 'answer at the end', 'read the last state'],
+          hint: 'Where does the optimal answer sit once every cell is decided?',
+          misconception: 'This only reports the finished answer; no choice is made here.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'max_non_adjacent',
       starterCode: `def max_non_adjacent(nums):

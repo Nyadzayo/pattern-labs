@@ -89,6 +89,53 @@ mid = lo + (hi - lo) // 2`,
       roleBank: ['low bound', 'high bound', 'midpoint', 'target value', 'step size'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Frame the range with inclusive edges',
+          acceptableKeywords: ['set inclusive bounds', 'last valid index', 'low and high edges', 'span the array'],
+          hint: 'For an inclusive search, where do the two edges start?',
+          misconception: 'This only positions the window — no comparison has happened yet.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Keep searching while the window holds elements',
+          acceptableKeywords: ['loop while range valid', 'until edges cross', 'inclusive while condition', 'keep narrowing'],
+          hint: 'What relationship between the edges means there is still something to check?',
+          misconception: 'This gates the search; it does not pick or test the midpoint.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Take the midpoint as an offset from the low edge',
+          acceptableKeywords: ['compute midpoint safely', 'offset from low', 'avoid overflow', 'floor of the half'],
+          hint: 'How is the center found without ever summing the two edges directly?',
+          misconception: 'This only locates the probe; it does not yet compare against the target.',
+        },
+        {
+          lineRange: [6, 7],
+          referenceLabel: 'Stop early on an exact hit',
+          acceptableKeywords: ['return on match', 'found the target', 'exact equality exit', 'success case'],
+          hint: 'What is the one outcome that ends the search immediately?',
+          misconception: 'This is the success exit, separate from shrinking the window.',
+        },
+        {
+          lineRange: [8, 11],
+          referenceLabel: 'Drop the half that cannot contain the target',
+          acceptableKeywords: ['discard one half', 'move the right edge', 'go left or right', 'reposition past mid'],
+          hint: 'Once the probe misses, which side of it is eliminated and how?',
+          misconception: 'This reshapes the window for the next pass — it is not the equality check above.',
+        },
+        {
+          lineRange: [12, 12],
+          referenceLabel: 'Report absence when the window empties',
+          acceptableKeywords: ['return sentinel', 'target not found', 'no match exit', 'final failure'],
+          hint: 'If the loop ends without a hit, what does that say about the target?',
+          misconception: 'Reaching here means the window collapsed with no match — the failure case.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'binary_search',
       starterCode: `def binary_search(nums, target):

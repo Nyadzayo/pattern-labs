@@ -166,6 +166,46 @@ for right in range(len(a)):
       ],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 4],
+          referenceLabel: 'Set up an empty tally and seed the trackers',
+          acceptableKeywords: ['initialize the frequency map', 'empty counts', 'start left at zero', 'seed the best'],
+          hint: 'Before the window moves, what state does it need ready?',
+          misconception: 'This prepares the bookkeeping; no element has entered the window yet.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Admit the new right element into the tally',
+          acceptableKeywords: ['advance the right edge', 'count the new element', 'add to the frequency map', 'include entering value'],
+          hint: 'As the right edge moves, how does the incoming value get recorded?',
+          misconception: 'This grows the window; it does not yet enforce the size limit.',
+        },
+        {
+          lineRange: [7, 11],
+          referenceLabel: 'Evict from the left until the window fits the limit',
+          acceptableKeywords: ['shrink the window', 'remove from the left', 'drop the leaving element', 'enforce the size'],
+          hint: 'When the window is too wide, which side gives way and how is its count handled?',
+          misconception: 'This removes the leaving element; it is the shrink step, not the count of distinct values.',
+        },
+        {
+          lineRange: [12, 13],
+          referenceLabel: 'When the window is exactly sized, record its distinct count',
+          acceptableKeywords: ['window at target size', 'count distinct keys', 'update the best', 'measure when full'],
+          hint: 'Only certain windows should be measured — which ones, and what do you record?',
+          misconception: 'This captures the answer for a valid window; it neither admits nor evicts elements.',
+        },
+        {
+          lineRange: [14, 14],
+          referenceLabel: 'Return the best distinct count seen',
+          acceptableKeywords: ['return the best', 'report the maximum distinct', 'give back the answer', 'final result'],
+          hint: 'After every window is examined, what gets reported?',
+          misconception: 'This reports the running best; it does no measuring itself.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'max_distinct_in_window',
       starterCode: `def max_distinct_in_window(a, k):

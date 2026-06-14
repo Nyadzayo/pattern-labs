@@ -96,6 +96,32 @@ while i < len(a) and a[i] == a[0]:
       roleBank: ['loop index', 'input collection', 'bound guard', 'match target'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Start the counter at the beginning',
+          acceptableKeywords: ['start at zero', 'initialize the index', 'counter begins', 'set up the cursor'],
+          hint: 'Before any element is inspected, where does the walk begin?',
+          misconception: 'This only places the starting point — no element has been examined yet.',
+        },
+        {
+          lineRange: [3, 4],
+          referenceLabel: 'Advance while both conditions still hold',
+          acceptableKeywords: ['keep going while in bounds and matching', 'guard then compare', 'advance while still equal', 'short-circuit before access'],
+          hint: 'What two things must both stay true for the walk to continue, and in what order are they checked?',
+          misconception: 'This advances the cursor; it is not where the final count is reported.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Report how far the walk reached',
+          acceptableKeywords: ['return the count', 'how far it got', 'final index is the length', 'hand back the result'],
+          hint: 'Once the run ends, what value answers the question?',
+          misconception: 'This returns the tally — it is not part of the looping condition.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'leading_run',
       starterCode: `def leading_run(a):

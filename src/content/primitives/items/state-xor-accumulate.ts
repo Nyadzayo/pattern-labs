@@ -103,6 +103,32 @@ for x in nums:
       roleBank: ['running XOR accumulator', 'current element', 'loop index', 'pair count'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Seed the fold with its neutral value',
+          acceptableKeywords: ['identity seed', 'neutral starting value', 'initialize accumulator', 'start at the identity'],
+          hint: 'What starting value leaves the very first fold unchanged?',
+          misconception: 'This only sets the seed — nothing has been folded in yet.',
+        },
+        {
+          lineRange: [3, 4],
+          referenceLabel: 'Fold every element so pairs cancel',
+          acceptableKeywords: ['fold each element', 'combine with xor', 'cancel duplicates', 'walk every value'],
+          hint: 'How does each value enter the running total so matched ones undo each other?',
+          misconception: 'This is the per-element combine, not the seed that precedes it.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Hand back the surviving value',
+          acceptableKeywords: ['return the result', 'final accumulator', 'give back the leftover', 'output the fold'],
+          hint: 'After everything cancels, what value is left to return?',
+          misconception: 'This reports the survivor; it does not perform the cancelling.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'lone_value',
       starterCode: `def lone_value(nums):

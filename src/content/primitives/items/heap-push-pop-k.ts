@@ -137,6 +137,39 @@ k = 3`,
       roleBank: ['size-k min-heap', 'current value', 'size cap', 'running total'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Set up an empty heap to hold the survivors',
+          acceptableKeywords: ['start an empty heap', 'prepare the heap', 'somewhere to keep candidates', 'initialize storage'],
+          hint: 'Before processing any values, what empty structure do you need?',
+          misconception: 'This only readies the heap; no values have entered it yet.',
+        },
+        {
+          lineRange: [4, 5],
+          referenceLabel: 'Offer every value to the heap',
+          acceptableKeywords: ['push each value', 'add every element', 'feed the heap', 'consider every item'],
+          hint: 'Each element gets a chance to belong — how does it enter?',
+          misconception: 'This admits a value first; the size check that may remove it comes next.',
+        },
+        {
+          lineRange: [6, 7],
+          referenceLabel: 'Evict the smallest whenever the heap overflows its cap',
+          acceptableKeywords: ['drop the smallest', 'bound to size k', 'pop on overflow', 'keep only k'],
+          hint: 'What keeps the heap from growing past the chosen size?',
+          misconception: 'This trims back to the cap after a push; it is the eviction, not the admission.',
+        },
+        {
+          lineRange: [8, 8],
+          referenceLabel: 'Return the smallest of the survivors',
+          acceptableKeywords: ['return the heap top', 'smallest survivor', 'kth largest', 'read the root'],
+          hint: 'Among the k kept values, which one is the answer?',
+          misconception: 'This only reads the root of the finished heap; it changes nothing.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'kth_largest',
       starterCode: `def kth_largest(nums, k):

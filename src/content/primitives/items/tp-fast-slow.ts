@@ -110,6 +110,39 @@ while fast < len(a) - 1:
       roleBank: ['slow pointer', 'fast pointer', 'midpoint value', 'loop counter'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Place both walkers at the start',
+          acceptableKeywords: ['initialize both pointers', 'start at zero', 'two indices at the start', 'set up the walkers'],
+          hint: 'Where do the half-speed and double-speed indices begin?',
+          misconception: 'This positions the pointers; nothing has moved yet.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Keep going while the fast walker can still take a full leap',
+          acceptableKeywords: ['loop while fast in range', 'until fast reaches the end', 'while a double step fits', 'fast bound check'],
+          hint: 'When can the faster index no longer advance safely?',
+          misconception: 'This bounds the walk; it does not move either pointer.',
+        },
+        {
+          lineRange: [4, 5],
+          referenceLabel: 'Advance one walker single and the other double',
+          acceptableKeywords: ['step slow by one', 'step fast by two', 'move at different speeds', 'half and double advance'],
+          hint: 'How far does each pointer move on a single iteration?',
+          misconception: 'This is the speed difference, not where the midpoint is read.',
+        },
+        {
+          lineRange: [6, 6],
+          referenceLabel: 'Report the value the slow walker landed on',
+          acceptableKeywords: ['return the middle value', 'read at slow', 'give back the midpoint', 'value where slow stopped'],
+          hint: 'When the fast index finishes, what does the slow index point at?',
+          misconception: 'This reads the midpoint after the walk; it does no advancing.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'middle_value',
       starterCode: `def middle_value(a):

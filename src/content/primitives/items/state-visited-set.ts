@@ -144,6 +144,46 @@ for x in items:
       roleBank: ['visited set', 'output collection', 'current item', 'loop bound'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Set up the memory and the output',
+          acceptableKeywords: ['initialize the tracker', 'empty set and list', 'prepare the containers', 'set up storage'],
+          hint: 'What two empty containers does the scan need before it starts?',
+          misconception: 'This only allocates storage — no item has been examined yet.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Walk over every incoming item',
+          acceptableKeywords: ['loop over items', 'iterate the input', 'visit each element', 'scan the stream'],
+          hint: 'How does each candidate item get reached?',
+          misconception: 'This only drives the iteration; the dedupe decision happens inside.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Skip anything already handled',
+          acceptableKeywords: ['skip the repeat', 'already seen continue', 'guard against duplicates', 'jump to next'],
+          hint: 'What should happen the moment an item is recognized as a repeat?',
+          misconception: 'This is the skip guard, separate from recording a fresh item below.',
+        },
+        {
+          lineRange: [7, 8],
+          referenceLabel: 'Record a first-time item',
+          acceptableKeywords: ['mark as seen', 'record the item', 'add to output', 'remember and keep'],
+          hint: 'For an item never seen before, what two things get updated?',
+          misconception: 'This runs only for new items — it is not the skip on a repeat.',
+        },
+        {
+          lineRange: [9, 9],
+          referenceLabel: 'Hand back the deduped order',
+          acceptableKeywords: ['return the result', 'give back the list', 'output the order', 'final collection'],
+          hint: 'After the scan, what gets returned?',
+          misconception: 'This reports the finished result; it does no filtering itself.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'dedupe_keep_order',
       starterCode: `def dedupe_keep_order(items):

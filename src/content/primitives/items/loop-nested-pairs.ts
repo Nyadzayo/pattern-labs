@@ -114,6 +114,46 @@ for i in range(n):
       roleBank: ['outer index', 'inner index', 'running count', 'pair sum'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Record the size and seed the tally',
+          acceptableKeywords: ['initialize counter', 'capture the length', 'seed the tally', 'start at zero'],
+          hint: 'What does the enumeration need to know and track before it starts?',
+          misconception: 'This only primes the bounds and count; no pair has been examined yet.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Pick the first member of each pair',
+          acceptableKeywords: ['outer loop', 'choose first element', 'fix the left index', 'pick anchor'],
+          hint: 'Which loop fixes the earlier element of a pair?',
+          misconception: 'This chooses one side only; the partner is selected by the inner loop.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Pair it only with later members to avoid repeats',
+          acceptableKeywords: ['inner starts after i', 'only later elements', 'skip self and duplicates', 'partner from i plus one'],
+          hint: 'Where must the inner index begin so each unordered pair is seen once?',
+          misconception: 'Starting elsewhere would either re-pair an element with itself or count each pair twice.',
+        },
+        {
+          lineRange: [6, 7],
+          referenceLabel: 'Count the pair only when it qualifies',
+          acceptableKeywords: ['check the condition', 'count if it matches', 'tally qualifying pairs', 'guard the increment'],
+          hint: 'What must be true before a pair adds to the total?',
+          misconception: 'The increment is gated by the test — it does not count every pair blindly.',
+        },
+        {
+          lineRange: [8, 8],
+          referenceLabel: 'Hand back the qualifying count',
+          acceptableKeywords: ['return count', 'give back the tally', 'output the total', 'return the answer'],
+          hint: 'After all pairs are seen, what is produced?',
+          misconception: 'Reaching here means every pair was checked; this just returns the tally.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'count_pairs_with_sum',
       starterCode: `def count_pairs_with_sum(nums, target):

@@ -104,6 +104,39 @@ for _ in range(n):
       roleBank: ['current value', 'next value', 'loop counter', 'accumulator'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Seed the pair with its starting values',
+          acceptableKeywords: ['seed the pair', 'initialize both variables', 'starting values', 'set the base cases'],
+          hint: 'What pair of values does the sequence begin from?',
+          misconception: 'This only plants the starting pair — nothing has advanced yet.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Repeat the advance a fixed number of times',
+          acceptableKeywords: ['loop fixed times', 'repeat n steps', 'iterate the advance', 'count the rolls'],
+          hint: 'How many times should the pair roll forward?',
+          misconception: 'This only bounds how many rolls happen; it is not the roll itself.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Roll both variables forward in one move',
+          acceptableKeywords: ['advance both at once', 'roll the pair forward', 'simultaneous update', 'shift to next pair'],
+          hint: 'How do both values move forward together reading the old values?',
+          misconception: 'This is the simultaneous roll, not the seed that came before.',
+        },
+        {
+          lineRange: [5, 5],
+          referenceLabel: 'Return the value now in position',
+          acceptableKeywords: ['return the result', 'give back the value', 'final answer', 'output the front'],
+          hint: 'After the last roll, which variable holds the answer?',
+          misconception: 'This reports the landed value; it does not perform an advance.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'fib',
       starterCode: `def fib(n):

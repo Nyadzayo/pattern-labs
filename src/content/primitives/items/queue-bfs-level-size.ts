@@ -168,6 +168,46 @@ start = 0`,
       roleBank: ['BFS queue', 'level counter', 'current level size', 'visited set'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 5],
+          referenceLabel: 'Seed the frontier and counters',
+          acceptableKeywords: ['start the queue', 'mark the source seen', 'initialize the counter', 'set up the frontier'],
+          hint: 'What must hold the first node, record that it is visited, and start the tally at nothing?',
+          misconception: 'This only primes the search — no traversal has happened yet.',
+        },
+        {
+          lineRange: [6, 8],
+          referenceLabel: 'Snapshot the current layer and tick the counter',
+          acceptableKeywords: ['freeze the level size', 'count this layer', 'capture how many at this depth', 'increment the level'],
+          hint: 'Before draining a layer, why capture its size up front, and what gets bumped here?',
+          misconception: 'This fixes how many belong to this level; it is not where neighbours are added.',
+        },
+        {
+          lineRange: [9, 10],
+          referenceLabel: 'Drain exactly this layer\'s nodes',
+          acceptableKeywords: ['pop one per level member', 'process each node in the layer', 'take from the front', 'loop the layer count'],
+          hint: 'How many pops happen before the depth advances?',
+          misconception: 'This pulls nodes off the front — it does not decide which are new.',
+        },
+        {
+          lineRange: [11, 14],
+          referenceLabel: 'Enqueue each unvisited neighbour once',
+          acceptableKeywords: ['add unseen neighbours', 'skip already visited', 'mark then enqueue', 'push new nodes'],
+          hint: 'For a node\'s neighbours, what test decides whether it joins the next layer, and when is it marked?',
+          misconception: 'This grows the next frontier; the visited mark must be set before re-enqueuing to avoid repeats.',
+        },
+        {
+          lineRange: [15, 15],
+          referenceLabel: 'Report the number of layers traversed',
+          acceptableKeywords: ['return the level count', 'hand back the depth', 'how many layers', 'final tally'],
+          hint: 'When the queue empties, what value is the answer?',
+          misconception: 'This returns the depth — it is not part of expanding the search.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'bfs_depth',
       starterCode: `def bfs_depth(graph, start):

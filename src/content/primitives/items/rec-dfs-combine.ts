@@ -130,6 +130,32 @@ const primitive: Primitive = {
       roleBank: ['current node', 'accumulated depth', 'child subtree', 'visited set'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 1],
+          referenceLabel: 'Define the recursion over one node',
+          acceptableKeywords: ['define the recursive function', 'take the current node', 'header for the descent', 'one node at a time'],
+          hint: 'What single thing does each call receive?',
+          misconception: 'This is just the signature — no decision is made here.',
+        },
+        {
+          lineRange: [2, 3],
+          referenceLabel: 'Stop at the empty subtree',
+          acceptableKeywords: ['base case for none', 'empty subtree returns zero', 'stop the descent', 'guard against missing child'],
+          hint: 'What ends the recursion so it does not run forever?',
+          misconception: 'This halts the descent at nothing; it does not yet measure any real node.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Count this node atop the deeper child',
+          acceptableKeywords: ['add one plus the deeper child', 'combine with max', 'take the longer branch', 'fold children into this answer'],
+          hint: 'How does this node\'s answer fold in the bigger of its two children\'s answers?',
+          misconception: 'This combines the children with max and adds one — adding both children would count nodes, not depth.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'max_depth',
       starterCode: `def max_depth(node):

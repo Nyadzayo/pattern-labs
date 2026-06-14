@@ -165,6 +165,46 @@ balanced = balanced and not stack`,
       roleBank: ['open-bracket stack', 'closer-to-opener map', 'running total', 'visited set'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 3],
+          referenceLabel: 'Set up the stack and the closer-to-opener map',
+          acceptableKeywords: ['empty stack of openers', 'map closers to openers', 'initialize the lookup', 'prepare the structures'],
+          hint: 'What remembers unclosed openers, and what tells each closer which opener it needs?',
+          misconception: 'This only prepares the tools — no character has been read yet.',
+        },
+        {
+          lineRange: [4, 4],
+          referenceLabel: 'Walk the string character by character',
+          acceptableKeywords: ['scan each character', 'iterate the string', 'visit every bracket', 'single pass'],
+          hint: 'How are the brackets examined?',
+          misconception: 'This drives the scan; it does not itself classify a bracket.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Remember every opener on the stack',
+          acceptableKeywords: ['push openers', 'stack the open bracket', 'record an unclosed opener', 'save it for later'],
+          hint: 'When an opening bracket appears, what happens to it?',
+          misconception: 'This stores openers for later matching — it never closes anything.',
+        },
+        {
+          lineRange: [7, 8],
+          referenceLabel: 'A closer must match the most recent opener',
+          acceptableKeywords: ['pop and compare', 'closer matches the top', 'reject on mismatch or empty', 'guard then match'],
+          hint: 'On a closer, what must be true about the top of the stack, and what guards an empty stack?',
+          misconception: 'This enforces nesting order; the empty check must come first so popping nothing fails safely.',
+        },
+        {
+          lineRange: [9, 9],
+          referenceLabel: 'Demand nothing was left open',
+          acceptableKeywords: ['stack must be empty', 'no leftover openers', 'return whether balanced', 'nothing dangling'],
+          hint: 'Surviving the scan is not enough — what about openers that were never closed?',
+          misconception: 'This final check rejects unclosed openers; a non-empty stack means the string is not balanced.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'is_balanced',
       starterCode: `def is_balanced(s):

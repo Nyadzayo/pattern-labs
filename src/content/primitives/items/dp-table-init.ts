@@ -97,6 +97,32 @@ const primitive: Primitive = {
       roleBank: ['column count source', 'row count source', 'fill value', 'loop accumulator'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 1],
+          referenceLabel: 'Take in the two prefix lengths',
+          acceptableKeywords: ['accept the dimensions', 'take the two sizes', 'receive the lengths', 'function inputs'],
+          hint: 'What two numbers decide the shape of the grid?',
+          misconception: 'This only names the inputs; the grid does not exist yet.',
+        },
+        {
+          lineRange: [2, 2],
+          referenceLabel: 'Build a grid with independent rows of zeros',
+          acceptableKeywords: ['make a fresh row each time', 'separate rows', 'comprehension per row', 'allocate the grid'],
+          hint: 'How do you guarantee each row is its own list, not a shared one?',
+          misconception: 'This is the safe allocation step; reusing one row here is the bug it avoids.',
+        },
+        {
+          lineRange: [3, 3],
+          referenceLabel: 'Hand back the assembled grid',
+          acceptableKeywords: ['return the table', 'give back the grid', 'return the result', 'output the table'],
+          hint: 'After construction, what does the caller need handed back?',
+          misconception: 'This only returns what was built; it does not allocate anything.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'make_dp_table',
       starterCode: `def make_dp_table(m, n):

@@ -132,6 +132,39 @@ for i in range(1, n + 1):
       roleBank: ['DP table', 'loop index', 'input array', 'accumulator', 'sentinel value'],
     },
     {
+      kind: 'label',
+      subgoals: [
+        {
+          lineRange: [1, 2],
+          referenceLabel: 'Read how many items there are to process',
+          acceptableKeywords: ['get the input size', 'count the elements', 'read length', 'how many items'],
+          hint: 'Before sizing anything, what number do you need from the input?',
+          misconception: 'This just measures the input; it does not yet reserve any storage.',
+        },
+        {
+          lineRange: [3, 4],
+          referenceLabel: 'Reserve the table and seed the base case',
+          acceptableKeywords: ['allocate the table', 'reserve the cells', 'set the base case', 'initialize first cell'],
+          hint: 'How big must the table be, and which cell starts with a known answer?',
+          misconception: 'This lays out empty storage and the starting value; no recurrence runs here yet.',
+        },
+        {
+          lineRange: [5, 6],
+          referenceLabel: 'Sweep in dependency order, filling each cell from the prior one',
+          acceptableKeywords: ['iterate upward', 'fill in order', 'build from previous cell', 'forward sweep'],
+          hint: 'In which direction must you move so every cell you read is already done?',
+          misconception: 'This is where the recurrence actually fills cells, not where the answer is returned.',
+        },
+        {
+          lineRange: [7, 7],
+          referenceLabel: 'Hand back the final accumulated cell',
+          acceptableKeywords: ['return the last cell', 'final answer', 'return the result', 'read the end of the table'],
+          hint: 'Once the table is full, which single cell holds the answer?',
+          misconception: 'This only reads the finished result; it does no computation of its own.',
+        },
+      ],
+    },
+    {
       kind: 'write',
       functionName: 'prefix_total',
       starterCode: `def prefix_total(a):
