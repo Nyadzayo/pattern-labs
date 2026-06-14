@@ -19,6 +19,7 @@ export function LabelRungView({ primitive, rung, onSubmit }: RungViewProps<Label
       <SubgoalLabeler
         code={write.solution}
         subgoals={rung.subgoals}
+        confidenceModuleId={primitive.moduleTags[0]}
         onSubmit={({ scores, understood }) => {
           recordSubgoalAttempt(`primitive:${primitive.id}`, scores, understood)
           onSubmit({

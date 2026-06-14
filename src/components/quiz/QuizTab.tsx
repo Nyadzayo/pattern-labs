@@ -11,7 +11,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { getModuleContent } from '@/content'
 import type { ModuleId, QuizKind, QuizQuestion } from '@/content'
 import { useAppState } from '@/lib/useAppState'
-import { recordQuizAttempt, type QuizAttempt } from '@/lib/storage'
+import { recordQuizAttempt, recordCalibration, type QuizAttempt } from '@/lib/storage'
+import { askConfidence } from '@/lib/confidence'
 import { Markdown } from '@/components/markdown/Markdown'
 
 type Phase = 'idle' | 'active' | 'done'
@@ -166,9 +167,20 @@ export function QuizTab({ moduleId }: { moduleId: ModuleId }) {
     setPhase('active')
   }
 
-  function choose(choiceIndex: number) {
+  async function choose(choiceIndex: number) {
+    if (phase !== 'active' || answers[index] !== null) return
+    // Predict-then-check: ask confidence before the correctness reveal.
+    const level = await askConfidence('quiz', moduleId)
     if (phase !== 'active' || answers[index] !== null) return
     setAnswers((prev) => prev.map((a, i) => (i === index ? choiceIndex : a)))
+    if (level !== null) {
+      recordCalibration({
+        surface: 'quiz',
+        moduleId,
+        confidence: level,
+        correct: choiceIndex === questions[index].correctIndex,
+      })
+    }
   }
 
   function advance() {

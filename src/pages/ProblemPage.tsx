@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { getModuleContent, getModuleMeta, MODULE_IDS } from '@/content'
 import type { Difficulty, ModuleId, Problem, TestCase } from '@/content'
 import { useAppState } from '@/lib/useAppState'
-import { saveDraft, updateProblemProgress, recordSubgoalAttempt } from '@/lib/storage'
+import { saveDraft, updateProblemProgress, recordSubgoalAttempt, recordCalibration } from '@/lib/storage'
+import { askConfidence } from '@/lib/confidence'
 import { SubgoalLabeler } from '@/components/subgoals/SubgoalLabeler'
 import { runJudge, warmupJudge, judgeStatus, onJudgeStatus, type RunOutcome } from '@/lib/judge'
 import type { JudgeStatus } from '@/lib/judgeTypes'
@@ -156,7 +157,17 @@ export function ProblemView({
     updateProblemProgress(problemKey, { hintsUsed: Math.max(progress?.hintsUsed ?? 0, next) })
   }
 
-  function revealSolution() {
+  async function revealSolution() {
+    // Predict-then-check: were you actually able to solve this before peeking?
+    const level = await askConfidence('solution', moduleId)
+    if (level !== null) {
+      recordCalibration({
+        surface: 'solution',
+        moduleId,
+        confidence: level,
+        correct: (progress?.status ?? 'attempted') === 'solved-clean',
+      })
+    }
     setSolutionShown(true)
     setSolutionGate(false)
     updateProblemProgress(problemKey, { viewedSolution: true })
@@ -342,6 +353,7 @@ export function ProblemView({
                       <SubgoalLabeler
                         code={problem.solution.code}
                         subgoals={problem.solution.subgoals}
+                        confidenceModuleId={moduleId}
                         onSubmit={({ scores, understood }) =>
                           recordSubgoalAttempt(problemKey, scores, understood)
                         }

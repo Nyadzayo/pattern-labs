@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAppState } from '@/lib/useAppState'
 import { getKata, recordKataAttempt } from '@/lib/katas'
+import { recordCalibration } from '@/lib/storage'
+import { askConfidence } from '@/lib/confidence'
 import { codeWpm, isComplete, keystrokeAccuracy, type Keystroke } from '@/lib/kataDiff'
 import { runJudge, warmupJudge } from '@/lib/judge'
 import { KataTypingSurface } from '@/components/katas/KataTypingSurface'
@@ -145,12 +147,17 @@ export function KataPage() {
   const runBlank = async () => {
     const seconds = startRef.current > 0 ? (performance.now() - startRef.current) / 1000 : 0
     const keys = keysRef.current
+    // Predict-then-check before the judge runs (timer already captured above).
+    const level = await askConfidence('kata', kata.moduleTags[0])
     setPhase('judging')
     const outcome = await runJudge(typedRef.current, kata.functionName, kata.testCases)
     const total = kata.testCases.length
     const casesPassed = outcome.results.filter((r) => r.ok).length
     const passed =
       !outcome.timedOut && !outcome.setupError && outcome.results.length === total && casesPassed === total
+    if (level !== null) {
+      recordCalibration({ surface: 'kata', moduleId: kata.moduleTags[0], confidence: level, correct: passed })
+    }
     recordKataAttempt(kata.id, {
       mode: 'blank',
       seconds,

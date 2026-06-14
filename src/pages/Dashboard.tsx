@@ -8,6 +8,7 @@ import { dueDrillCount } from '@/lib/drills'
 import { dueStemCount } from '@/lib/sprint'
 import { dailyWarmup, warmupDoneToday } from '@/lib/warmup'
 import { ProgressRing } from '@/components/shell/ProgressRing'
+import { CalibrationCard } from '@/components/calibration/CalibrationCard'
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -86,6 +87,10 @@ export function Dashboard() {
           <span className="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white">Start</span>
         </Link>
       )}
+
+      <div className="mt-6">
+        <CalibrationCard />
+      </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         {lastMeta && (

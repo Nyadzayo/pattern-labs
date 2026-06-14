@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { Subgoal } from '@/content/types'
 import { gradeLabel, bestChunkMatch, labelingComplete, type GradeResult } from '@/lib/subgoalGrade'
+import { recordCalibration } from '@/lib/storage'
+import { askConfidence } from '@/lib/confidence'
 
 export interface SubgoalLabelerResult {
   /** Lenient coverage score (0..1) per chunk from the submitted attempt. */
@@ -18,6 +20,10 @@ export interface SubgoalLabelerProps {
   onSubmit?: (result: SubgoalLabelerResult) => void
   /** Optional instruction line above the chunks. */
   title?: string
+  /** When set, ask a 1-tap confidence pick before revealing and log calibration. */
+  confidenceModuleId?: string
+  /** Capture confidence on submit (defaults to true when confidenceModuleId given). */
+  captureConfidence?: boolean
 }
 
 const FALLBACK_HINT =
@@ -31,7 +37,14 @@ const FALLBACK_HINT =
  * labels are never shown as readable text up front. Hint XOR feedback per chunk:
  * the hint is pre-submission only; the reveal/feedback is post-submission only.
  */
-export function SubgoalLabeler({ code, subgoals, onSubmit, title }: SubgoalLabelerProps) {
+export function SubgoalLabeler({
+  code,
+  subgoals,
+  onSubmit,
+  title,
+  confidenceModuleId,
+  captureConfidence,
+}: SubgoalLabelerProps) {
   const lines = useMemo(() => code.replace(/\n+$/, '').split('\n'), [code])
   const [labels, setLabels] = useState<string[]>(() => subgoals.map(() => ''))
   const [hintsShown, setHintsShown] = useState<boolean[]>(() => subgoals.map(() => false))
@@ -45,13 +58,17 @@ export function SubgoalLabeler({ code, subgoals, onSubmit, title }: SubgoalLabel
     return lines.slice(Math.max(0, a - 1), b)
   }
 
-  function submit() {
+  async function submit() {
+    const wantConfidence = captureConfidence ?? confidenceModuleId !== undefined
+    // Predict-then-check: ask confidence BEFORE the reference labels are revealed.
+    const level = wantConfidence ? await askConfidence('subgoal', confidenceModuleId) : null
     const res = subgoals.map((s, i) => gradeLabel(labels[i] ?? '', s.acceptableKeywords))
+    const understood = labelingComplete(res.map((r) => r.score))
     setResults(res)
-    onSubmit?.({
-      scores: res.map((r) => r.score),
-      understood: labelingComplete(res.map((r) => r.score)),
-    })
+    if (level !== null) {
+      recordCalibration({ surface: 'subgoal', moduleId: confidenceModuleId, confidence: level, correct: understood })
+    }
+    onSubmit?.({ scores: res.map((r) => r.score), understood })
   }
 
   function reset() {

@@ -15,12 +15,14 @@ import { KataPage } from '@/pages/KataPage'
 import { WarmupPage } from '@/pages/WarmupPage'
 import { Settings } from '@/pages/Settings'
 import { Placeholder } from '@/pages/Placeholder'
+import { ConfidenceHost } from '@/components/calibration/ConfidenceHost'
 import '@/content/primitives' // self-register the Primitives Lab catalog
 import '@/content/sprint' // self-register the Pattern Sprint catalog
 
 export default function App() {
   return (
     <HashRouter>
+      <ConfidenceHost />
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
